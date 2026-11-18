@@ -39,6 +39,13 @@ specs/      one folder per feature: spec.md, plan.md, tasks.md
 5. No API version prefix: routes live under `/api` (for example `/api/imports`).
 6. The error message catalog holds English text only.
 7. Template example modules are removed before delivery.
+8. No CHECK constraints: enum and range columns are plain columns validated by the backend.
+9. Project documentation (root `docs/`, `backend/docs/api/*`, READMEs) is in English; the
+   template's Indonesian rule files stay as they are.
+10. Pure import rules live in `backend/domain/assetimport/` (standard library and `domain/*` only).
+11. Real-PostgreSQL integration tests live in `backend/internal/integrationtest/` and
+    `backend/internal/testsupport/pgtest/`, skipped without `TEST_DATABASE_URL`.
+12. Uploaded CSV files are parsed in memory and never stored.
 
 The constitution holds the full text and the reasons.
 
