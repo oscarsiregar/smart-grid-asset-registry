@@ -1,50 +1,87 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+- Version change: (template, unversioned) → 1.0.0
+- Principles defined (initial ratification):
+  I. Follow the Template
+  II. Validation Lives in the Backend
+  III. Predictable, Explainable Imports
+  IV. Test the Rules
+  V. Usable and Accessible
+- Added sections: Template Exceptions, Definition of Done, Governance
+- Removed sections: none
+- Templates: none modified (dependent templates read this file at runtime)
+- Deferred TODOs: none
+-->
+
+# Smart Grid Asset Registry Constitution
+
+A web app that imports a CSV of grid assets (substations and their equipment, linked by
+parent asset ID), validates it on the server, stores accepted rows in PostgreSQL, and lets
+users browse and search the asset hierarchy.
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Follow the Template
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+`backend/` and `frontend/` come from the team template. `backend/AGENTS.md`,
+`backend/docs/rules/*`, `frontend/AGENTS.md` and `frontend/docs/*` are binding. New code
+MUST copy the shape of existing modules rather than invent new patterns. Any deviation
+MUST be listed under Template Exceptions before it is made.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Validation Lives in the Backend
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+All business rules MUST be enforced by the backend. The database uses only primary keys,
+unique keys, NOT NULL and foreign keys; CHECK constraints and triggers are forbidden.
+The frontend MUST NOT re-implement validation.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Predictable, Explainable Imports
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+CSV row order MUST NOT change the import result. Every rejected row MUST report its CSV
+row number, its asset ID when present, a stable error code and a readable message. Every
+import result MUST state clearly whether data was committed.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Test the Rules
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Every import and hierarchy rule MUST have a table-driven unit test written before the
+rule. The supplied sample CSV MUST be covered by a golden test. Repositories and usecases
+MUST also be tested against a real PostgreSQL.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Usable and Accessible
+
+The selected asset and open panels MUST live in the URL so refresh, deep links and the
+back button work. Loading, empty and error states MUST always be handled. Status MUST NOT
+be conveyed by colour alone; panels MUST trap focus and close on Escape.
+
+## Template Exceptions
+
+1. **No authentication**: the product has no users, so routes are public and there are no
+   permission checks.
+2. **Frontend tests**: Vitest + React Testing Library are added (the template has no test
+   runner).
+3. **Local stack**: a root `docker-compose.yml` runs `db` (PostgreSQL 16, port 55432),
+   `api` (port 8080) and `web` (nginx, port 3000, forwarding `/api`); database migrations
+   run automatically on start.
+4. **Local shared library**: the template's private go-common library is re-implemented
+   inside `backend/` with the same names and signatures, so the project builds without
+   company credentials. Its only addition: error responses with an application error code
+   include it as `data.errorCode`.
+5. **No API version prefix**: routes live under `/api` (for example `/api/imports`).
+6. **English messages**: the error message catalog holds English text only.
+7. **Template example modules** are removed before delivery.
+
+## Definition of Done
+
+- Backend `make check` and `make lint` pass.
+- Frontend `pnpm lint`, `pnpm build` and `pnpm test` pass.
+- `docker compose up --build` starts cleanly and the change was tried through the real app.
+- `docs/ARCHITECTURE.md` and `docs/KNOWN_LIMITATIONS.md` are updated when relevant.
+- No secrets are committed.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution overrides all other practices. Changes are made only by amending this
+file with a semantic version bump (MAJOR: principle removed or redefined; MINOR: principle
+or section added or materially expanded; PATCH: wording clarifications). Plans and reviews
+MUST check compliance with these principles and the Definition of Done.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-19
