@@ -51,18 +51,19 @@ No open NEEDS CLARIFICATION items; all decisions are in [research.md](research.m
 
 | Principle | Status | Evidence |
 |---|---|---|
-| I. Follow the template | **Pass, pending amendment** | New code copies the `product` (backend) and `notes` (frontend) shapes. Six deviations not covered by exceptions 1–7 are listed in [research.md R0](research.md#r0-template-fit-deviations-that-need-a-decision) and below; they need a constitution amendment before the affected tasks run |
-| II. Validation lives in the backend | Pass | All rules in `domain/assetimport` + usecases; schema uses PK/unique/NOT NULL/FK only; the frontend Zod schema checks only "a file is chosen" and the mode value |
+| I. Follow the template | Pass | New code copies the `product` (backend) and `notes` (frontend) shapes. Every deviation is a listed exception: the five accepted in 1.1.0 are exceptions 8–12. The rejected one (D2) is dropped, so both tables keep the template audit columns with `"system"` as the actor name ([research.md R0, R7](research.md#r0-template-fit-deviations-that-need-a-decision)) |
+| II. Validation lives in the backend | Pass | All rules in `domain/assetimport` + usecases; schema uses PK/unique/NOT NULL/FK only, no CHECK (exception 8); the frontend Zod schema checks only "a file is chosen" and the mode value |
 | III. Predictable, explainable imports | Pass | Set/map-based two-pass engine (R3), stable codes in `domain/errorcode`, row number + asset ID on every rejection, `outcome` + `isCommitted` in every result, `500` ⇒ rolled back |
-| IV. Test the rules | Pass | Table test per rule written first; golden test on the sample (R12); permutation test; repository and usecase integration tests on real PostgreSQL (D5) |
+| IV. Test the rules | Pass | Table test per rule written first; golden test on the sample (R12); permutation test; repository and usecase integration tests on real PostgreSQL (exception 11) |
 | V. Usable and accessible | Pass | `?panel=import` in the URL, native modal `<dialog>` (focus trap, Escape), loading/empty/error states listed in [contracts/ui-import-panel.md](contracts/ui-import-panel.md), outcomes in text plus labelled icons |
-| Template exceptions used | 1, 2, 3, 4, 5, 6, 7 | auth removal, Vitest, compose + migrate on start, local go-common (+`data.errorCode`), `/api`, English catalog, example removal |
+| Template exceptions used | 1–12 | auth removal, Vitest, compose + migrate on start, local go-common (+`data.errorCode`), `/api`, English catalog, example removal, no CHECK constraints, English docs, `domain/assetimport`, integration-test packages, in-memory uploads |
 | Definition of Done | Planned | `make check`, `make lint`, `pnpm lint/build/test`, `docker compose up --build` + manual run ([quickstart.md](quickstart.md)), `docs/ARCHITECTURE.md` + `docs/KNOWN_LIMITATIONS.md` created, no secrets (`.env` files stay git-ignored) |
 
-**Post-design re-check (after Phase 1)**: unchanged. The design added no new deviation beyond D1–D6.
-The gate stays at *pass, pending amendment*: before `/speckit-implement`, amend the constitution
-(MINOR bump, 1.0.0 → 1.1.0) to add exceptions for D1–D6, or reject individual items and
-re-plan them.
+**Post-design re-check (constitution 1.1.0, 2026-11-19)**: **PASS**, no open violations. D1, D3,
+D4, D5 and D6 are now exceptions 8–12. D2 was rejected and is designed out: `asset_import` and
+`asset` carry `created_by_name` / `updated_by_name` set to `usecase.SystemActorName` (`"system"`)
+([data-model.md](data-model.md)). The go-common provenance note in research R1 is confirmed
+acceptable (signatures and behaviour only, no copying).
 
 ## Project Structure
 
@@ -101,7 +102,7 @@ backend/
 │   ├── pkg/apperror/  pkg/logger/  pkg/database/  pkg/utils/  pkg/middleware/fiber/
 │   └── response/
 ├── domain/
-│   ├── assetimport/                             # pure engine (D4): parse, normalize, field_rules,
+│   ├── assetimport/                             # pure engine (exc. 10): parse, normalize, field_rules,
 │   │   ├── *.go + *_test.go                     #   hierarchy_rules, reimport_rules, serial_warnings,
 │   │   └── testdata/grid_assets.csv, grid_assets.golden.json   # validate, types
 │   ├── entity/{asset.go, asset_import.go}
@@ -123,8 +124,8 @@ backend/
 │   │   ├── asset/                               # init, find_by_asset_ids, find_by_serial_numbers, create_many (+ sqlmock tests)
 │   │   └── asset_import/                        # init, create, acquire_lock (+ sqlmock tests)
 │   ├── mocks/                                   # regenerated (make mocks)
-│   ├── testsupport/pgtest/                      # open TEST_DATABASE_URL, migrate, truncate, skip (D5)
-│   └── integrationtest/                         # repositories + usecases on real PostgreSQL (D5)
+│   ├── testsupport/pgtest/                      # open TEST_DATABASE_URL, migrate, truncate, skip (exc. 11)
+│   └── integrationtest/                         # repositories + usecases on real PostgreSQL (exc. 11)
 └── docs/api/asset-import.md                     # contract (English, D3)
 
 frontend/
@@ -160,9 +161,8 @@ modules exist, then go in the final cleanup phase. Their migration goes in the f
 (R8).
 
 **Structure Decision**: Web application with the template's existing `backend/` and `frontend/`
-trees. New code goes into the template's own folders, except the two new backend locations
-`domain/assetimport` (D4) and `internal/{testsupport,integrationtest}` (D5), which wait for the
-amendment.
+trees. New code goes into the template's own folders, plus the two backend locations that
+exceptions 10 and 11 allow: `domain/assetimport` and `internal/{testsupport/pgtest,integrationtest}`.
 
 ## Implementation phases (input for `/speckit-tasks`)
 
@@ -186,14 +186,13 @@ amendment.
 
 ## Complexity Tracking
 
-Deviations from the template that exceptions 1–7 do not cover (Principle I). Each needs a
-constitution amendment before its tasks run.
+No open violations. The deviations proposed during planning were resolved by constitution 1.1.0:
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| D1 No CHECK constraints for enums/ranges (template rule 05) | Constitution II forbids them | Keeping the template rule would break the constitution |
-| D2 No `*_by_name` audit columns | No users exist (exception 1), so the value would always be blank | A constant like `"system"` carries no information; `import_id` records provenance instead |
-| D3 Project docs in English (template: Indonesian) | Exception 6 is English-only for messages; reviewers of the brief read English | Mixed-language docs would be harder to review |
-| D4 New package `domain/assetimport` | The rules must be pure and exhaustively testable (user decision, Principle IV) | `helpers.go` in the usecase package is not pure (imports logger/apperr) and would be one very large file |
-| D5 New test-only packages `internal/testsupport/pgtest`, `internal/integrationtest` | Principle IV needs real-PostgreSQL tests of usecases; usecase packages may not import repositories | Putting them in the usecase package breaks the dependency table in rule 01 |
-| D6 Multipart upload parsed in memory, file not stored (template rules 03/07 assume `BodyParser` and object storage) | The CSV is input data, not a document to keep | Storing uploads would add storage and presigned URLs the spec does not need |
+| Proposal | Outcome |
+|---|---|
+| D1 No CHECK constraints for enums/ranges | Accepted — exception 8 |
+| D2 Drop `*_by_name` audit columns | **Rejected** — columns kept, filled with `"system"` |
+| D3 Project docs in English | Accepted — exception 9 |
+| D4 Package `domain/assetimport` | Accepted — exception 10 |
+| D5 Packages `internal/integrationtest`, `internal/testsupport/pgtest` | Accepted — exception 11 |
+| D6 CSV parsed in memory, never stored | Accepted — exception 12 |

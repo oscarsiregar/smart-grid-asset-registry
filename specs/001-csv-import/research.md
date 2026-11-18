@@ -10,20 +10,23 @@ the template rules do not fit the spec or constitution; nothing there is silentl
 ## R0. Template fit: deviations that need a decision
 
 Principle I says every deviation is listed under *Template Exceptions* **before** it is made. The
-items below are not covered by exceptions 1–7. They are proposed as a constitution amendment
-(see [plan.md → Complexity Tracking](plan.md#complexity-tracking)); implementation of the affected
-tasks waits for that amendment.
+items below were not covered by exceptions 1–7 and were proposed as a constitution amendment.
 
-| # | Template rule (source) | Conflict | Proposal |
+**Resolution (constitution 1.1.0, 2026-11-19)**: D1, D3, D4, D5 and D6 were accepted as exceptions
+8, 9, 10, 11 and 12. **D2 was rejected**: both tables keep the template's `created_by_name` /
+`updated_by_name` audit columns, filled with the fixed value `"system"` (see R7). The table below
+keeps the original proposals for the record.
+
+| # | Template rule (source) | Conflict | Proposal → outcome |
 |---|---|---|---|
-| D1 | Enums stored `VARCHAR + CHECK (status IN (...))`; `price CHECK (price >= 0)` (backend `05-repository-database.md`, product migration) | Constitution II forbids CHECK constraints | No CHECK constraints; enums are plain `VARCHAR` validated by the backend. Constitution II already wins on precedence, but list it as an exception so the template rule is visibly overridden |
-| D2 | Every table has `created_by_name` / `updated_by_name` audit columns (`05`) | No users (exception 1), so there is no actor name | Omit the `*_by_name` columns; keep `created_at` / `updated_at`. Each asset instead records the `import_id` that created it |
-| D3 | Docs (`docs/`, README) in Indonesian; catalog entries carry `ID` + `EN` (`02-penamaan.md`, `06-error-handling.md`) | Exception 6 covers only the message catalog; it is silent on docs. The brief's reviewers read English | All project documentation (root `docs/`, `backend/docs/api/*.md`, READMEs) in English. Existing Indonesian rule files stay as they are |
-| D4 | Folder layout has no place for pure domain logic beyond `Validate()` and entity methods (`01-arsitektur.md`) | The import rules are a large, pure, exhaustively tested engine (user decision: no DB/HTTP/framework imports) | New package `backend/domain/assetimport/` (stdlib + other `domain/*` only), one file per concern |
-| D5 | Integration tests: template has only sqlmock repository tests and mocked usecase tests (`08-testing.md`); usecase packages must not import `internal/repository` (`01`) | Constitution IV requires real-PostgreSQL tests of repositories and usecases | New test-only package `backend/internal/integrationtest/` (wires real repositories + usecases), plus a helper `backend/internal/testsupport/pgtest/`. Skipped when `TEST_DATABASE_URL` is unset |
-| D6 | File uploads: "validate MIME from content, server-generated name, object storage, presigned URL" (`07-keamanan.md`); handlers parse with `BodyParser` only (`03-handler.md`) | The CSV is parsed in memory and never stored; it arrives as `multipart/form-data` | Handler reads the part with `ctx.FormFile("file")`; the bytes go to the usecase as an `io.Reader`; no storage, so the storage rules do not apply. Content is "validated" by parsing it as UTF-8 CSV |
+| D1 | Enums stored `VARCHAR + CHECK (status IN (...))`; `price CHECK (price >= 0)` (backend `05-repository-database.md`, product migration) | Constitution II forbids CHECK constraints | No CHECK constraints; enums are plain `VARCHAR` validated by the backend → **accepted, exception 8** |
+| D2 | Every table has `created_by_name` / `updated_by_name` audit columns (`05`) | No users (exception 1), so there is no actor name | Omit the `*_by_name` columns → **rejected**: keep the columns, value `"system"` |
+| D3 | Docs (`docs/`, README) in Indonesian; catalog entries carry `ID` + `EN` (`02-penamaan.md`, `06-error-handling.md`) | Exception 6 covers only the message catalog; it is silent on docs. The brief's reviewers read English | All project documentation (root `docs/`, `backend/docs/api/*.md`, READMEs) in English; existing Indonesian rule files stay → **accepted, exception 9** |
+| D4 | Folder layout has no place for pure domain logic beyond `Validate()` and entity methods (`01-arsitektur.md`) | The import rules are a large, pure, exhaustively tested engine (user decision: no DB/HTTP/framework imports) | New package `backend/domain/assetimport/` (stdlib + other `domain/*` only), one file per concern → **accepted, exception 10** |
+| D5 | Integration tests: template has only sqlmock repository tests and mocked usecase tests (`08-testing.md`); usecase packages must not import `internal/repository` (`01`) | Constitution IV requires real-PostgreSQL tests of repositories and usecases | Test-only packages `backend/internal/integrationtest/` and `backend/internal/testsupport/pgtest/`, skipped when `TEST_DATABASE_URL` is unset → **accepted, exception 11** |
+| D6 | File uploads: "validate MIME from content, server-generated name, object storage, presigned URL" (`07-keamanan.md`); handlers parse with `BodyParser` only (`03-handler.md`) | The CSV is parsed in memory and never stored; it arrives as `multipart/form-data` | Handler reads the part with `ctx.FormFile("file")`; the bytes go to the usecase as an `io.Reader`; no storage → **accepted, exception 12** |
 
-Items that **are** covered and need no amendment: no auth / no permission checks (exception 1),
+Items that were already covered: no auth / no permission checks (exception 1),
 Vitest + RTL (2), compose stack and migrate-on-start instead of a migration job (3), local
 go-common (4), `/api` instead of `/v1` for business routes and health (5), English-only catalog (6),
 example removal (7).
@@ -61,15 +64,15 @@ the import path. Implementing only what is used keeps dead code out (frontend B3
 
 **Note — provenance**: the private v1.0.0 source is present in the local Go module cache. It is
 company code, so it is used only to confirm signatures and observable behaviour (JSON envelope,
-status mapping); the implementation is written fresh. Flagged so the user can decide if even that
-reference is acceptable.
+status mapping); the implementation is written fresh. The user confirmed (2026-11-19) that this
+use of the cached source is acceptable; copying it is not.
 
 **Alternatives**: vendoring the cached module (licence/credentials problem, ships unused code);
 replacing go-common calls with Fiber primitives (breaks "same names and signatures").
 
 ## R2. Where the import rules live (pure package)
 
-**Decision**: `backend/domain/assetimport/` (deviation D4) with:
+**Decision**: `backend/domain/assetimport/` (exception 10) with:
 `parse.go` (CSV → rows + file-level error), `normalize.go` (trim, blank → absent),
 `field_rules.go` (FR-005…FR-010), `hierarchy_rules.go` (FR-011…FR-016a), `reimport_rules.go`
 (FR-018/019), `serial_warnings.go` (FR-020), `validate.go` (orchestration, deterministic output),
@@ -160,7 +163,13 @@ prove a chain reaches a substation; only stored rows the file mentions are neede
 UUID primary keys generated in the usecase; `asset.asset_id` unique; `asset.parent_asset_id`
 references `asset(asset_id)`; `asset.import_id` references `asset_import(id)`; free text as `TEXT`;
 numbers as unconstrained `NUMERIC`; dates as `DATE`; enums as `VARCHAR`; blanks stored as `NULL`;
-no CHECK, no triggers (D1, D2).
+no CHECK, no triggers (exception 8). Both tables keep the template audit columns
+`created_at`, `created_by_name`, `updated_at`, `updated_by_name` (D2 rejected); with no users,
+the `*_by_name` columns hold the fixed value `"system"`, defined once as
+`usecase.SystemActorName` in `domain/usecase/asset_import.go` and set by the usecase like the
+template's `ActorName`. The column names end in `ByName`, so the go-common audit plugin's
+`CreatedBy`/`UpdatedBy` handling does not touch them (rule 05). `asset.import_id` stays as well:
+it records which import created the asset, which the actor name cannot.
 
 **Rationale**: The natural key is what the CSV and the later browse URLs use, so the self-reference
 on `asset_id` keeps parent links readable and needs no ID translation. `TEXT` avoids an unspecified
@@ -168,7 +177,7 @@ on `asset_id` keeps parent links readable and needs no ID translation. `TEXT` av
 exactly as typed, so "unchanged" comparisons do not suffer rounding.
 
 **Alternatives**: `parent_id UUID → asset(id)` (extra lookups, less readable); `VARCHAR(255)` +
-a new length rule (not in the spec).
+a new length rule (not in the spec); dropping the `*_by_name` columns (proposed as D2, rejected).
 
 ## R8. Migrations
 

@@ -2,8 +2,10 @@
 
 **Feature**: [spec.md](spec.md) · **Decisions**: [research.md](research.md) R2, R3, R7, R8
 
-Database rules (Constitution II): primary keys, unique keys, NOT NULL and foreign keys only — no
-CHECK constraints, no triggers. Every business rule below is enforced in the backend.
+Database rules (Constitution II, exception 8): primary keys, unique keys, NOT NULL and foreign
+keys only — no CHECK constraints, no triggers. Every business rule below is enforced in the backend.
+Audit columns follow the template (`created_at`, `created_by_name`, `updated_at`,
+`updated_by_name`), with `"system"` as the actor name.
 
 ## Tables
 
@@ -21,11 +23,13 @@ CHECK constraints, no triggers. Every business rule below is enforced in the bac
 | `rejected_rows` | `INTEGER` | no | |
 | `warning_rows` | `INTEGER` | no | rows carrying at least one warning |
 | `created_at` | `TIMESTAMPTZ` | no | `u.now()` |
+| `created_by_name` | `VARCHAR(255)` | no | always `"system"` (`usecase.SystemActorName`); template audit column |
 | `updated_at` | `TIMESTAMPTZ` | no | same as `created_at` (records are never updated) |
+| `updated_by_name` | `VARCHAR(255)` | no | always `"system"` |
 
 Indexes: `ix_asset_import_created_at (created_at DESC)`.
 Invariant (checked in tests, not the DB): `total = imported + unchanged + rejected`.
-No `*_by_name` audit columns (research D2). Failed attempts and validate-only runs leave no row.
+Failed attempts and validate-only runs leave no row.
 
 ### `asset` — stored grid assets
 
@@ -45,7 +49,13 @@ No `*_by_name` audit columns (research D2). Failed attempts and validate-only ru
 | `commissioned_date` | `DATE` | yes | |
 | `import_id` | `UUID` | no | FK → `asset_import(id)`; the import that created the asset |
 | `created_at` | `TIMESTAMPTZ` | no | |
+| `created_by_name` | `VARCHAR(255)` | no | always `"system"` |
 | `updated_at` | `TIMESTAMPTZ` | no | |
+| `updated_by_name` | `VARCHAR(255)` | no | always `"system"` |
+
+Audit columns follow the template (rule 05) with no defaults in the database: the usecase sets
+them, as the template's `CreateProduct` does with `ActorName`. They are not CSV columns, so they
+take no part in the re-import comparison (FR-018).
 
 Indexes: `ux_asset_asset_id (asset_id)` unique; `ix_asset_parent_asset_id (parent_asset_id)`
 (children lookups, later browse feature); `ix_asset_serial_number (serial_number)` (FR-020 lookup);
@@ -82,13 +92,17 @@ Permitted-parent table (FR-014): `TRANSFORMER`, `LV_BOARD`, `SWITCHBOARD` → `S
 - **`Asset`**: `ID uuid.UUID`, `AssetID string`, `ParentAssetID *string`, `AssetType valueobject.AssetType`,
   `AssetName string`, `OperationalStatus *valueobject.OperationalStatus`, `VoltageKV *float64`,
   `RatingKVA *float64`, `Manufacturer, Model, SerialNumber *string`, `CommissionedDate *time.Time`
-  (date only, UTC midnight), `ImportID uuid.UUID`, `CreatedAt, UpdatedAt time.Time`.
+  (date only, UTC midnight), `ImportID uuid.UUID`, `CreatedAt time.Time`, `CreatedByName string`,
+  `UpdatedAt time.Time`, `UpdatedByName string`.
   Method `DifferingFields(other *Asset) []string` compares the eleven CSV-backed fields by value
   (numbers numerically, dates by calendar day) and returns CSV column names in CSV order (FR-019).
 - **`AssetImport`**: `ID`, `FileName`, `Mode valueobject.ImportMode`, `Outcome valueobject.ImportOutcome`,
-  `TotalRows`, `ImportedRows`, `UnchangedRows`, `RejectedRows`, `WarningRows int`, `CreatedAt`, `UpdatedAt`.
+  `TotalRows`, `ImportedRows`, `UnchangedRows`, `RejectedRows`, `WarningRows int`, `CreatedAt`,
+  `CreatedByName`, `UpdatedAt`, `UpdatedByName`.
+- **`usecase.SystemActorName = "system"`** (`domain/usecase/asset_import.go`): the only value
+  written to `*_by_name` columns while the product has no users (exception 1).
 
-### Pure import engine (`domain/assetimport`, research D4/R2)
+### Pure import engine (`domain/assetimport`, exception 10, research R2)
 
 | Type | Fields / role |
 |---|---|
