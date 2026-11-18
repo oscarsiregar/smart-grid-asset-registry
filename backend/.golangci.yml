@@ -40,4 +40,4 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - backend-template
+        - smart-grid-asset-registry

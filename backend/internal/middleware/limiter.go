@@ -3,9 +3,10 @@ package middleware
 import (
 	"time"
 
+	"smart-grid-asset-registry/pkg/gocommon/response"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
-	"repo.smf-indonesia.co.id/package-helper/go-common/response"
 )
 
 // LimiterConfig throttles clients that keep FAILING (non-2xx): successful

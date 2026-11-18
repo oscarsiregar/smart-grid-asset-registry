@@ -3,7 +3,7 @@
 Instructions for an AI assistant working in this frontend.
 
 > **Project-specific:** this app has no authentication (an approved exception to the template, see
-> `.specify/memory/constitution.md` → *Template Exceptions* no. 1). There is no sign-in, no private routes and no auth state;
+> `.specify/memory/constitution.md` → _Template Exceptions_ no. 1). There is no sign-in, no private routes and no auth state;
 > template auth pieces exist only until they are removed.
 
 ## Working approach

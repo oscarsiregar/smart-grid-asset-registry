@@ -5,10 +5,10 @@ import (
 	"errors"
 	"testing"
 
-	"backend-template/domain/errorcode"
-	"backend-template/domain/usecase"
-	"backend-template/domain/valueobject"
-	"backend-template/internal/apperr"
+	"smart-grid-asset-registry/domain/errorcode"
+	"smart-grid-asset-registry/domain/usecase"
+	"smart-grid-asset-registry/domain/valueobject"
+	"smart-grid-asset-registry/internal/apperr"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

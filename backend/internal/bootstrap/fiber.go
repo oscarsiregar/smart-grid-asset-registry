@@ -1,12 +1,12 @@
 package bootstrap
 
 import (
-	"backend-template/internal/config"
+	"smart-grid-asset-registry/internal/config"
+	"smart-grid-asset-registry/pkg/gocommon/pkg/utils"
 
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
-	"repo.smf-indonesia.co.id/package-helper/go-common/pkg/utils"
 )
 
 func FiberConfig(cfg *config.Config, log *logrus.Logger) fiber.Config {
@@ -22,6 +22,8 @@ func FiberConfig(cfg *config.Config, log *logrus.Logger) fiber.Config {
 		JSONEncoder:    sonic.Marshal,
 		JSONDecoder:    sonic.Unmarshal,
 		ReadBufferSize: 65536,
-		BodyLimit:      4 * 1024 * 1024,
+		// 6 MB: a 5 MB CSV plus multipart overhead must reach the usecase,
+		// which enforces the 5 MB file limit with its own error code.
+		BodyLimit: 6 * 1024 * 1024,
 	}
 }

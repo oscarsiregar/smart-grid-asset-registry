@@ -1,10 +1,10 @@
 package product
 
 import (
-	"backend-template/domain/dto"
-	"backend-template/domain/errorcode"
-	"backend-template/domain/usecase"
-	"backend-template/internal/apperr"
+	"smart-grid-asset-registry/domain/dto"
+	"smart-grid-asset-registry/domain/errorcode"
+	"smart-grid-asset-registry/domain/usecase"
+	"smart-grid-asset-registry/internal/apperr"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"

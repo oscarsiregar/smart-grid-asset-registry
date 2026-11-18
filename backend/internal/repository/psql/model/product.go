@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"backend-template/domain/valueobject"
+	"smart-grid-asset-registry/domain/valueobject"
 
 	"github.com/google/uuid"
 )

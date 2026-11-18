@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"backend-template/domain/repository"
+	"smart-grid-asset-registry/domain/repository"
 
 	"gorm.io/gorm"
 )

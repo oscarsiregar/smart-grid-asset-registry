@@ -1,6 +1,6 @@
 .PHONY: run build test cover lint fmt vet mocks tidy check
 
-MODULE := backend-template
+MODULE := smart-grid-asset-registry
 # Same exclusions as .gitlab-ci.yml go_test.
 TEST_PKGS = $(shell go list ./... | grep -vE '^$(MODULE)/(cmd(/.*)?|internal/bootstrap$$|internal/routes$$|internal/mocks(/.*)?|internal/repository/psql/model$$|domain/(repository|service|dto|entity|errorcode)$$)')
 

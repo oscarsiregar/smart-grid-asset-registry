@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"backend-template/domain/entity"
-	"backend-template/domain/valueobject"
-	"backend-template/internal/repository/psql/model"
+	"smart-grid-asset-registry/domain/entity"
+	"smart-grid-asset-registry/domain/valueobject"
+	"smart-grid-asset-registry/internal/repository/psql/model"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

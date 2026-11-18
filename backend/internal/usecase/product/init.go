@@ -3,8 +3,8 @@ package product_usecase
 import (
 	"time"
 
-	"backend-template/domain/repository"
-	"backend-template/domain/usecase"
+	"smart-grid-asset-registry/domain/repository"
+	"smart-grid-asset-registry/domain/usecase"
 
 	"github.com/sirupsen/logrus"
 )

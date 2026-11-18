@@ -4,12 +4,12 @@ import (
 	"errors"
 	"testing"
 
-	"backend-template/domain/entity"
-	"backend-template/domain/errorcode"
-	"backend-template/domain/usecase"
-	"backend-template/domain/valueobject"
-	"backend-template/internal/apperr"
-	mocksusecase "backend-template/internal/mocks/usecase"
+	"smart-grid-asset-registry/domain/entity"
+	"smart-grid-asset-registry/domain/errorcode"
+	"smart-grid-asset-registry/domain/usecase"
+	"smart-grid-asset-registry/domain/valueobject"
+	"smart-grid-asset-registry/internal/apperr"
+	mocksusecase "smart-grid-asset-registry/internal/mocks/usecase"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"

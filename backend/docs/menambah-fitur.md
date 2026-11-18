@@ -64,7 +64,7 @@ handler & route (7) → docs (8).
 ## Menambah integrasi eksternal
 
 1. `domain/service/<nama>.go` — interface + Input/Output.
-2. `.mockery.yaml` — aktifkan package `backend-template/domain/service` (dir `internal/mocks/service`).
+2. `.mockery.yaml` — aktifkan package `smart-grid-asset-registry/domain/service` (dir `internal/mocks/service`).
 3. `internal/service/<nama>/init.go` (constructor menerima base URL, secret, logger; HTTP client dengan timeout) + satu file per call + test dengan `httptest.NewServer`.
 4. Env baru di `config.go` (+ `Validate`), `.env.example`, `values.yml`/Secret.
 5. Inject di `bootstrap/setup.go` ke usecase yang membutuhkan.

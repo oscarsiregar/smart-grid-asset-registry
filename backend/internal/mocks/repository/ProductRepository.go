@@ -3,12 +3,12 @@
 package mocks
 
 import (
-	entity "backend-template/domain/entity"
 	context "context"
+	entity "smart-grid-asset-registry/domain/entity"
 
 	mock "github.com/stretchr/testify/mock"
 
-	repository "backend-template/domain/repository"
+	repository "smart-grid-asset-registry/domain/repository"
 
 	uuid "github.com/google/uuid"
 )

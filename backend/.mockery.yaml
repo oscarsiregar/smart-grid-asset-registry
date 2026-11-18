@@ -6,14 +6,14 @@ resolve-type-alias: false
 disable-version-string: true
 issue-845-fix: true
 packages:
-  backend-template/domain/repository:
+  smart-grid-asset-registry/domain/repository:
     config:
       all: true
       dir: internal/mocks/repository
       outpkg: mocks
       filename: "{{.InterfaceName}}.go"
       mockname: "{{.InterfaceName}}"
-  backend-template/domain/usecase:
+  smart-grid-asset-registry/domain/usecase:
     config:
       all: true
       dir: internal/mocks/usecase

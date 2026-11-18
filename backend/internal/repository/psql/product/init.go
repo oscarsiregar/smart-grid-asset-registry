@@ -1,7 +1,7 @@
 package product_repository
 
 import (
-	"backend-template/domain/repository"
+	"smart-grid-asset-registry/domain/repository"
 
 	"gorm.io/gorm"
 )

@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"backend-template/domain/entity"
-	"backend-template/domain/valueobject"
-	mocksrepo "backend-template/internal/mocks/repository"
+	"smart-grid-asset-registry/domain/entity"
+	"smart-grid-asset-registry/domain/valueobject"
+	mocksrepo "smart-grid-asset-registry/internal/mocks/repository"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

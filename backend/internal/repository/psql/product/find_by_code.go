@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"backend-template/domain/entity"
-	"backend-template/domain/repository"
-	"backend-template/internal/repository/psql/gormtx"
-	"backend-template/internal/repository/psql/mapper"
-	"backend-template/internal/repository/psql/model"
+	"smart-grid-asset-registry/domain/entity"
+	"smart-grid-asset-registry/domain/repository"
+	"smart-grid-asset-registry/internal/repository/psql/gormtx"
+	"smart-grid-asset-registry/internal/repository/psql/mapper"
+	"smart-grid-asset-registry/internal/repository/psql/model"
 
 	"gorm.io/gorm"
 )

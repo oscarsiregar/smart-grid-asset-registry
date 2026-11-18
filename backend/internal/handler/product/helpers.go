@@ -3,11 +3,11 @@ package product
 import (
 	"time"
 
-	"backend-template/domain/dto"
-	"backend-template/domain/entity"
+	"smart-grid-asset-registry/domain/dto"
+	"smart-grid-asset-registry/domain/entity"
+	pkg_middleware_fiber "smart-grid-asset-registry/pkg/gocommon/pkg/middleware/fiber"
 
 	"github.com/gofiber/fiber/v2"
-	pkg_middleware_fiber "repo.smf-indonesia.co.id/package-helper/go-common/pkg/middleware/fiber"
 )
 
 // caller returns the authenticated user's name and permissions placed in

@@ -5,18 +5,9 @@ include:
     ref: feat/create-pipeline
     file: template/tanzu_template.yml
 
-variables:
-  # Never route the private module through the public proxy or checksum DB.
-  GOPRIVATE: "repo.smf-indonesia.co.id/*"
-
-.go_private_module: &go_private_module
-  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@repo.smf-indonesia.co.id/".insteadOf "https://repo.smf-indonesia.co.id/"
-
 lint:
   stage: lint
   image: golangci/golangci-lint:v2.13.2
-  before_script:
-    - *go_private_module
   script:
     # 10m: loading every package from a cold module cache can exceed 5m.
     - golangci-lint run --timeout=10m
@@ -29,15 +20,12 @@ go_test:
   image: golang:1.26.9-alpine
   # A transient image-pull hiccup shouldn't need a human to click retry.
   retry: 2
-  before_script:
-    - apk add --no-cache git
-    - *go_private_module
   script:
     - test -z "$(gofmt -l .)" || (echo "gofmt needed on:" && gofmt -l . && exit 1)
     - go vet ./...
     # Excludes wiring (cmd, bootstrap, routes), generated mocks, and
     # declaration-only packages (no logic to test).
-    - go test $(go list ./... | grep -vE '^backend-template/(cmd(/.*)?|internal/bootstrap$|internal/routes$|internal/mocks(/.*)?|internal/repository/psql/model$|domain/(repository|service|dto|entity|errorcode)$)')
+    - go test $(go list ./... | grep -vE '^smart-grid-asset-registry/(cmd(/.*)?|internal/bootstrap$|internal/routes$|internal/mocks(/.*)?|internal/repository/psql/model$|domain/(repository|service|dto|entity|errorcode)$)')
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH
@@ -47,9 +35,6 @@ go_test:
 coverage_check:
   stage: test
   image: golang:1.26.9-alpine
-  before_script:
-    - apk add --no-cache git
-    - *go_private_module
   script:
     - go test ./internal/usecase/... -coverprofile=coverage.out
     - go tool cover -func=coverage.out

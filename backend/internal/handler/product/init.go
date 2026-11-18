@@ -1,7 +1,7 @@
 package product
 
 import (
-	"backend-template/domain/usecase"
+	"smart-grid-asset-registry/domain/usecase"
 
 	"github.com/gofiber/fiber/v2"
 )

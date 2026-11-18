@@ -1,7 +1,14 @@
-import { type ServerCommonErrorResponse } from "./server-common-error-response.type.js";
-import { type ServerValidationErrorResponse } from "./server-validation-error-response.type.js";
+import { type ServerErrorData } from "./server-error-data.type.js";
 
-type ServerErrorResponse =
-	ServerCommonErrorResponse | ServerValidationErrorResponse;
+/**
+ * The go-common error envelope: `{ code, status, message, data }`, where
+ * `data` is `null` or carries the application error code.
+ */
+type ServerErrorResponse = {
+	code: number;
+	data: null | ServerErrorData;
+	message: string;
+	status: string;
+};
 
 export { type ServerErrorResponse };

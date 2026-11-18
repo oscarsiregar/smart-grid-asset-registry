@@ -9,16 +9,16 @@ import (
 	"testing"
 	"time"
 
-	"backend-template/domain/entity"
-	"backend-template/domain/valueobject"
+	"smart-grid-asset-registry/domain/entity"
+	"smart-grid-asset-registry/domain/valueobject"
+	pkg_middleware_fiber "smart-grid-asset-registry/pkg/gocommon/pkg/middleware/fiber"
+	"smart-grid-asset-registry/pkg/gocommon/pkg/utils"
+	"smart-grid-asset-registry/pkg/gocommon/response"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
-	pkg_middleware_fiber "repo.smf-indonesia.co.id/package-helper/go-common/pkg/middleware/fiber"
-	"repo.smf-indonesia.co.id/package-helper/go-common/pkg/utils"
-	"repo.smf-indonesia.co.id/package-helper/go-common/response"
 )
 
 func newTestLogger() *logrus.Logger {

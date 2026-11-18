@@ -1,8 +1,8 @@
 package mapper
 
 import (
-	"backend-template/domain/entity"
-	"backend-template/internal/repository/psql/model"
+	"smart-grid-asset-registry/domain/entity"
+	"smart-grid-asset-registry/internal/repository/psql/model"
 )
 
 func ToModelProduct(e *entity.Product) *model.Product {

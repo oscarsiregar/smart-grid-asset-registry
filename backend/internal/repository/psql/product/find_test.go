@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"backend-template/domain/repository"
-	"backend-template/domain/valueobject"
+	"smart-grid-asset-registry/domain/repository"
+	"smart-grid-asset-registry/domain/valueobject"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"

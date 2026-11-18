@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"backend-template/domain/entity"
-	"backend-template/domain/valueobject"
+	"smart-grid-asset-registry/domain/entity"
+	"smart-grid-asset-registry/domain/valueobject"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

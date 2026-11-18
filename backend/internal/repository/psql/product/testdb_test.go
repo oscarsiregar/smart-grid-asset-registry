@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"backend-template/internal/repository/psql/gormtx"
+	"smart-grid-asset-registry/internal/repository/psql/gormtx"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"

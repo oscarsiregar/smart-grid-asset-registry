@@ -3,8 +3,8 @@
 package mocks
 
 import (
-	usecase "backend-template/domain/usecase"
 	context "context"
+	usecase "smart-grid-asset-registry/domain/usecase"
 
 	mock "github.com/stretchr/testify/mock"
 )

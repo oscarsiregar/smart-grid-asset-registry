@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"time"
 
-	"backend-template/internal/bootstrap"
-	"backend-template/internal/config"
-	"backend-template/internal/middleware"
-	"backend-template/internal/routes"
+	"smart-grid-asset-registry/internal/bootstrap"
+	"smart-grid-asset-registry/internal/config"
+	"smart-grid-asset-registry/internal/middleware"
+	"smart-grid-asset-registry/internal/routes"
+	"smart-grid-asset-registry/pkg/gocommon/pkg/database"
+	"smart-grid-asset-registry/pkg/gocommon/pkg/logger"
+	commonMiddleware "smart-grid-asset-registry/pkg/gocommon/pkg/middleware/fiber"
+	"smart-grid-asset-registry/pkg/gocommon/pkg/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/sirupsen/logrus"
 	gormlogger "gorm.io/gorm/logger"
-	"repo.smf-indonesia.co.id/package-helper/go-common/pkg/database"
-	"repo.smf-indonesia.co.id/package-helper/go-common/pkg/logger"
-	commonMiddleware "repo.smf-indonesia.co.id/package-helper/go-common/pkg/middleware/fiber"
-	"repo.smf-indonesia.co.id/package-helper/go-common/pkg/utils"
 )
 
 func main() {

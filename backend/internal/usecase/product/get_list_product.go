@@ -3,13 +3,13 @@ package product_usecase
 import (
 	"context"
 
-	"backend-template/domain/errorcode"
-	"backend-template/domain/repository"
-	"backend-template/domain/usecase"
-	"backend-template/domain/valueobject"
-	"backend-template/internal/apperr"
+	"smart-grid-asset-registry/domain/errorcode"
+	"smart-grid-asset-registry/domain/repository"
+	"smart-grid-asset-registry/domain/usecase"
+	"smart-grid-asset-registry/domain/valueobject"
+	"smart-grid-asset-registry/internal/apperr"
 
-	"repo.smf-indonesia.co.id/package-helper/go-common/pkg/logger"
+	"smart-grid-asset-registry/pkg/gocommon/pkg/logger"
 )
 
 func (pu productUsecase) GetListProduct(ctx context.Context, input usecase.GetListProductInput) (usecase.GetListProductOutput, error) {

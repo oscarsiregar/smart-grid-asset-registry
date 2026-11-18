@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"backend-template/domain/valueobject"
+	"smart-grid-asset-registry/domain/valueobject"
 
 	"github.com/stretchr/testify/assert"
 )
