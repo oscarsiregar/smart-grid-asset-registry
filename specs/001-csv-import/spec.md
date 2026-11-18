@@ -12,6 +12,22 @@ asset ID) as CSV files with data-quality problems. An operator uploads such a fi
 rows are accepted and why the others are rejected, stores the accepted rows, and knows for
 certain whether anything was committed."
 
+## Clarifications
+
+### Session 2026-11-19
+
+- Q: When a row breaks more than one hierarchy rule, list every broken rule or only one? → A: List
+  every applicable hierarchy error on the row (e.g. both `INVALID_PARENT_TYPE` and
+  `CYCLE_DETECTED`).
+- Q: Add sanity rules beyond the brief (reject future commissioned dates, negative voltage)? → A:
+  No; stick to the brief's rules and record these as possible next steps in known limitations.
+- Q: Keep a stored record of each import, or show results once and discard them? → A: Store a
+  summary (time, file name, mode, counts, outcome) of every confirm attempt that completes:
+  committed, nothing to commit, or strict-blocked. Failed attempts are rolled back and only
+  logged, not stored. Validate-only runs are not stored.
+- Q: Can operational_status be blank, or must every row have one? → A: Optional; a blank status
+  is accepted and stored as "no status"; only a non-blank unsupported value is rejected.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Validate a file and see every problem (Priority: P1)
@@ -138,7 +154,11 @@ result shows 0 imported, every previously imported row as unchanged, and the sam
 - **Parent ID that looks like a self-reference but names a different, missing asset**
   (e.g. SWB-S with parent SWB-SELF): rejected with `PARENT_NOT_FOUND`, not `SELF_PARENT`.
 - **Row with several problems**: all of its field-level errors are listed; hierarchy checks are
-  only reported for rows whose own fields are valid.
+  only reported for rows whose own fields are valid, and then every applicable hierarchy error is
+  listed (e.g. SWB-CY-A, a switchboard whose parent is a switchboard inside a cycle, gets both
+  `INVALID_PARENT_TYPE` and `CYCLE_DETECTED`). `PARENT_REJECTED` is not added to rows that are
+  themselves in a cycle, and `INVALID_PARENT_TYPE` is only checked when the parent's type is a
+  supported value.
 - **Duplicate serial number** (different asset IDs, same non-blank serial number, within the
   file or against a stored asset): rows are not rejected; each affected row is accepted and
   carries a `DUPLICATE_SERIAL_NUMBER` warning.
@@ -174,7 +194,8 @@ result shows 0 imported, every previously imported row as unchanged, and the sam
 - **FR-007**: asset_type MUST be one of SUBSTATION, TRANSFORMER, LV_BOARD, SWITCHBOARD,
   SWITCHBOARD_PANEL (`INVALID_ASSET_TYPE`).
 - **FR-008**: operational_status, when present, MUST be one of IN_SERVICE, MAINTENANCE,
-  OUT_OF_SERVICE (`INVALID_OPERATIONAL_STATUS`).
+  OUT_OF_SERVICE (`INVALID_OPERATIONAL_STATUS`). A blank status MUST be accepted and stored as
+  "no status".
 - **FR-009**: voltage_kv and rating_kva, when present, MUST be valid decimal numbers
   (`INVALID_NUMBER`); rating_kva MUST NOT be negative (`NEGATIVE_RATING`).
 - **FR-010**: commissioned_date, when present, MUST be a real calendar date in either
@@ -194,6 +215,8 @@ result shows 0 imported, every previously imported row as unchanged, and the sam
 - **FR-015**: Rows forming a cycle MUST be rejected (`CYCLE_DETECTED`).
 - **FR-016**: Every accepted asset's chain of parents MUST end at a stored or accepted
   SUBSTATION; a row whose in-file parent is rejected MUST be rejected (`PARENT_REJECTED`).
+- **FR-016a**: Each hierarchy rule (FR-011 to FR-016) MUST be evaluated independently, and a
+  row MUST list every hierarchy error that applies to it, not only the first.
 - **FR-017**: The accepted and rejected sets and their error codes MUST be identical for any
   ordering of the same data rows.
 
@@ -234,6 +257,18 @@ result shows 0 imported, every previously imported row as unchanged, and the sam
 - **FR-028**: Results MUST list warnings separately from rejections, with row number, asset ID,
   code and message.
 
+**Import records**
+
+- **FR-029**: Every confirm attempt that completes with outcome *Committed*, *Nothing to commit*
+  or *Not committed — strict mode* MUST store an import record: time, file name, mode, total /
+  imported / unchanged / rejected / warning counts, and outcome. For *Committed*, the record MUST
+  be saved in the same atomic step as the assets.
+- **FR-030**: Failed attempts (rolled back) MUST NOT leave an import record; they MUST be written
+  to the server log with the file name, mode and failure reason. Validate-only runs MUST NOT
+  leave an import record.
+- **FR-031**: Rejected-row and warning details MUST NOT be stored; they exist only in the result
+  shown to the operator.
+
 ### Key Entities
 
 - **Asset**: a piece of grid equipment identified by asset ID. Attributes: asset type, name,
@@ -244,6 +279,8 @@ result shows 0 imported, every previously imported row as unchanged, and the sam
 - **Import result**: the outcome of validating or committing one file: mode (partial/strict),
   counts, commit outcome, rejected rows with their errors, and warnings.
 - **Row error / warning**: a row number, asset ID if present, stable code and English message.
+- **Import record**: the stored summary of one completed confirm attempt: time, file name, mode,
+  counts (total, imported, unchanged, rejected, warnings) and outcome. It holds no row details.
 
 ## Success Criteria *(mandatory)*
 
@@ -261,7 +298,8 @@ result shows 0 imported, every previously imported row as unchanged, and the sam
 - **SC-005**: In 100% of results, an operator can tell from the text alone whether data was
   saved, without reading colours or icons.
 - **SC-006**: After any failed or strict-mode-blocked import, the stored assets are exactly the
-  same as before the attempt.
+  same as before the attempt; a strict-mode-blocked attempt leaves exactly one import record and
+  a failed attempt leaves none.
 
 ## Assumptions
 
@@ -272,10 +310,13 @@ result shows 0 imported, every previously imported row as unchanged, and the sam
 - Two-digit years in day/month/year dates mean 2000–2099 (the sample uses 08–20).
 - Asset type and status values are matched exactly, case-sensitively, after trimming whitespace.
 - operational_status, voltage_kv, rating_kva, manufacturer, model, serial_number and
-  commissioned_date are optional; only rating_kva has a sign rule, as in the brief.
+  commissioned_date are optional; only rating_kva has a sign rule, as in the brief. Future
+  commissioned dates and negative voltage_kv values are accepted; rejecting them is listed in
+  known limitations as a possible next step.
 - Inner whitespace in names is kept as supplied (e.g. "Dual Node  B").
-- Import results are shown to the operator once and are not stored; refreshing the import page
-  returns to an empty upload form.
+- The detailed import result (rejected rows, warnings) is shown to the operator once and is not
+  stored; refreshing the import page returns to an empty upload form. Only the import record
+  summary is kept (FR-029). A screen for browsing past import records is not part of this feature.
 - The brief calls the sample "a valid dataset of 220 assets across 13 substations", but the file
   holds 222 data rows including deliberately invalid test rows; the golden test's expected
   counts are derived from these rules, not from the brief's numbers.
