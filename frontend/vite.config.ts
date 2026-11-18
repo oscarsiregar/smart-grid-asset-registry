@@ -18,6 +18,10 @@ const config = ({ mode }: ConfigEnv): ReturnType<typeof defineConfig> => {
 
 	return defineConfig({
 		build: {
+			// Bundles live under /static so they never share a path with the
+			// app's /assets routes (nginx would otherwise treat /assets as the
+			// bundle directory).
+			assetsDir: "static",
 			outDir: "build",
 		},
 		plugins: [reactPlugin(), svgr()],

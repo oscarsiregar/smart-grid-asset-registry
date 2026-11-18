@@ -16,6 +16,17 @@ import (
 
 const internalServerErrorMessage = "Internal Server Error"
 
+// A request body above Fiber's BodyLimit never reaches a handler, so Fiber
+// itself answers 413. This service maps that to the same application error
+// code an over-size CSV gets from the usecase (spec FR-003, analysis N1), so
+// every "file too large" answer carries a stable code. The values must stay in
+// sync with errorcode.ImportFileTooLarge and its catalog message;
+// internal/apperr's tests guard that.
+const (
+	PayloadTooLargeErrorCode = "IMPORT_FILE_TOO_LARGE"
+	PayloadTooLargeMessage   = "The file is too large. The maximum size is 5 MB."
+)
+
 // ErrorData is the "data" of an error response that carries an application
 // error code — the one addition to go-common (Template Exception 4).
 type ErrorData struct {
@@ -25,7 +36,9 @@ type ErrorData struct {
 // NewErrorHandler is the global Fiber error handler:
 //   - *apperror.AppError → its status and message; data.errorCode when the
 //     error has an application error code, otherwise its Errors (usually null)
-//   - *fiber.Error → its status and message
+//   - *fiber.Error 413 → 413 with PayloadTooLargeMessage and
+//     data.errorCode PayloadTooLargeErrorCode
+//   - other *fiber.Error → its status and message
 //   - anything else → 500 "Internal Server Error"; the real error is logged,
 //     never sent to the client
 //
@@ -45,6 +58,9 @@ func NewErrorHandler(log *logrus.Logger) fiber.ErrorHandler {
 
 		var fiberErr *fiber.Error
 		if errors.As(err, &fiberErr) {
+			if fiberErr.Code == fiber.StatusRequestEntityTooLarge {
+				return response.Error(c, fiberErr.Code, PayloadTooLargeMessage, ErrorData{ErrorCode: PayloadTooLargeErrorCode})
+			}
 			if fiberErr.Code >= fiber.StatusInternalServerError {
 				logger.WithCtx(c.UserContext(), log).WithError(err).Error("fiber error")
 			}

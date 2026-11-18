@@ -123,8 +123,9 @@ File-level problems → `422` with a specific `data.errorCode`; any CSV syntax e
 whole file (`IMPORT_FILE_NOT_CSV`, line in the message), while a wrong field count stays a row
 error (`MALFORMED_ROW`); a repeated header column → `IMPORT_DUPLICATE_COLUMNS`. A body above the
 6 MB Fiber limit → `413` with `IMPORT_FILE_TOO_LARGE`: the Fiber error handler configured in
-`internal/bootstrap/fiber.go` wraps go-common's `NewErrorHandler` and turns Fiber's 413 into
-`apperr.PayloadTooLarge(IMPORT_FILE_TOO_LARGE)` first, so go-common stays generic. Bad
+the local go-common error handler (`pkg/gocommon/pkg/utils`) answers Fiber's 413 with that code
+and message itself, so `internal/apperr` does not depend on Fiber (analysis N1); an `apperr` test
+keeps the handler's copy of the code and message identical to the catalog. Bad
 `mode`/missing part → `400 INVALID_REQUEST`; unexpected failure → `500`, transaction rolled back,
 nothing stored, logged (FR-030). Details in [contracts/imports-api.md](contracts/imports-api.md).
 

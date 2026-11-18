@@ -73,9 +73,15 @@ func TestNewErrorHandler(t *testing.T) {
 		},
 		{
 			name:       "fiber error",
+			err:        fiber.NewError(fiber.StatusMethodNotAllowed, "Method Not Allowed"),
+			wantStatus: fiber.StatusMethodNotAllowed,
+			wantBody:   `{"code":405,"status":"error","message":"Method Not Allowed","data":null}`,
+		},
+		{
+			name:       "fiber 413 gets the file-too-large error code",
 			err:        fiber.NewError(fiber.StatusRequestEntityTooLarge, "Request Entity Too Large"),
 			wantStatus: fiber.StatusRequestEntityTooLarge,
-			wantBody:   `{"code":413,"status":"error","message":"Request Entity Too Large","data":null}`,
+			wantBody:   `{"code":413,"status":"error","message":"The file is too large. The maximum size is 5 MB.","data":{"errorCode":"IMPORT_FILE_TOO_LARGE"}}`,
 		},
 		{
 			name:       "unknown error is hidden and logged",

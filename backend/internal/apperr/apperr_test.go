@@ -7,6 +7,7 @@ import (
 
 	"smart-grid-asset-registry/domain/errorcode"
 	"smart-grid-asset-registry/pkg/gocommon/pkg/apperror"
+	"smart-grid-asset-registry/pkg/gocommon/pkg/utils"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,6 +20,13 @@ func TestCatalog_EveryErrorCodeHasAMessage(t *testing.T) {
 		assert.Truef(t, ok, "errorcode %s has no entry in apperr catalog", code)
 		assert.NotEmptyf(t, message, "errorcode %s has an empty message", code)
 	}
+}
+
+// The go-common error handler answers Fiber's own 413 with a copy of this
+// code and message (it may not import domain/); keep them identical.
+func TestImportFileTooLarge_MatchesErrorHandler(t *testing.T) {
+	assert.Equal(t, errorcode.ImportFileTooLarge, utils.PayloadTooLargeErrorCode)
+	assert.Equal(t, Message(errorcode.ImportFileTooLarge, "5 MB"), utils.PayloadTooLargeMessage)
 }
 
 func TestMessage(t *testing.T) {

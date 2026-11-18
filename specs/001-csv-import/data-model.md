@@ -162,7 +162,7 @@ File-level codes (whole file rejected, no row results):
 | Code | HTTP | Rule |
 |---|---|---|
 | `IMPORT_FILE_TOO_LARGE` | 422 | file larger than 5 MB (`Parse`) |
-| `IMPORT_FILE_TOO_LARGE` | 413 | request body above the 6 MB server limit (Fiber's 413 mapped in `internal/bootstrap/fiber.go`) |
+| `IMPORT_FILE_TOO_LARGE` | 413 | request body above the 6 MB server limit (Fiber's 413 mapped in the go-common error handler, `pkg/gocommon/pkg/utils`) |
 | `IMPORT_FILE_EMPTY` | 422 | no data rows |
 | `IMPORT_FILE_NOT_CSV` | 422 | not UTF-8, or **any CSV syntax error** (unclosed/stray quote); arg: the line number |
 | `IMPORT_MISSING_COLUMNS` | 422 | header lacks required columns; arg: missing names in CSV order |

@@ -9,6 +9,7 @@ import (
 	"smart-grid-asset-registry/internal/config"
 	"smart-grid-asset-registry/internal/middleware"
 	"smart-grid-asset-registry/internal/routes"
+	"smart-grid-asset-registry/migrations"
 	"smart-grid-asset-registry/pkg/gocommon/pkg/database"
 	"smart-grid-asset-registry/pkg/gocommon/pkg/logger"
 	commonMiddleware "smart-grid-asset-registry/pkg/gocommon/pkg/middleware/fiber"
@@ -28,8 +29,15 @@ func main() {
 
 	log := logger.New(cfg.IsProd)
 
-	// database.Connect already registers go-common's audit plugin — do NOT
-	// call db.Use(database.NewAuditPlugin()) again (gorm.ErrRegistered).
+	// Schema first: the embedded migrations are applied on every start
+	// (constitution, Template Exception 3). A failure stops the service.
+	if err := migrations.Up(migrations.PostgresURL(cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)); err != nil {
+		log.Fatalf("Failed to apply database migrations: %v", err)
+	}
+	log.Info("Database migrations applied")
+
+	// The local database.Connect registers no audit plugin: the *_by_name
+	// audit columns are set by the usecases (see pkg/gocommon/pkg/database).
 	db, err := database.Connect(&database.DBConfig{
 		Host:            cfg.DBHost,
 		User:            cfg.DBUser,

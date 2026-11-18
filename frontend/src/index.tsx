@@ -23,8 +23,17 @@ createRoot(document.querySelector("#root") as HTMLElement).render(
 							{
 								children: [
 									{
-										element: <Navigate replace to={AppRoute.NOTES} />,
+										element: <Navigate replace to={AppRoute.ASSETS} />,
 										index: true,
+									},
+									{
+										lazy: async () => {
+											const pageModule =
+												await import("~/pages/assets/assets.js");
+
+											return { Component: pageModule.Assets };
+										},
+										path: AppRoute.ASSETS,
 									},
 									{
 										lazy: async () => {
