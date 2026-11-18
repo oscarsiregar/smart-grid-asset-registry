@@ -2,6 +2,10 @@
 
 Instructions for an AI assistant working in this frontend.
 
+> **Project-specific:** this app has no authentication (an approved exception to the template, see
+> `.specify/memory/constitution.md` → *Template Exceptions* no. 1). There is no sign-in, no private routes and no auth state;
+> template auth pieces exist only until they are removed.
+
 ## Working approach
 
 - Read [docs/code-conventions.md](docs/code-conventions.md) before writing code. It is the source of truth; follow it
@@ -34,9 +38,10 @@ storage, notifications, and shared enums, types, helpers, and hooks.
 
 ## Verification
 
-Run `pnpm lint` and `pnpm build`. Report the exact commands and their exit codes. A non-zero exit is a failure. There
-is no test runner: never claim tests passed. For UI changes, name the route and the states that should be checked by
-hand.
+Run `pnpm lint`, `pnpm build` and `pnpm test`. Report the exact commands and their exit codes. A non-zero exit is a
+failure. Tests use Vitest + React Testing Library with `fetch` mocked, and sit next to the code they cover (template exception no. 2:
+the template had no test runner). For UI changes, name the route and the states that should be
+checked by hand.
 
 ## Conventions
 

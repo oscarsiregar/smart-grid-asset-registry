@@ -3,7 +3,7 @@
 Template standar backend service: **Go 1.26 · Fiber v2 · GORM/PostgreSQL · go-common**,
 Clean Architecture, dengan contoh modul CRUD lengkap (`product`) beserta test di setiap lapis.
 
-> **Aturan proyek: [CLAUDE.md](CLAUDE.md)** (ringkas, mengikat) · detail di **[docs/rules/](docs/rules/)** ·
+> **Aturan proyek: [AGENTS.md](AGENTS.md)** (ringkas, mengikat) · detail di **[docs/rules/](docs/rules/)** ·
 > menambah fitur: **[docs/menambah-fitur.md](docs/menambah-fitur.md)**
 
 ## Memakai template ini untuk service baru
