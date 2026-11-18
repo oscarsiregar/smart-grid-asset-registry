@@ -75,10 +75,5 @@ handler  ──►  usecase  ──►  repository / service
 - `log := logger.WithCtx(ctx, u.log).WithField("usecase", "NamaMethod")` di awal setiap usecase.
 - `Warn` untuk permission denied, `Error` + `WithError(err)` untuk kegagalan teknis, `Info("success")` di akhir. Jangan log error yang sudah jadi `apperr` 4xx sebagai Error.
 
-## Git & CI — [10-git-ci-deploy](docs/rules/10-git-ci-deploy.md)
-- Branch: `feat/…`, `fix/…`, `chore/…`, `docs/…`, `refactor/…` dari `main`. Commit: Conventional Commits.
-- Sebelum push: `make check` (fmt + vet + test). Lint: `make lint`.
-- Jangan commit `.env`, binary, `coverage.out`.
-
 ## Menambah fitur baru
 Ikuti checklist langkah demi langkah di **[docs/menambah-fitur.md](docs/menambah-fitur.md)**.

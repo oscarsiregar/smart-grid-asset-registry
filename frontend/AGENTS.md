@@ -11,7 +11,6 @@ Instructions for an AI assistant working in this frontend.
 - Make the smallest coherent change that solves the request. No unrelated refactoring.
 - Ask before adding a dependency, changing the API contract, changing authentication, or changing tooling.
 - State any low-risk assumption you make.
-- Do not commit, push, or open a pull request unless asked. Never add an AI co-author trailer.
 
 ## Architecture in one paragraph
 
