@@ -1,0 +1,32 @@
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-12);
+}
+
+.title {
+	margin: 0;
+	font-size: var(--font-size-title-3);
+	font-weight: 700;
+	color: var(--text-strong);
+}
+
+.list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-12);
+	padding: 0;
+	margin: 0;
+	list-style: none;
+}
+
+.state {
+	display: flex;
+	gap: var(--space-12);
+	align-items: center;
+}
+
+.state-message {
+	margin: 0;
+	color: var(--text-muted);
+}

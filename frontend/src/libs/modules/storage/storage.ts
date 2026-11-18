@@ -1,0 +1,6 @@
+import { BaseStorage } from "./base-storage.module.js";
+
+const storage = new BaseStorage(localStorage);
+
+export { storage };
+export { StorageKey } from "./libs/enums/storage-key.enum.js";

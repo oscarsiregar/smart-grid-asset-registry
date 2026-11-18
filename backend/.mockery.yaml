@@ -1,0 +1,22 @@
+# Regenerate with: make mocks   (mockery v2.53+)
+# Mocks are generated from domain interfaces only. Add domain/service here
+# once it contains its first interface.
+with-expecter: true
+resolve-type-alias: false
+disable-version-string: true
+issue-845-fix: true
+packages:
+  backend-template/domain/repository:
+    config:
+      all: true
+      dir: internal/mocks/repository
+      outpkg: mocks
+      filename: "{{.InterfaceName}}.go"
+      mockname: "{{.InterfaceName}}"
+  backend-template/domain/usecase:
+    config:
+      all: true
+      dir: internal/mocks/usecase
+      outpkg: mocks
+      filename: "{{.InterfaceName}}.go"
+      mockname: "{{.InterfaceName}}"

@@ -1,0 +1,21 @@
+root = true
+
+[*]
+indent_style = tab
+indent_size = 2
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = true
+charset = utf-8
+
+# Prettier owns Markdown indentation, and code blocks inside it keep the tabs of the
+# language they show, so editorconfig does not enforce an indent style here.
+[*.md]
+indent_size = unset
+indent_style = unset
+
+[*.{yml,yaml}]
+indent_style = space
+
+[*.conf]
+indent_style = space

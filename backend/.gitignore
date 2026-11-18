@@ -1,0 +1,43 @@
+# Binaries
+bin/
+main
+main_test
+__debug_bin*
+*.exe
+*.test
+*.prof
+
+# OS
+.DS_Store
+._*
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Test output
+coverage.out
+coverage.html
+c.out
+profile.out
+
+# Go workspaces
+go.work
+go.work.sum
+
+# Vendor
+vendor/
+
+# Air (hot reload)
+tmp/

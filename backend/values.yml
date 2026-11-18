@@ -1,0 +1,90 @@
+# Helm values for the company template-chart. Rename application.name.
+application:
+  name: "backend-template"
+
+replicaCount: 1
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+image:
+  repository: ""
+  tag: "latest"
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: smf-harbor
+
+service:
+  type: ClusterIP
+  port: 3030
+
+ingress:
+  enabled: true
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  hosts:
+    - host: nginx-example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Non-secret env only. Secrets (DB_PASSWORD, JWT_SECRET,
+# INTERNAL_SERVICE_SECRET) come from a Kubernetes Secret, never this file.
+env:
+  # Kubernetes Service already load-balances; Fiber prefork fights CPU limits.
+  - name: FIBER_PREFORK
+    value: "false"
+  # Match Go's thread count to the CPU limit to avoid throttling.
+  - name: GOMAXPROCS
+    value: "1"
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+# httpGet against /v1/health (really pings the DB), not tcpSocket.
+# tcpSocket is explicitly nulled: the shared chart defaults probes to
+# tcpSocket and Helm MERGES maps, so leaving it set would give the probe two
+# handler types and Kubernetes rejects the Deployment.
+livenessProbe:
+  httpGet:
+    path: /v1/health
+    port: 3030
+  tcpSocket: null
+  initialDelaySeconds: 5
+  timeoutSeconds: 3
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /v1/health
+    port: 3030
+  tcpSocket: null
+  initialDelaySeconds: 5
+  timeoutSeconds: 3
+  periodSeconds: 10
+
+volumes:
+  - name: localtime
+    hostPath:
+      path: /usr/share/zoneinfo/Asia/Jakarta
+
+volumeMounts:
+  - name: localtime
+    mountPath: /etc/localtime
+
+redis:
+  enabled: false
+
+postgresql:
+  enabled: false

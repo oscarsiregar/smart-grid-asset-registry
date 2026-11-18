@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+.env.*
+Dockerfile
+docker-compose*.yml
+bin/
+tmp/
+coverage.out
+.air.toml
+.golangci.yml
+.mockery.yaml
+Makefile
+docs/
+*.md
