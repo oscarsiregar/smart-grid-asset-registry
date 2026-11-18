@@ -113,12 +113,20 @@ Permitted-parent table (FR-014): `TRANSFORMER`, `LV_BOARD`, `SWITCHBOARD` → `S
 | `Issue` | `Code string`, `Args []any` — rendered to English by the handler via `apperr.Message` |
 | `RejectedRow` | `Row int`, `AssetID *string`, `Errors []Issue` |
 | `Warning` | `Row int`, `AssetID string`, `Issue` |
-| `Report` | `Accepted []*entity.Asset` (parents first, then by asset ID), `UnchangedRows []int`, `Rejected []RejectedRow` (by row), `Warnings []Warning` (by row), `Counts` |
+| `Report` | `Accepted []*entity.Asset` (parents first, then by asset ID; **`ID`, `ImportID` and audit fields left zero**), `UnchangedRows []int`, `Rejected []RejectedRow` (by row), `Warnings []Warning` (by row), `Counts` |
 | `Counts` | `Total`, `ToImport`, `Unchanged`, `Rejected`, `WarningRows` |
 
 Entry points: `Parse(r io.Reader, maxBytes int64) (ParsedFile, *FileError)` and
-`Validate(file ParsedFile, stored StoredAssets, newID func() uuid.UUID) Report`
-(IDs injected so tests are deterministic).
+`Validate(file ParsedFile, stored StoredAssets) Report`. The package imports only the standard
+library and other `domain` packages (exception 10) — no `github.com/google/uuid`. The usecase
+assigns `ID` (`uuid.New` via its injectable `newID`), `ImportID` and the audit fields to each
+accepted asset before inserting.
+
+`Parse` is the single place the 5 MB limit is enforced (it reads at most `maxBytes + 1` bytes);
+the usecase only translates its `FileError`.
+
+One count, three names: `Counts.ToImport` (engine) = `counts.imported` (API) = `imported_rows`
+(table) — new valid rows, saved only when the outcome is `COMMITTED`.
 
 ## Validation rules → codes
 
@@ -127,7 +135,7 @@ rules only on rows whose fields are valid; all applicable hierarchy errors are l
 
 | Code | Rule | FR |
 |---|---|---|
-| `MALFORMED_ROW` | wrong number of fields | edge case |
+| `MALFORMED_ROW` | wrong number of fields on a record with valid CSV syntax | edge case |
 | `ASSET_ID_REQUIRED` / `ASSET_TYPE_REQUIRED` / `ASSET_NAME_REQUIRED` | blank after trim | FR-005 |
 | `DUPLICATE_ASSET_ID` | ID appears on >1 row; every such row | FR-006 |
 | `INVALID_ASSET_TYPE` | not one of five types | FR-007 |
@@ -149,14 +157,23 @@ empty, FR-018).
 Warning: `DUPLICATE_SERIAL_NUMBER` — an accepted row whose serial is shared with another accepted
 row or a stored asset with a different ID (arg: the other asset IDs, sorted) (FR-020).
 
-File-level codes (whole file rejected, `422`, no row results): `IMPORT_FILE_TOO_LARGE`,
-`IMPORT_FILE_EMPTY` (no data rows), `IMPORT_FILE_NOT_CSV` (not UTF-8 / unparseable),
-`IMPORT_MISSING_COLUMNS` (arg: missing column names). Request-shape problems (no `file` part, bad
-`mode`) use the existing `INVALID_REQUEST` (`400`).
+File-level codes (whole file rejected, no row results):
+
+| Code | HTTP | Rule |
+|---|---|---|
+| `IMPORT_FILE_TOO_LARGE` | 422 | file larger than 5 MB (`Parse`) |
+| `IMPORT_FILE_TOO_LARGE` | 413 | request body above the 6 MB server limit (Fiber's 413 mapped in `internal/bootstrap/fiber.go`) |
+| `IMPORT_FILE_EMPTY` | 422 | no data rows |
+| `IMPORT_FILE_NOT_CSV` | 422 | not UTF-8, or **any CSV syntax error** (unclosed/stray quote); arg: the line number |
+| `IMPORT_MISSING_COLUMNS` | 422 | header lacks required columns; arg: missing names in CSV order |
+| `IMPORT_DUPLICATE_COLUMNS` | 422 | header repeats a column name (case-sensitive, after trim); arg: repeated names |
+
+Request-shape problems (no `file` part, bad `mode`) use the existing `INVALID_REQUEST` (`400`).
 
 ## Commit state transitions (`CreateAssetImport`)
 
 ```text
+body > 6 MB ──► 413 IMPORT_FILE_TOO_LARGE (before the handler)
 parse ──file error──► 422, nothing stored, no record
   │
   ▼  (transaction + advisory lock)

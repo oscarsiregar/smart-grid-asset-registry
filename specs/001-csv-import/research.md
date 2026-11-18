@@ -78,7 +78,9 @@ replacing go-common calls with Fiber primitives (breaks "same names and signatur
 (FR-018/019), `serial_warnings.go` (FR-020), `validate.go` (orchestration, deterministic output),
 `types.go`. Input: parsed rows + `StoredAssets` (map `asset_id → *entity.Asset`, plus a serial-number
 index). Output: `Report` with accepted assets **in insert order**, unchanged rows, rejected rows
-(sorted by row number), warnings, counts. Issues carry `Code` + `Args`, not text.
+(sorted by row number), warnings, counts. Issues carry `Code` + `Args`, not text. The package
+imports no `github.com/google/uuid` (exception 10 allows only the standard library and `domain`
+packages): accepted assets come back without `ID`/`ImportID`, and the usecase assigns them.
 
 **Rationale**: The user requires the rules to be pure and fed a map of stored assets. `domain/` is
 the only template layer that already forbids framework imports, and its tests need no mocks. Codes
@@ -117,9 +119,14 @@ recursive CTE validation (rules leave the backend's pure layer; contradicts Prin
   attempt (`COMMITTED`, `NOTHING_TO_COMMIT`, `STRICT_BLOCKED`), because each one stores an import
   record (FR-029). The browser resends the same `File` object it kept from the validate step;
   the server re-validates (FR-022).
-File-level problems → `422` with a specific `data.errorCode`; bad `mode`/missing part → `400
-INVALID_REQUEST`; unexpected failure → `500`, transaction rolled back, nothing stored, logged
-(FR-030). Details in [contracts/imports-api.md](contracts/imports-api.md).
+File-level problems → `422` with a specific `data.errorCode`; any CSV syntax error refuses the
+whole file (`IMPORT_FILE_NOT_CSV`, line in the message), while a wrong field count stays a row
+error (`MALFORMED_ROW`); a repeated header column → `IMPORT_DUPLICATE_COLUMNS`. A body above the
+6 MB Fiber limit → `413` with `IMPORT_FILE_TOO_LARGE`: the Fiber error handler configured in
+`internal/bootstrap/fiber.go` wraps go-common's `NewErrorHandler` and turns Fiber's 413 into
+`apperr.PayloadTooLarge(IMPORT_FILE_TOO_LARGE)` first, so go-common stays generic. Bad
+`mode`/missing part → `400 INVALID_REQUEST`; unexpected failure → `500`, transaction rolled back,
+nothing stored, logged (FR-030). Details in [contracts/imports-api.md](contracts/imports-api.md).
 
 **Rationale**: Stateless server (no preview tokens or temp files), matches the spec's "re-validate
 at confirm time", and keeps the template's "POST create → 201" rule. The static `/validate` route is

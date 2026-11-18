@@ -114,7 +114,7 @@ backend/
 ├── internal/
 │   ├── apperr/apperr.go                         # + Message(), ErrorCode on AppError, EN only
 │   ├── config/config.go                         # drop JWT/internal secret; APP_PORT 8080 default
-│   ├── bootstrap/{setup.go, fiber.go}           # wiring; BodyLimit 6 MB
+│   ├── bootstrap/{setup.go, fiber.go}           # wiring; BodyLimit 6 MB; Fiber 413 → IMPORT_FILE_TOO_LARGE
 │   ├── routes/router.go                         # /api group, /api/health, /api/imports[/validate]
 │   ├── handler/asset_import/                    # init.go, validate_asset_import.go, create_asset_import.go, helpers.go (+ tests)
 │   ├── usecase/asset_import/                    # init.go, validate_asset_import.go, create_asset_import.go, helpers.go (+ tests)

@@ -41,6 +41,10 @@ skipped, not passed.
 
 Start from an empty database (`docker compose down -v && docker compose up --build`).
 
+Note: the template's rate limiter blocks a client after 20 non-2xx responses in 15 minutes. The
+error scenarios below (F–H3) plus repeated UI tries can trigger it; a `429` then means "wait or
+restart `api`", not a bug.
+
 | # | Command (from repo root) | Expected |
 |---|---|---|
 | A | `curl -s -F file=@backend/domain/assetimport/testdata/grid_assets.csv localhost:8080/api/imports/validate` | `200`, `outcome VALIDATED_ONLY`, counts total 222 / imported 205 / unchanged 0 / rejected 17 (golden values), warnings on rows 89 and 90; `asset` table still empty |
@@ -50,7 +54,9 @@ Start from an empty database (`docker compose down -v && docker compose up --bui
 | E | a CSV with one stored ID and a changed status | that row rejected `ASSET_ID_CONFLICT`, message names `operational_status` |
 | F | header-only CSV | `422`, `data.errorCode IMPORT_FILE_EMPTY`, no row results |
 | G | CSV missing the `asset_name` column | `422`, `IMPORT_MISSING_COLUMNS` |
-| H | a 6 MB file | `422 IMPORT_FILE_TOO_LARGE` (or `413` above 6 MB) |
+| H | a 5.5 MB file, then a 7 MB file | 5.5 MB → `422 IMPORT_FILE_TOO_LARGE`; 7 MB → `413` with `data.errorCode IMPORT_FILE_TOO_LARGE` |
+| H2 | a CSV with an unclosed quote on line 40 | `422 IMPORT_FILE_NOT_CSV`, message names line 40 |
+| H3 | a CSV whose header has two `asset_id` columns | `422 IMPORT_DUPLICATE_COLUMNS` |
 | I | stop `db`, repeat C | `500`; after restarting `db`, no new `asset_import` row and no assets added; api log shows the failure with file name and mode |
 
 Inspect the database: `docker compose exec db psql -U postgres -d asset_registry -c "select outcome, imported_rows, unchanged_rows, rejected_rows from asset_import order by created_at"`.

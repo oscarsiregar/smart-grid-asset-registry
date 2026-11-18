@@ -20,7 +20,7 @@ Errors carrying an application error code (exception 4):
 { "code": 422, "status": "error", "message": "The file is missing required columns: asset_name, model", "data": { "errorCode": "IMPORT_MISSING_COLUMNS" } }
 ```
 
-Errors without one (unhandled `500`, Fiber `413`, unknown route): `"data": null`.
+Errors without one (unhandled `500`, unknown route): `"data": null`.
 
 ## Request (both endpoints)
 
@@ -53,11 +53,12 @@ Re-validates the file inside one transaction (serialised by an advisory lock) an
 | HTTP | `data.errorCode` | When |
 |---|---|---|
 | 400 | `INVALID_REQUEST` | no `file` part, or `mode` not `PARTIAL`/`STRICT` |
-| 413 | — (`data: null`) | body above the server limit (6 MB) — rejected before the handler |
+| 413 | `IMPORT_FILE_TOO_LARGE` | body above the server limit (6 MB) — rejected before the handler; Fiber's 413 is mapped to this code |
 | 422 | `IMPORT_FILE_TOO_LARGE` | file larger than 5 MB |
 | 422 | `IMPORT_FILE_EMPTY` | no data rows (empty file or header only) |
-| 422 | `IMPORT_FILE_NOT_CSV` | not UTF-8 text or not parseable as CSV |
+| 422 | `IMPORT_FILE_NOT_CSV` | not UTF-8 text, or a CSV syntax error such as a broken quote; the message names the line |
 | 422 | `IMPORT_MISSING_COLUMNS` | header lacks one or more of the eleven columns |
+| 422 | `IMPORT_DUPLICATE_COLUMNS` | header repeats a column name |
 | 500 | — | unexpected failure |
 
 A file-level error never includes row results.

@@ -27,6 +27,13 @@ certain whether anything was committed."
   logged, not stored. Validate-only runs are not stored.
 - Q: Can operational_status be blank, or must every row have one? → A: Optional; a blank status
   is accepted and stored as "no status"; only a non-blank unsupported value is rejected.
+- Q: Is a CSV syntax error (e.g. a broken quote) a row error or a file error? → A: A file error:
+  the whole file is refused with `IMPORT_FILE_NOT_CSV` and the line number in the message. A
+  record with the wrong number of fields stays a row error (`MALFORMED_ROW`).
+- Q: What happens when the header repeats a column name? → A: The whole file is refused with
+  `IMPORT_DUPLICATE_COLUMNS`.
+- Q: Does a request body over the server limit get a stable code? → A: Yes; it is answered with
+  `413` and `IMPORT_FILE_TOO_LARGE`, the same code as a file over 5 MB.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -139,9 +146,13 @@ result shows 0 imported, every previously imported row as unchanged, and the sam
 ### Edge Cases
 
 - **Empty file or header only**: file-level error "file contains no data rows"; nothing saved.
-- **Not a CSV / unreadable encoding / larger than the size limit**: file-level error; nothing saved.
-- **Row with the wrong number of fields**: that row is rejected with `MALFORMED_ROW`; other rows
-  are processed normally.
+- **Not UTF-8 / larger than the size limit**: file-level error; nothing saved.
+- **CSV syntax error** (e.g. an unclosed or stray quote) anywhere in the file: the whole file is
+  refused with `IMPORT_FILE_NOT_CSV`, and the message names the line; nothing saved.
+- **Header repeats a column name** (e.g. two `asset_id` columns): the whole file is refused with
+  `IMPORT_DUPLICATE_COLUMNS`, naming the repeated columns; nothing saved.
+- **Row with the wrong number of fields** (but valid CSV syntax): that row is rejected with
+  `MALFORMED_ROW`; other rows are processed normally.
 - **Duplicate asset ID within the file**: every row sharing that ID is rejected with
   `DUPLICATE_ASSET_ID`, so the result does not depend on which copy comes first.
 - **Missing asset ID**: the row is rejected with `ASSET_ID_REQUIRED` and its asset ID is shown as
@@ -181,7 +192,8 @@ result shows 0 imported, every previously imported row as unchanged, and the sam
   unknown extra columns MUST be ignored.
 - **FR-003**: The system MUST reject the whole file with a file-level error (stable code and
   message, no row results) when it is empty, has no data rows, is missing a required column,
-  cannot be read as CSV text, or exceeds the size limit.
+  repeats a column name in the header, is not UTF-8 text, contains a CSV syntax error (such as a
+  broken quote — the message MUST name the line), or exceeds the size limit.
 - **FR-004**: Row numbers MUST be reported as the line number in the original file, with the
   header as row 1.
 
