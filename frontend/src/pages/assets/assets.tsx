@@ -5,6 +5,7 @@ import { Panel } from "~/libs/components/panel/panel.js";
 import { IconName, PanelName } from "~/libs/enums/enums.js";
 import { usePanel } from "~/libs/hooks/use-panel/use-panel.hook.js";
 
+import { ImportPanel } from "./components/import-panel/import-panel.js";
 import { AssetsPageMessage } from "./libs/enums/enums.js";
 import styles from "./styles.module.css";
 
@@ -34,9 +35,7 @@ const Assets: React.FC = () => {
 				onClose={closePanel}
 				title={AssetsPageMessage.IMPORT_PANEL_TITLE}
 			>
-				<p className={styles["empty"]}>
-					{AssetsPageMessage.IMPORT_PANEL_PLACEHOLDER}
-				</p>
+				<ImportPanel />
 			</Panel>
 		</PageContainer>
 	);

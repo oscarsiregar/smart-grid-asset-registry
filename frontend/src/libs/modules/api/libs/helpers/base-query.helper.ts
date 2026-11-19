@@ -12,6 +12,7 @@ import { showNotification } from "~/libs/modules/notification/notification.js";
 import { type BaseQueryExtraOptions } from "../types/base-query-extra-options.type.js";
 import { type ServerError } from "../types/server-error.type.js";
 import { toServerError } from "./to-server-error.helper.js";
+import { unwrapEnvelope } from "./unwrap-envelope.helper.js";
 
 type BaseQueryFunctionInternal = BaseQueryFn<
 	FetchArgs | string,
@@ -34,7 +35,7 @@ const baseQuery: BaseQueryFunctionInternal = async (
 	const result = await fetchQuery(arguments_, api, extraOptions ?? {});
 
 	if (!result.error) {
-		return result;
+		return { ...result, data: unwrapEnvelope(result.data) };
 	}
 
 	const error = toServerError(result.error, result.meta?.response?.headers);

@@ -45,6 +45,8 @@ const config = ({ mode }: ConfigEnv): ReturnType<typeof defineConfig> => {
 		// Vitest + React Testing Library (constitution, Template Exception 2).
 		// Tests sit next to the code they cover as *.test.ts(x).
 		test: {
+			// fetch needs an absolute URL; the app itself uses the relative /api.
+			env: { VITE_APP_API_ORIGIN_URL: "http://localhost/api" },
 			environment: "jsdom",
 			include: ["src/**/*.test.{ts,tsx}"],
 			restoreMocks: true,

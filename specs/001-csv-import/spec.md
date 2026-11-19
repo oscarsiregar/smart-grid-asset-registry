@@ -30,6 +30,8 @@ certain whether anything was committed."
 - Q: Is a CSV syntax error (e.g. a broken quote) a row error or a file error? → A: A file error:
   the whole file is refused with `IMPORT_FILE_NOT_CSV` and the line number in the message. A
   record with the wrong number of fields stays a row error (`MALFORMED_ROW`).
+- Q: Which errors does a row with the wrong number of fields report? → A: Only `MALFORMED_ROW`:
+  its values no longer line up with the columns, so other field errors would be noise.
 - Q: What happens when the header repeats a column name? → A: The whole file is refused with
   `IMPORT_DUPLICATE_COLUMNS`.
 - Q: Does a request body over the server limit get a stable code? → A: Yes; it is answered with
@@ -152,7 +154,8 @@ result shows 0 imported, every previously imported row as unchanged, and the sam
 - **Header repeats a column name** (e.g. two `asset_id` columns): the whole file is refused with
   `IMPORT_DUPLICATE_COLUMNS`, naming the repeated columns; nothing saved.
 - **Row with the wrong number of fields** (but valid CSV syntax): that row is rejected with
-  `MALFORMED_ROW`; other rows are processed normally.
+  `MALFORMED_ROW` only — its values no longer line up with the columns, so no other field or
+  hierarchy rule is applied to it; other rows are processed normally.
 - **Duplicate asset ID within the file**: every row sharing that ID is rejected with
   `DUPLICATE_ASSET_ID`, so the result does not depend on which copy comes first.
 - **Missing asset ID**: the row is rejected with `ASSET_ID_REQUIRED` and its asset ID is shown as
@@ -164,7 +167,8 @@ result shows 0 imported, every previously imported row as unchanged, and the sam
   rows hanging below the cycle are rejected with `PARENT_REJECTED`.
 - **Parent ID that looks like a self-reference but names a different, missing asset**
   (e.g. SWB-S with parent SWB-SELF): rejected with `PARENT_NOT_FOUND`, not `SELF_PARENT`.
-- **Row with several problems**: all of its field-level errors are listed; hierarchy checks are
+- **Row with several problems**: all of its field-level errors are listed (except for a row with
+  the wrong number of fields, which reports only `MALFORMED_ROW`, see above); hierarchy checks are
   only reported for rows whose own fields are valid, and then every applicable hierarchy error is
   listed (e.g. SWB-CY-A, a switchboard whose parent is a switchboard inside a cycle, gets both
   `INVALID_PARENT_TYPE` and `CYCLE_DETECTED`). `PARENT_REJECTED` is not added to rows that are

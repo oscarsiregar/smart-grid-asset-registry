@@ -135,7 +135,7 @@ rules only on rows whose fields are valid; all applicable hierarchy errors are l
 
 | Code | Rule | FR |
 |---|---|---|
-| `MALFORMED_ROW` | wrong number of fields on a record with valid CSV syntax | edge case |
+| `MALFORMED_ROW` | wrong number of fields on a record with valid CSV syntax; reported alone (values are misaligned, so no other rule is applied) | edge case |
 | `ASSET_ID_REQUIRED` / `ASSET_TYPE_REQUIRED` / `ASSET_NAME_REQUIRED` | blank after trim | FR-005 |
 | `DUPLICATE_ASSET_ID` | ID appears on >1 row; every such row | FR-006 |
 | `INVALID_ASSET_TYPE` | not one of five types | FR-007 |

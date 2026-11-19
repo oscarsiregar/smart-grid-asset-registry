@@ -1,0 +1,39 @@
+{
+	"counts": {
+		"Total": 222,
+		"ToImport": 205,
+		"Unchanged": 0,
+		"Rejected": 17,
+		"WarningRows": 2
+	},
+	"acceptedByType": {
+		"SUBSTATION": 13,
+		"TRANSFORMER": 30,
+		"LV_BOARD": 16,
+		"SWITCHBOARD": 25,
+		"SWITCHBOARD_PANEL": 121
+	},
+	"rejected": [
+		{ "row": 91, "assetId": "PNL-M", "codes": ["PARENT_NOT_FOUND"] },
+		{ "row": 92, "assetId": "SWB-S", "codes": ["PARENT_NOT_FOUND"] },
+		{ "row": 93, "assetId": "SWB-CY-A", "codes": ["INVALID_PARENT_TYPE", "CYCLE_DETECTED"] },
+		{ "row": 94, "assetId": "SWB-CY-B", "codes": ["INVALID_PARENT_TYPE", "CYCLE_DETECTED"] },
+		{ "row": 95, "assetId": "SWB-CY-C", "codes": ["INVALID_PARENT_TYPE", "CYCLE_DETECTED"] },
+		{ "row": 96, "assetId": "PNL-CY-C", "codes": ["INVALID_PARENT_TYPE", "CYCLE_DETECTED"] },
+		{ "row": 97, "assetId": "PNL-CY-D", "codes": ["CYCLE_DETECTED"] },
+		{ "row": 98, "assetId": "PNL-BP", "codes": ["INVALID_PARENT_TYPE"] },
+		{ "row": 99, "assetId": "TX-BP", "codes": ["INVALID_PARENT_TYPE"] },
+		{ "row": 178, "assetId": "GEN-001", "codes": ["INVALID_ASSET_TYPE"] },
+		{ "row": 179, "assetId": "TX-BD", "codes": ["INVALID_DATE"] },
+		{ "row": 180, "assetId": "TX-NR", "codes": ["NEGATIVE_RATING"] },
+		{ "row": 181, "assetId": "PNL-BS", "codes": ["INVALID_OPERATIONAL_STATUS"] },
+		{ "row": 182, "assetId": null, "codes": ["ASSET_ID_REQUIRED"] },
+		{ "row": 183, "assetId": "PNL-N", "codes": ["ASSET_NAME_REQUIRED"] },
+		{ "row": 184, "assetId": "SS-H-P", "codes": ["SUBSTATION_HAS_PARENT"] },
+		{ "row": 185, "assetId": "TX-N-P", "codes": ["PARENT_REQUIRED"] }
+	],
+	"warnings": [
+		{ "row": 89, "assetId": "TX-D1", "code": "DUPLICATE_SERIAL_NUMBER" },
+		{ "row": 90, "assetId": "TX-D2", "code": "DUPLICATE_SERIAL_NUMBER" }
+	]
+}

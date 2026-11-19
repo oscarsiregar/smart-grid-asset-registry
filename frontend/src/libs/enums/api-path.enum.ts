@@ -1,5 +1,5 @@
 const APIPath = {
-	AUTH: "/auth",
+	IMPORTS: "/imports",
 	NOTES: "/notes",
 } as const;
 

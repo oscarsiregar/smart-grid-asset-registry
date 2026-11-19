@@ -2,6 +2,7 @@ package routes
 
 import (
 	"smart-grid-asset-registry/internal/config"
+	asset_import "smart-grid-asset-registry/internal/handler/asset_import"
 	"smart-grid-asset-registry/pkg/gocommon/pkg/utils"
 
 	"github.com/gofiber/fiber/v2"
@@ -9,9 +10,10 @@ import (
 )
 
 type RouteDependencies struct {
-	App *fiber.App
-	DB  *gorm.DB
-	Cfg *config.Config
+	App                *fiber.App
+	DB                 *gorm.DB
+	Cfg                *config.Config
+	AssetImportHandler asset_import.AssetImportHandler
 }
 
 // RegisterRoutes is the only place routes are registered.
@@ -25,4 +27,8 @@ func RegisterRoutes(deps *RouteDependencies) {
 
 	// Liveness/readiness probe (pings the DB).
 	utils.RegisterHealthCheck(api, deps.DB, nil)
+
+	// Static routes are registered before any parameterised route.
+	importGroup := api.Group("/imports")
+	importGroup.Post("/validate", deps.AssetImportHandler.ValidateAssetImport)
 }

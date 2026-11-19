@@ -1,0 +1,38 @@
+.banner {
+	display: flex;
+	gap: var(--space-10);
+	align-items: center;
+	padding: var(--space-12) var(--space-16);
+	margin: 0;
+	font-weight: 600;
+	color: var(--text-strong);
+	border: var(--border-width-hairline) solid var(--border-default);
+	border-left-width: var(--border-width-thick);
+	border-radius: var(--radius-md);
+}
+
+.icon {
+	flex-shrink: 0;
+	width: var(--space-20);
+	height: var(--space-20);
+}
+
+.info {
+	background-color: var(--surface-inset);
+	border-left-color: var(--border-accent);
+}
+
+.success {
+	background-color: var(--surface-inset);
+	border-left-color: var(--text-accent);
+}
+
+.warning {
+	background-color: var(--surface-inset);
+	border-left-color: var(--border-strong);
+}
+
+.danger {
+	background-color: var(--surface-inset);
+	border-left-color: var(--border-danger);
+}
