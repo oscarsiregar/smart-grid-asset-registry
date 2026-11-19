@@ -50,9 +50,9 @@ Shown only when at least one asset is stored (the empty registry state of 002 ha
 | State | Shows |
 |---|---|
 | Running | "Searching…" (`role="status"`) |
-| All matches received | "N assets match "<text>"" (and " of type <Type>" when chosen), then the list |
-| More matches than received | "Showing <items received> of N assets that match "<text>". Add more of the ID or name, or choose a type, to narrow the search." then the received items (the backend's first 50) |
-| No match | "No asset matches "<text>"" (+ " of type <Type>"). "Check the spelling, or search all types." |
+| All matches received | "N assets match “<text>”" ("1 asset matches …" for one) (and " of type <Type>" when chosen), then the list |
+| More matches than received | "Showing <items received> of N assets that match “<text>”. Add more of the ID or name, or choose a type, to narrow the search." then the received items (the backend's first 50) |
+| No match | "No asset matches “<text>”" (+ " of type <Type>"). "Check the spelling, or search all types." |
 | Refused (`400 INVALID_REQUEST`) | the server's message as sent, for example "Invalid request: q must be at most 100 characters"; no retry (the same search would be refused again); the form stays editable |
 | Failure | "The search could not be completed." + **Try again** |
 
@@ -64,5 +64,7 @@ status in words ("No status recorded" for none); and the location — the ancest
 
 A committed import refreshes a shown search (tag `ASSET`); an import that saved nothing changes nothing. The
 summary and list update in place; the form keeps its values.
+
+Quoted search text uses typographic quotes (“…”) in all copy.
 
 Every state is readable from its text alone; nothing relies on colour (principle V, SC-006).

@@ -7,6 +7,9 @@
 
 .tree,
 .details {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-16);
 	min-width: 0;
 	padding: var(--space-12);
 	background-color: var(--surface-card);

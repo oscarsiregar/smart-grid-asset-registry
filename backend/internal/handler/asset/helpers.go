@@ -47,6 +47,27 @@ func toAssetListResponse(output usecase.GetListAssetOutput) dto.AssetListRespons
 	return dto.AssetListResponse{Items: items, TotalItems: len(items)}
 }
 
+// toAssetSearchResponse maps one page of matches; every item carries its
+// ancestors, [] when none (a substation) or not given, never null.
+func toAssetSearchResponse(output usecase.GetListAssetOutput) dto.AssetSearchResponse {
+	items := make([]dto.AssetSearchItemResponse, 0, len(output.Assets))
+	for _, node := range output.Assets {
+		ancestors := output.AncestorIDs[node.AssetID]
+		if ancestors == nil {
+			ancestors = []string{}
+		}
+		items = append(items, dto.AssetSearchItemResponse{
+			AssetID:           node.AssetID,
+			AssetName:         node.AssetName,
+			AssetType:         node.AssetType.String(),
+			OperationalStatus: statusText(node.OperationalStatus),
+			ChildCount:        node.ChildCount,
+			AncestorAssetIDs:  ancestors,
+		})
+	}
+	return dto.AssetSearchResponse{Items: items, TotalItems: output.TotalItems}
+}
+
 func toAssetResponse(asset *entity.Asset) dto.AssetResponse {
 	return dto.AssetResponse{
 		AssetID:           asset.AssetID,
