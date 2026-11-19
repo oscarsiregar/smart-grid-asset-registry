@@ -27,10 +27,28 @@ itself is described in [ARCHITECTURE.md](ARCHITECTURE.md).
   the page returns to an empty form, and only the import record's summary (counts and outcome) is kept
   (FR-029, FR-031).
 - **No screen lists past imports.** Import records are in the `asset_import` table and can be inspected with
-  `psql`. Browsing and searching the asset hierarchy are also not part of this feature; `/assets` shows an empty
-  state.
+  `psql`.
 - **Validate-only checks are not recorded.** Failed (rolled-back) attempts are not recorded either; they are only
   logged.
+
+## Asset explorer
+
+- **No search yet.** Assets are found by browsing the tree or by their address; searching is the next feature.
+- **Complete lists, no paging or virtual scrolling** (Template Exception 13, 002-R11). A node's children are all
+  loaded and rendered at once. The API side stays fast at 50 000 assets (a 5 000-child list in about 30 ms),
+  but a node with many thousands of children makes a long page in the browser.
+- **The details are not one snapshot** (002-R5). The asset, its path, its children and a substation's counts
+  are read separately, without a transaction. Assets are only ever added, so the only possible mismatch is an
+  import committing between those reads (counts that already include a new child the list does not yet show);
+  the refetch after the commit corrects it.
+- **Only the selected asset's ancestors are restored.** The address holds the selected asset; which other nodes
+  were expanded is not kept across a refresh or a new tab.
+- **Asset IDs `.` and `..` cannot be selected.** Imports accept them, but browsers and `fetch` rewrite those path
+  segments, even encoded as `%2E`, so such an asset has no address and its details cannot be requested. It is
+  still listed in the tree with its type and status and can be expanded to reach its children; its label is
+  plain text rather than a link.
+- **Numbers are shown by value** (FR-010). `NUMERIC` values reach the browser as JSON numbers, so trailing zeros
+  typed in the CSV are not kept: `22.50` shows as `22.5 kV`.
 
 ## Size and concurrency
 

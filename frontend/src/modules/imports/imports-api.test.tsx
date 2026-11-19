@@ -1,10 +1,14 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { HTTPCode } from "~/libs/enums/enums.js";
 import { config } from "~/libs/modules/config/config.js";
 import { createStore } from "~/libs/modules/store/store.module.js";
+import {
+	useGetAssetDetailQuery,
+	useGetAssetNodesQuery,
+} from "~/modules/assets/assets.js";
 
 import {
 	useCreateImportMutation,
@@ -22,6 +26,10 @@ const RESULT: ImportResultDto = {
 	rejectedRows: [],
 	warnings: [],
 };
+
+afterEach(() => {
+	vi.unstubAllGlobals();
+});
 
 const createJsonResponse = (status: number, body: unknown): Response =>
 	Response.json(body, { status });
@@ -142,5 +150,191 @@ describe("createImport", () => {
 		const [[request]] = fetchMock.mock.calls as unknown as [[Request]];
 		expect(request.method).toBe("POST");
 		expect(request.url).toBe("http://localhost/api/imports");
+	});
+});
+
+// ---- Refreshing the asset explorer after an import (user story 4) ----------
+
+type CreateAnswer = "committed" | "failed" | ImportResultDto;
+
+const ASSET_URLS = [
+	"http://localhost/api/assets",
+	"http://localhost/api/assets?parentAssetId=SS-001",
+	"http://localhost/api/assets/SS-001",
+] as const;
+
+const ASSET_DETAIL = {
+	asset: {
+		assetId: "SS-001",
+		assetName: "Aurora",
+		assetType: "SUBSTATION",
+		commissionedDate: null,
+		manufacturer: null,
+		model: null,
+		operationalStatus: null,
+		parentAssetId: null,
+		ratingKva: null,
+		serialNumber: null,
+		voltageKv: null,
+	},
+	children: [],
+	descendantCounts: {
+		lvBoards: 0,
+		switchboardPanels: 0,
+		switchboards: 0,
+		transformers: 0,
+	},
+	path: [],
+};
+
+const serveExplorer = (answer: CreateAnswer) => {
+	const fetchMock = vi.fn((request: Request): Promise<Response> => {
+		if (request.method === "POST") {
+			if (answer === "failed") {
+				return Promise.resolve(
+					createJsonResponse(HTTPCode.INTERNAL_SERVER_ERROR, {
+						code: HTTPCode.INTERNAL_SERVER_ERROR,
+						data: null,
+						message: "Internal Server Error",
+						status: "error",
+					}),
+				);
+			}
+
+			const result =
+				answer === "committed"
+					? {
+							...RESULT,
+							import: { createdAt: "2026-11-19T10:15:00Z", id: "6f1c2c1e" },
+							isCommitted: true,
+							outcome: ImportOutcome.COMMITTED,
+						}
+					: answer;
+
+			return Promise.resolve(
+				createJsonResponse(HTTPCode.CREATED, {
+					code: HTTPCode.CREATED,
+					data: result,
+					message: "Successfully create asset import",
+					status: "success",
+				}),
+			);
+		}
+
+		const data =
+			request.url === "http://localhost/api/assets/SS-001"
+				? ASSET_DETAIL
+				: { items: [], totalItems: 0 };
+
+		return Promise.resolve(
+			createJsonResponse(HTTPCode.OK, {
+				code: HTTPCode.OK,
+				data,
+				message: "ok",
+				status: "success",
+			}),
+		);
+	});
+	vi.stubGlobal("fetch", fetchMock);
+
+	return fetchMock;
+};
+
+const countAssetRequests = (
+	fetchMock: ReturnType<typeof serveExplorer>,
+): number[] =>
+	ASSET_URLS.map(
+		(url) =>
+			fetchMock.mock.calls.filter(([request]) => request.url === url).length,
+	);
+
+// What the explorer has mounted: the top level, an expanded node's children
+// and the details area, plus the import panel's mutation.
+const useExplorerAndImport = () => ({
+	children: useGetAssetNodesQuery("SS-001"),
+	createImport: useCreateImportMutation(),
+	detail: useGetAssetDetailQuery("SS-001"),
+	topLevel: useGetAssetNodesQuery(null),
+});
+
+const renderExplorerAndImport = () => {
+	const store = createStore(config);
+	const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+		<Provider store={store}>{children}</Provider>
+	);
+
+	return renderHook(() => useExplorerAndImport(), { wrapper });
+};
+
+const runImport = async (
+	result: ReturnType<typeof renderExplorerAndImport>["result"],
+): Promise<void> => {
+	await act(async () => {
+		const [createImport] = result.current.createImport;
+		await createImport({
+			file: new File(["asset_id"], "grid.csv"),
+			mode: ImportMode.PARTIAL,
+		});
+	});
+};
+
+// One request per mounted asset query, or two after a refetch.
+const ONE_REQUEST = 1;
+const TWO_REQUESTS = 2;
+const ONE_REQUEST_EACH = ASSET_URLS.map(() => ONE_REQUEST);
+const TWO_REQUESTS_EACH = ASSET_URLS.map(() => TWO_REQUESTS);
+
+describe("createImport and the asset explorer", () => {
+	it("refetches every mounted asset query after a committed import", async () => {
+		const fetchMock = serveExplorer("committed");
+		const { result } = renderExplorerAndImport();
+		await waitFor(() => {
+			expect(result.current.detail.isSuccess).toBe(true);
+		});
+		expect(countAssetRequests(fetchMock)).toEqual(ONE_REQUEST_EACH);
+
+		await runImport(result);
+
+		await waitFor(() => {
+			expect(countAssetRequests(fetchMock)).toEqual(TWO_REQUESTS_EACH);
+		});
+	});
+
+	it.each([
+		["validated only", RESULT],
+		[
+			"nothing to commit",
+			{ ...RESULT, outcome: ImportOutcome.NOTHING_TO_COMMIT },
+		],
+		["strict-blocked", { ...RESULT, outcome: ImportOutcome.STRICT_BLOCKED }],
+	] as const)(
+		"refetches nothing after a result that saved nothing (%s)",
+		async (_label, answer) => {
+			const fetchMock = serveExplorer(answer);
+			const { result } = renderExplorerAndImport();
+			await waitFor(() => {
+				expect(result.current.detail.isSuccess).toBe(true);
+			});
+
+			await runImport(result);
+
+			const [, importState] = result.current.createImport;
+			expect(importState.isSuccess).toBe(true);
+			expect(countAssetRequests(fetchMock)).toEqual(ONE_REQUEST_EACH);
+		},
+	);
+
+	it("refetches nothing after a failed import", async () => {
+		const fetchMock = serveExplorer("failed");
+		const { result } = renderExplorerAndImport();
+		await waitFor(() => {
+			expect(result.current.detail.isSuccess).toBe(true);
+		});
+
+		await runImport(result);
+
+		const [, importState] = result.current.createImport;
+		expect(importState.isError).toBe(true);
+		expect(countAssetRequests(fetchMock)).toEqual(ONE_REQUEST_EACH);
 	});
 });

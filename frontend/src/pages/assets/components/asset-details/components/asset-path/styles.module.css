@@ -1,0 +1,27 @@
+.path {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-4);
+	align-items: center;
+	padding: 0;
+	margin: 0;
+	font-family: var(--font-family-mono);
+	font-size: var(--font-size-body-sm);
+	list-style: none;
+}
+
+.step {
+	display: inline-flex;
+	gap: var(--space-4);
+	align-items: center;
+}
+
+.step + .step::before {
+	color: var(--text-faint);
+	content: "›";
+}
+
+.current {
+	font-weight: 600;
+	color: var(--text-strong);
+}

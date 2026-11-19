@@ -2,6 +2,7 @@ package routes
 
 import (
 	"smart-grid-asset-registry/internal/config"
+	asset "smart-grid-asset-registry/internal/handler/asset"
 	asset_import "smart-grid-asset-registry/internal/handler/asset_import"
 	"smart-grid-asset-registry/pkg/gocommon/pkg/utils"
 
@@ -14,6 +15,7 @@ type RouteDependencies struct {
 	DB                 *gorm.DB
 	Cfg                *config.Config
 	AssetImportHandler asset_import.AssetImportHandler
+	AssetHandler       asset.AssetHandler
 }
 
 // RegisterRoutes is the only place routes are registered.
@@ -32,4 +34,10 @@ func RegisterRoutes(deps *RouteDependencies) {
 	importGroup := api.Group("/imports")
 	importGroup.Post("/validate", deps.AssetImportHandler.ValidateAssetImport)
 	importGroup.Post("/", deps.AssetImportHandler.CreateAssetImport)
+
+	// Read-only asset explorer (feature 002); complete lists, no paging
+	// (Template Exception 13).
+	assetGroup := api.Group("/assets")
+	assetGroup.Get("/", deps.AssetHandler.GetListAsset)
+	assetGroup.Get("/:assetId", deps.AssetHandler.GetAssetDetail)
 }

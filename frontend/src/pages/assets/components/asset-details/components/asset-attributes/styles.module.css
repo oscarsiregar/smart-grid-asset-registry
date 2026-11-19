@@ -1,0 +1,34 @@
+.attributes {
+	display: grid;
+	gap: var(--space-8);
+	margin: 0;
+}
+
+.attribute {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+	gap: var(--space-12);
+	padding-block: var(--space-6);
+	border-bottom: var(--border-width-hairline) solid var(--border-subtle);
+}
+
+.term {
+	font-size: var(--font-size-body-sm);
+	color: var(--text-muted);
+}
+
+.value {
+	margin: 0;
+	color: var(--text-body);
+	overflow-wrap: anywhere;
+}
+
+.link {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: var(--space-8);
+}
+
+.id {
+	font-family: var(--font-family-mono);
+}

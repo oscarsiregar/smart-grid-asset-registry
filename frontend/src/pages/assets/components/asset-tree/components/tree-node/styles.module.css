@@ -1,0 +1,114 @@
+.node {
+	display: flex;
+	flex-direction: column;
+	outline: none;
+	border-radius: var(--radius-sm);
+}
+
+.node:focus-visible {
+	box-shadow: 0 0 0 var(--border-width-focus) var(--border-focus);
+}
+
+.row {
+	display: flex;
+	gap: var(--space-8);
+	align-items: center;
+	min-height: var(--size-control-h-md);
+	padding-inline: var(--space-4);
+	border-radius: var(--radius-sm);
+}
+
+.row:hover {
+	background-color: var(--state-hover-tint);
+}
+
+.selected {
+	font-weight: 600;
+	background-color: var(--surface-inset);
+	box-shadow: inset var(--border-width-thick) 0 0 var(--border-accent);
+}
+
+.marker {
+	display: inline-flex;
+	flex-shrink: 0;
+	gap: var(--space-4);
+	align-items: center;
+	font-size: var(--font-size-label-sm);
+	color: var(--text-strong);
+}
+
+.marker-icon {
+	width: var(--size-icon-sm);
+	height: var(--size-icon-sm);
+}
+
+.toggle {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: var(--space-24);
+	height: var(--space-24);
+	padding: 0;
+	color: var(--text-muted);
+	cursor: pointer;
+	background: none;
+	border: none;
+	border-radius: var(--radius-xs);
+}
+
+.toggle:hover {
+	color: var(--text-strong);
+}
+
+.chevron {
+	width: var(--size-icon-sm);
+	height: var(--size-icon-sm);
+	transform: rotate(-90deg);
+}
+
+.expanded {
+	transform: none;
+}
+
+.spacer {
+	flex-shrink: 0;
+	width: var(--space-24);
+}
+
+.label {
+	display: flex;
+	flex: 1;
+	flex-wrap: wrap;
+	gap: var(--space-4) var(--space-8);
+	align-items: baseline;
+	min-width: 0;
+	color: var(--text-body);
+	text-decoration: none;
+}
+
+.id {
+	font-family: var(--font-family-mono);
+	font-size: var(--font-size-body-sm);
+	color: var(--text-strong);
+}
+
+.name {
+	color: var(--text-body);
+}
+
+.label:hover .name {
+	text-decoration: underline;
+}
+
+.type {
+	font-size: var(--font-size-meta);
+	color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.chevron {
+		transition: transform var(--motion-duration-fast)
+			var(--motion-ease-standard);
+	}
+}

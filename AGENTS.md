@@ -46,6 +46,8 @@ specs/      one folder per feature: spec.md, plan.md, tasks.md
 11. Real-PostgreSQL integration tests live in `backend/internal/integrationtest/` and
     `backend/internal/testsupport/pgtest/`, skipped without `TEST_DATABASE_URL`.
 12. Uploaded CSV files are parsed in memory and never stored.
+13. The asset hierarchy reads (top-level substations, the children of one asset) return every row,
+    without `page`/`limit`; other list endpoints keep the template's paging.
 
 The constitution holds the full text and the reasons.
 

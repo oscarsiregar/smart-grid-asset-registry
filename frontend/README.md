@@ -1,7 +1,8 @@
 # Smart Grid Asset Registry — frontend
 
-React + TypeScript single-page app for importing grid-asset CSV files: choose a file and a mode, see the server's
-validation result (counts, rejected rows, warnings), then save it. Built on the company frontend template (store,
+React + TypeScript single-page app for importing grid-asset CSV files (choose a file and a mode, see the server's
+validation result, then save it) and exploring the stored asset hierarchy (an expandable tree beside the selected
+asset's details, every asset at its own address `/assets/<asset_id>`). Built on the company frontend template (store,
 API layer, error handling, notifications, forms, routing) with strict conventions.
 
 - Rules: [docs/code-conventions.md](docs/code-conventions.md)
@@ -9,8 +10,10 @@ API layer, error handling, notifications, forms, routing) with strict convention
 - Review rubric: [docs/quality-criteria.md](docs/quality-criteria.md)
 - Architecture: [../docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
 
-The reference feature is the CSV import: `src/modules/imports` (endpoints, DTOs, schema) and `src/pages/assets`
-(the `/assets` page and its import panel, opened with `?panel=import`). There is no sign-in: the app has no users
+The reference features are the CSV import — `src/modules/imports` (endpoints, DTOs, schema) and the import panel
+in `src/pages/assets`, opened with `?panel=import` — and the asset explorer: `src/modules/assets` (queries, DTOs,
+the `Asset` cache tag a committed import invalidates) and `src/pages/assets` (tree, details, keyboard and
+expansion hooks; the selected asset is the `:assetId` path segment). There is no sign-in: the app has no users
 (constitution, Template Exception 1).
 
 ## Prerequisites
@@ -76,10 +79,14 @@ Everything prefixed `VITE_` ships to the browser; never put a secret there.
 | ------ | ----------------------- | ----------------------------------- | ------------------------------------ |
 | POST   | `/api/imports/validate` | `file`, `mode` (`PARTIAL`/`STRICT`) | `200`, import result, nothing stored |
 | POST   | `/api/imports`          | `file`, `mode`                      | `201`, import result with the record |
+| GET    | `/api/assets`           | query `parentAssetId` (optional)    | `200`, complete ordered node list    |
+| GET    | `/api/assets/:assetId`  | — (ID percent-encoded)              | `200`, asset, path, children, counts |
 
 Responses use the go-common envelope `{ code, status, message, data }`; `baseQuery` unwraps `data`. Errors carry
 their application code in `data.errorCode` (for example `IMPORT_MISSING_COLUMNS`). The full contract is in
-[../specs/001-csv-import/contracts/imports-api.md](../specs/001-csv-import/contracts/imports-api.md).
+[../specs/001-csv-import/contracts/imports-api.md](../specs/001-csv-import/contracts/imports-api.md) and
+[../specs/002-asset-explorer/contracts/assets-api.md](../specs/002-asset-explorer/contracts/assets-api.md);
+an unknown asset is `404` with `ASSET_NOT_FOUND`, shown as a "not found" state rather than an error.
 
 ## Docker
 
