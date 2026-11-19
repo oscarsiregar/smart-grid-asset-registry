@@ -1,3 +1,13 @@
+<!--
+Sync Impact Report
+- Version change: 1.1.0 → 1.2.0 (MINOR: Template Exceptions expanded)
+- Modified principles: none
+- Added: Template Exception 13 (complete hierarchy lists, without page/limit)
+- Removed sections: none
+- Templates: none modified (dependent templates read this file at runtime)
+- Follow-up: none
+-->
+
 # Smart Grid Asset Registry Constitution
 
 A web app that imports a CSV of grid assets (substations and their equipment, linked by
@@ -66,6 +76,9 @@ be conveyed by colour alone; panels MUST trap focus and close on Escape.
     and are skipped when `TEST_DATABASE_URL` is not set.
 12. **In-memory uploads**: uploaded CSV files are parsed in memory and never stored, so the
     template's file-storage rules do not apply.
+13. **Complete hierarchy lists**: the asset hierarchy reads (top-level substations, the
+    children of one asset) return every row, without page/limit, because the explorer shows
+    all children at once. Other list endpoints keep the template's paging.
 
 ## Definition of Done
 
@@ -82,4 +95,4 @@ file with a semantic version bump (MAJOR: principle removed or redefined; MINOR:
 or section added or materially expanded; PATCH: wording clarifications). Plans and reviews
 MUST check compliance with these principles and the Definition of Done.
 
-**Version**: 1.1.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-19
+**Version**: 1.2.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-19
