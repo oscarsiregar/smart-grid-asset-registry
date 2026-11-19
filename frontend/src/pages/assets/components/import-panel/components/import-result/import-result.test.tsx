@@ -105,6 +105,57 @@ describe("ImportResult", () => {
 		expect(screen.queryByText("To import")).not.toBeInTheDocument();
 	});
 
+	it("keeps listing every rejected row when strict mode blocked the commit", () => {
+		render(
+			<ImportResult
+				onReset={vi.fn()}
+				resetLabel="Import another file"
+				result={{
+					...VALIDATED,
+					mode: ImportMode.STRICT,
+					outcome: ImportOutcome.STRICT_BLOCKED,
+				}}
+			/>,
+		);
+
+		expect(screen.getByRole("status")).toHaveTextContent(
+			"Not committed — strict mode, 17 rows rejected",
+		);
+		expect(
+			screen.getByRole("table", { name: "Rejected rows (1)" }),
+		).toBeInTheDocument();
+		expect(screen.getByText("INVALID_DATE")).toBeInTheDocument();
+		expect(getCount("To import")).toBe("205");
+		expect(
+			screen.queryByRole("button", { name: /Save/ }),
+		).not.toBeInTheDocument();
+	});
+
+	it("shows a re-import: nothing to commit, every row unchanged and the same rejections", () => {
+		render(
+			<ImportResult
+				onReset={vi.fn()}
+				resetLabel="Import another file"
+				result={{
+					...VALIDATED,
+					counts: { ...VALIDATED.counts, imported: 0, unchanged: 205 },
+					import: { createdAt: "2026-11-19T10:15:00Z", id: "6f1c2c1e" },
+					outcome: ImportOutcome.NOTHING_TO_COMMIT,
+				}}
+			/>,
+		);
+
+		expect(screen.getByRole("status")).toHaveTextContent(
+			"Nothing to commit — no new assets",
+		);
+		expect(getCount("Unchanged")).toBe("205");
+		expect(getCount("To import")).toBe("0");
+		expect(getCount("Rejected")).toBe("17");
+		expect(
+			screen.getByRole("table", { name: "Rejected rows (1)" }),
+		).toBeInTheDocument();
+	});
+
 	it("offers to choose another file", () => {
 		const handleReset = vi.fn();
 		render(

@@ -100,7 +100,7 @@ func (u assetImportUsecase) newImportRecord(input usecase.CreateAssetImportInput
 		ID:            u.newID(),
 		FileName:      input.FileName,
 		Mode:          input.Mode,
-		Outcome:       importOutcome(report),
+		Outcome:       importOutcome(input.Mode, report),
 		TotalRows:     report.Counts.Total,
 		ImportedRows:  report.Counts.ToImport,
 		UnchangedRows: report.Counts.Unchanged,
@@ -114,7 +114,12 @@ func (u assetImportUsecase) newImportRecord(input usecase.CreateAssetImportInput
 }
 
 // importOutcome decides what a confirm does (data-model.md, commit states).
-func importOutcome(report assetimport.Report) valueobject.ImportOutcome {
+// Strict mode is checked first: one rejected row blocks the whole file
+// (FR-023), even when nothing new would have been saved.
+func importOutcome(mode valueobject.ImportMode, report assetimport.Report) valueobject.ImportOutcome {
+	if mode == valueobject.ImportModeStrict && report.Counts.Rejected > 0 {
+		return valueobject.ImportOutcomeStrictBlocked
+	}
 	if report.Counts.ToImport == 0 {
 		return valueobject.ImportOutcomeNothingToCommit
 	}

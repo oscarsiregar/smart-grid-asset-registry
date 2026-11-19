@@ -8,6 +8,7 @@ describe("OutcomeBanner", () => {
 	it.each([
 		[ImportOutcomeMessage.VALIDATED_ONLY, OutcomeTone.INFO],
 		[ImportOutcomeMessage.CHECK_FAILED, OutcomeTone.DANGER],
+		["Not committed — strict mode, 17 rows rejected", OutcomeTone.WARNING],
 	])("states %s as text in a status region", (message, tone) => {
 		render(<OutcomeBanner message={message} tone={tone} />);
 

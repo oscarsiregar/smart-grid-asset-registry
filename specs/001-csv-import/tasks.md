@@ -198,13 +198,13 @@ a fully valid file is saved completely.
 
 ### Tests for User Story 3 — write first, confirm they FAIL ⚠️
 
-- [ ] T091 [US3] Add strict cases to `backend/internal/usecase/asset_import/create_asset_import_test.go`: `STRICT` with ≥ 1 rejected row → record `STRICT_BLOCKED` created, `CreateMany` **not** called, transaction committed, `isCommitted` false; `STRICT` with 0 rejected rows → `COMMITTED`; `STRICT` with 0 rejected and 0 new rows → `NOTHING_TO_COMMIT`
-- [ ] T092 [P] [US3] Add strict cases to `backend/internal/integrationtest/create_asset_import_test.go`: sample in strict mode → 0 assets, one `STRICT_BLOCKED` record with counts 222/205/0/17/2; a clean 3-row file in strict mode → committed
+- [X] T091 [US3] Add strict cases to `backend/internal/usecase/asset_import/create_asset_import_test.go`: `STRICT` with ≥ 1 rejected row → record `STRICT_BLOCKED` created, `CreateMany` **not** called, transaction committed, `isCommitted` false; `STRICT` with 0 rejected rows → `COMMITTED`; `STRICT` with 0 rejected and 0 new rows → `NOTHING_TO_COMMIT`
+- [X] T092 [P] [US3] Add strict cases to `backend/internal/integrationtest/create_asset_import_test.go`: sample in strict mode → 0 assets, one `STRICT_BLOCKED` record with counts 222/205/0/17/2; a clean 3-row file in strict mode → committed
 
 ### Implementation for User Story 3
 
-- [ ] T093 [US3] Implement the strict branch in `backend/internal/usecase/asset_import/create_asset_import.go` (checked before the `COMMITTED`/`NOTHING_TO_COMMIT` decision, data-model.md commit states) — T091 and T092 pass
-- [ ] T094 [US3] Frontend strict outcome: "Not committed — strict mode, N rows rejected" in `frontend/src/pages/assets/components/import-panel/components/outcome-banner/outcome-banner.tsx` (+ test); strict-mode explanation text in `import-form.tsx` enums; `import-result.tsx` keeps listing every rejected row for `STRICT_BLOCKED` (+ test)
+- [X] T093 [US3] Implement the strict branch in `backend/internal/usecase/asset_import/create_asset_import.go` (checked before the `COMMITTED`/`NOTHING_TO_COMMIT` decision, data-model.md commit states) — T091 and T092 pass
+- [X] T094 [US3] Frontend strict outcome: "Not committed — strict mode, N rows rejected" in `frontend/src/pages/assets/components/import-panel/components/outcome-banner/outcome-banner.tsx` (+ test); strict-mode explanation text in `import-form.tsx` enums; `import-result.tsx` keeps listing every rejected row for `STRICT_BLOCKED` (+ test)
 - [ ] T095 [US3] **Checkpoint — real stack**: `docker compose down -v && docker compose up --build`; quickstart API scenario B and UI step 7; `psql` shows 0 assets and one `STRICT_BLOCKED` record; all five check commands exit 0
 
 ---
@@ -219,15 +219,15 @@ different values are rejected with `ASSET_ID_CONFLICT`; repeating an import adds
 
 ### Tests for User Story 4 — write first, confirm they FAIL ⚠️
 
-- [ ] T096 [P] [US4] `backend/domain/entity/asset_test.go` for `DifferingFields(other *Asset) []string`: identical → empty; numbers compared by value (`22` vs `22.0`); dates by calendar day; `nil` vs blank equal; each of the eleven CSV columns detected; result in CSV column order; audit fields, `ID`, `ImportID` ignored
-- [ ] T097 [P] [US4] `backend/domain/assetimport/reimport_rules_test.go` (FR-018, FR-019): row identical to a stored asset → unchanged (not imported, not rejected, counted in `Unchanged`); same ID with a different status → `ASSET_ID_CONFLICT` naming `operational_status`; several differing fields listed; a child whose in-file parent is rejected for `ASSET_ID_CONFLICT` → `PARENT_REJECTED`; an unchanged row is a valid parent for new children in the same file; sample against a store holding the sample's accepted assets → 0 to import, 205 unchanged, same 17 rejected
+- [X] T096 [P] [US4] `backend/domain/entity/asset_test.go` for `DifferingFields(other *Asset) []string`: identical → empty; numbers compared by value (`22` vs `22.0`); dates by calendar day; `nil` vs blank equal; each of the eleven CSV columns detected; result in CSV column order; audit fields, `ID`, `ImportID` ignored
+- [X] T097 [P] [US4] `backend/domain/assetimport/reimport_rules_test.go` (FR-018, FR-019): row identical to a stored asset → unchanged (not imported, not rejected, counted in `Unchanged`); same ID with a different status → `ASSET_ID_CONFLICT` naming `operational_status`; several differing fields listed; a child whose in-file parent is rejected for `ASSET_ID_CONFLICT` → `PARENT_REJECTED`; an unchanged row is a valid parent for new children in the same file; sample against a store holding the sample's accepted assets → 0 to import, 205 unchanged, same 17 rejected
 
 ### Implementation for User Story 4
 
-- [ ] T098 [US4] Implement `DifferingFields` in `backend/domain/entity/asset.go` — T096 passes
-- [ ] T099 [US4] `backend/domain/assetimport/reimport_rules.go` and wire it into `validate.go` after the hierarchy pass and before `PARENT_REJECTED` propagation, so conflicts propagate to children; unchanged rows are excluded from `Accepted` — T097, T049 and T050 still pass
-- [ ] T100 [US4] Re-import cases in `backend/internal/integrationtest/create_asset_import_test.go`: sample twice → second `NOTHING_TO_COMMIT`, counts 222/0/205/17, still 205 assets, two records; stored `TX-001-1` with a changed status → `ASSET_ID_CONFLICT` with the field name; a transformer-only file whose parent is stored `SS-001` → committed; **moved from T085**: an asset with the same ID but different values stored between validate and confirm → the confirm result rejects that row with `ASSET_ID_CONFLICT` (US2 scenario 3, conflicting variant); two concurrent imports of **overlapping** files serialise and the second reports the shared rows as unchanged (FR-024, overlapping variant)
-- [ ] T101 [US4] Frontend re-import rendering tests in `frontend/src/pages/assets/components/import-panel/components/import-result/import-result.test.tsx` and `rejected-rows-table.test.tsx`: unchanged count shown, `ASSET_ID_CONFLICT` message listing fields rendered, "Nothing to commit — no new assets" banner after a re-import response
+- [X] T098 [US4] Implement `DifferingFields` in `backend/domain/entity/asset.go` — T096 passes
+- [X] T099 [US4] `backend/domain/assetimport/reimport_rules.go` and wire it into `validate.go` after the hierarchy pass and before `PARENT_REJECTED` propagation, so conflicts propagate to children; unchanged rows are excluded from `Accepted` — T097, T049 and T050 still pass
+- [X] T100 [US4] Re-import cases in `backend/internal/integrationtest/create_asset_import_test.go`: sample twice → second `NOTHING_TO_COMMIT`, counts 222/0/205/17, still 205 assets, two records; stored `TX-001-1` with a changed status → `ASSET_ID_CONFLICT` with the field name; a transformer-only file whose parent is stored `SS-001` → committed; **moved from T085**: an asset with the same ID but different values stored between validate and confirm → the confirm result rejects that row with `ASSET_ID_CONFLICT` (US2 scenario 3, conflicting variant); two concurrent imports of **overlapping** files serialise and the second reports the shared rows as unchanged (FR-024, overlapping variant)
+- [X] T101 [US4] Frontend re-import rendering tests in `frontend/src/pages/assets/components/import-panel/components/import-result/import-result.test.tsx` and `rejected-rows-table.test.tsx`: unchanged count shown, `ASSET_ID_CONFLICT` message listing fields rendered, "Nothing to commit — no new assets" banner after a re-import response
 - [ ] T102 [US4] **Checkpoint — real stack**: `docker compose up --build` on the database from T090 (or re-import the sample first); quickstart API scenarios D and E and UI step 6; `psql` shows still 205 assets and a `NOTHING_TO_COMMIT` record; all five check commands exit 0
 
 ---

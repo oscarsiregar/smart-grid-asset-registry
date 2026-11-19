@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"smart-grid-asset-registry/domain/assetimport"
 	"smart-grid-asset-registry/domain/entity"
 	"smart-grid-asset-registry/domain/errorcode"
 	"smart-grid-asset-registry/domain/usecase"
@@ -110,6 +111,74 @@ func TestCreateAssetImport(t *testing.T) {
 			},
 		},
 		{
+			name:  "strict with a rejected row: record STRICT_BLOCKED, no assets inserted, commit",
+			input: createInput(valueobject.ImportModeStrict, mixedLines...),
+			setup: func(d deps) {
+				d.withinTx()
+				lock := d.assetImportRepo.EXPECT().AcquireLock(mock.Anything, d.trx).Return(nil).Call
+				expectReads(d, lock, mixedIDs)
+				d.assetImportRepo.EXPECT().Create(mock.Anything, d.trx, mock.MatchedBy(func(r *entity.AssetImport) bool {
+					// imported_rows still counts the new valid rows; they were not saved
+					return r.Mode == valueobject.ImportModeStrict && r.Outcome == valueobject.ImportOutcomeStrictBlocked &&
+						r.TotalRows == 3 && r.ImportedRows == 2 && r.RejectedRows == 1
+				})).Return(nil)
+				// no CreateMany: the mock fails the test if it is called
+				d.trx.EXPECT().Commit().Return(nil)
+			},
+			check: func(t *testing.T, output usecase.CreateAssetImportOutput) {
+				require.NotNil(t, output.Import)
+				assert.Equal(t, valueobject.ImportOutcomeStrictBlocked, output.Import.Outcome)
+				assert.Len(t, output.Report.Rejected, 1, "every rejected row is still reported")
+			},
+		},
+		{
+			name:  "strict with no rejected rows: record COMMITTED, assets inserted",
+			input: createInput(valueobject.ImportModeStrict, mixedLines[0], mixedLines[1]),
+			setup: func(d deps) {
+				d.withinTx()
+				lock := d.assetImportRepo.EXPECT().AcquireLock(mock.Anything, d.trx).Return(nil).Call
+				expectReads(d, lock, []string{"SS-1", "TX-1"})
+				d.assetImportRepo.EXPECT().Create(mock.Anything, d.trx, mock.MatchedBy(func(r *entity.AssetImport) bool {
+					return r.Mode == valueobject.ImportModeStrict && r.Outcome == valueobject.ImportOutcomeCommitted &&
+						r.ImportedRows == 2 && r.RejectedRows == 0
+				})).Return(nil)
+				d.assetRepo.EXPECT().CreateMany(mock.Anything, d.trx, mock.MatchedBy(func(assets []*entity.Asset) bool {
+					return len(assets) == 2
+				})).Return(nil)
+				d.trx.EXPECT().Commit().Return(nil)
+			},
+			check: func(t *testing.T, output usecase.CreateAssetImportOutput) {
+				require.NotNil(t, output.Import)
+				assert.Equal(t, valueobject.ImportOutcomeCommitted, output.Import.Outcome)
+			},
+		},
+		{
+			name:  "strict with no rejected and no new rows: record NOTHING_TO_COMMIT, no assets inserted",
+			input: createInput(valueobject.ImportModeStrict, "SS-1,,SUBSTATION,Sub 1,IN_SERVICE,22,,,,,"),
+			setup: func(d deps) {
+				d.withinTx()
+				status := valueobject.OperationalStatusInService
+				voltage := 22.0
+				storedSubstation := &entity.Asset{
+					AssetID: "SS-1", AssetType: valueobject.AssetTypeSubstation, AssetName: "Sub 1",
+					OperationalStatus: &status, VoltageKV: &voltage,
+				}
+				lock := d.assetImportRepo.EXPECT().AcquireLock(mock.Anything, d.trx).Return(nil).Call
+				d.assetRepo.EXPECT().FindByAssetIDs(mock.Anything, d.trx, []string{"SS-1"}).
+					Return([]*entity.Asset{storedSubstation}, nil).NotBefore(lock)
+				d.assetRepo.EXPECT().FindBySerialNumbers(mock.Anything, d.trx, []string{}).Return(nil, nil).NotBefore(lock)
+				d.assetImportRepo.EXPECT().Create(mock.Anything, d.trx, mock.MatchedBy(func(r *entity.AssetImport) bool {
+					return r.Outcome == valueobject.ImportOutcomeNothingToCommit &&
+						r.ImportedRows == 0 && r.UnchangedRows == 1 && r.RejectedRows == 0
+				})).Return(nil)
+				d.trx.EXPECT().Commit().Return(nil)
+			},
+			check: func(t *testing.T, output usecase.CreateAssetImportOutput) {
+				require.NotNil(t, output.Import)
+				assert.Equal(t, valueobject.ImportOutcomeNothingToCommit, output.Import.Outcome)
+			},
+		},
+		{
 			name:    "invalid request shape: 400, no transaction",
 			input:   usecase.CreateAssetImportInput{FileName: "grid.csv", Mode: valueobject.ImportModePartial},
 			setup:   func(deps) {},
@@ -182,6 +251,36 @@ func TestCreateAssetImport(t *testing.T) {
 			}
 			require.NoError(t, err)
 			tt.check(t, output)
+		})
+	}
+}
+
+// TestImportOutcome covers the commit-state decision (data-model.md) on its
+// own, including strict files with nothing new and nothing rejected, which
+// only arise once rows can be unchanged.
+func TestImportOutcome(t *testing.T) {
+	counts := func(toImport, unchanged, rejected int) assetimport.Report {
+		return assetimport.Report{Counts: assetimport.Counts{
+			Total: toImport + unchanged + rejected, ToImport: toImport, Unchanged: unchanged, Rejected: rejected,
+		}}
+	}
+
+	tests := []struct {
+		name   string
+		mode   valueobject.ImportMode
+		report assetimport.Report
+		want   valueobject.ImportOutcome
+	}{
+		{"partial, new rows", valueobject.ImportModePartial, counts(2, 0, 1), valueobject.ImportOutcomeCommitted},
+		{"partial, nothing new", valueobject.ImportModePartial, counts(0, 3, 1), valueobject.ImportOutcomeNothingToCommit},
+		{"strict, a rejected row", valueobject.ImportModeStrict, counts(2, 0, 1), valueobject.ImportOutcomeStrictBlocked},
+		{"strict, rejected and nothing new", valueobject.ImportModeStrict, counts(0, 0, 1), valueobject.ImportOutcomeStrictBlocked},
+		{"strict, clean with new rows", valueobject.ImportModeStrict, counts(2, 1, 0), valueobject.ImportOutcomeCommitted},
+		{"strict, clean and nothing new", valueobject.ImportModeStrict, counts(0, 3, 0), valueobject.ImportOutcomeNothingToCommit},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, importOutcome(tt.mode, tt.report))
 		})
 	}
 }

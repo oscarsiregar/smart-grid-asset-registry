@@ -25,7 +25,7 @@ go_test:
     - go vet ./...
     # Excludes wiring (cmd, bootstrap, routes), generated mocks, and
     # declaration-only packages (no logic to test).
-    - go test $(go list ./... | grep -vE '^smart-grid-asset-registry/(cmd(/.*)?|internal/bootstrap$|internal/routes$|internal/mocks(/.*)?|internal/repository/psql/model$|domain/(repository|service|dto|entity|errorcode)$)')
+    - go test $(go list ./... | grep -vE '^smart-grid-asset-registry/(cmd(/.*)?|internal/bootstrap$|internal/routes$|internal/mocks(/.*)?|internal/repository/psql/model$|domain/(repository|service|dto|errorcode)$)')
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH

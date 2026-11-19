@@ -30,3 +30,69 @@ type Asset struct {
 	UpdatedAt         time.Time
 	UpdatedByName     string
 }
+
+// DifferingFields returns the CSV column names whose values differ between
+// the two assets, in CSV column order; empty when they are the same asset
+// data (spec FR-018, FR-019). Numbers compare by value, dates by calendar
+// day, and a nil text equals a blank one. ID, ImportID and the audit fields
+// are not CSV data and are ignored.
+func (a *Asset) DifferingFields(other *Asset) []string {
+	comparisons := []struct {
+		column string
+		equal  bool
+	}{
+		{"asset_id", a.AssetID == other.AssetID},
+		{"parent_asset_id", equalText(a.ParentAssetID, other.ParentAssetID)},
+		{"asset_type", a.AssetType == other.AssetType},
+		{"asset_name", a.AssetName == other.AssetName},
+		{"operational_status", equalStatus(a.OperationalStatus, other.OperationalStatus)},
+		{"voltage_kv", equalNumber(a.VoltageKV, other.VoltageKV)},
+		{"rating_kva", equalNumber(a.RatingKVA, other.RatingKVA)},
+		{"manufacturer", equalText(a.Manufacturer, other.Manufacturer)},
+		{"model", equalText(a.Model, other.Model)},
+		{"serial_number", equalText(a.SerialNumber, other.SerialNumber)},
+		{"commissioned_date", equalDay(a.CommissionedDate, other.CommissionedDate)},
+	}
+
+	differing := []string{}
+	for _, comparison := range comparisons {
+		if !comparison.equal {
+			differing = append(differing, comparison.column)
+		}
+	}
+	return differing
+}
+
+func equalText(a, b *string) bool {
+	text := func(value *string) string {
+		if value == nil {
+			return ""
+		}
+		return *value
+	}
+	return text(a) == text(b)
+}
+
+func equalStatus(a, b *valueobject.OperationalStatus) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return *a == *b
+}
+
+func equalNumber(a, b *float64) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return *a == *b
+}
+
+// equalDay compares the calendar day each date names in its own location.
+func equalDay(a, b *time.Time) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	ay, am, ad := a.Date()
+	by, bm, bd := b.Date()
+	return ay == by && am == bm && ad == bd
+}

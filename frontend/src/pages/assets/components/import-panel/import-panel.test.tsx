@@ -48,6 +48,13 @@ const COMMITTED: ImportResultDto = {
 	outcome: ImportOutcome.COMMITTED,
 };
 
+const STRICT_BLOCKED: ImportResultDto = {
+	...VALIDATED,
+	import: { createdAt: "2026-11-19T10:15:00Z", id: "6f1c2c1e" },
+	mode: ImportMode.STRICT,
+	outcome: ImportOutcome.STRICT_BLOCKED,
+};
+
 const NOTHING_TO_COMMIT: ImportResultDto = {
 	...VALIDATED,
 	counts: { ...VALIDATED.counts, imported: 0, unchanged: 205 },
@@ -236,6 +243,31 @@ describe("ImportPanel — saving a file (US2)", () => {
 
 		expect(
 			await screen.findByText("Nothing to commit — no new assets"),
+		).toBeInTheDocument();
+	});
+
+	it("says strict mode blocked the commit and still lists the rejected rows (US3)", async () => {
+		serve({
+			create: createSuccess(HTTPCode.CREATED, STRICT_BLOCKED),
+			validate: createSuccess(HTTPCode.OK, {
+				...VALIDATED,
+				mode: ImportMode.STRICT,
+			}),
+		});
+		renderPanel();
+		submitFile();
+		await screen.findByText("Validated only — nothing saved");
+
+		fireEvent.click(screen.getByRole("button", { name: "Save 205 assets" }));
+
+		expect(
+			await screen.findByText("Not committed — strict mode, 17 rows rejected"),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText("Parent SWB-404 is neither stored nor in the file."),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Import another file" }),
 		).toBeInTheDocument();
 	});
 

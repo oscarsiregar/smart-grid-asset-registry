@@ -75,4 +75,36 @@ describe("RejectedRowsTable", () => {
 		expect(screen.queryByRole("table")).not.toBeInTheDocument();
 		expect(screen.getByText("No rows were rejected.")).toBeInTheDocument();
 	});
+
+	it("renders an ASSET_ID_CONFLICT message naming the differing fields (FR-019)", () => {
+		render(
+			<RejectedRowsTable
+				rows={[
+					{
+						assetId: "TX-001-1",
+						errors: [
+							{
+								code: "ASSET_ID_CONFLICT",
+								message:
+									"Asset TX-001-1 is already stored with different values for: operational_status, rating_kva. Editing stored assets is not supported.",
+							},
+						],
+						row: 3,
+					},
+				]}
+			/>,
+		);
+
+		const [, line] = screen.getAllByRole("row");
+		expect(
+			within(line as HTMLElement)
+				.getAllByRole("cell")
+				.map((cell) => cell.textContent),
+		).toEqual([
+			"3",
+			"TX-001-1",
+			"ASSET_ID_CONFLICT",
+			"Asset TX-001-1 is already stored with different values for: operational_status, rating_kva. Editing stored assets is not supported.",
+		]);
+	});
 });

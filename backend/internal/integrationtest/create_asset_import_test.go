@@ -169,3 +169,161 @@ func TestCreateAssetImport_ConcurrentImportsAreSerialised(t *testing.T) {
 		t.Fatalf("unexpected outcome for file B: %s", b.output.Import.Outcome)
 	}
 }
+
+// TestCreateAssetImport_StrictSampleIsBlocked: in strict mode the sample's 17
+// rejected rows block the whole file; only the attempt is recorded (FR-023,
+// SC-006).
+func TestCreateAssetImport_StrictSampleIsBlocked(t *testing.T) {
+	db := pgtest.Open(t)
+	uc := newImportUsecase(db, asset_repository.NewAssetRepository(db))
+
+	output, err := uc.CreateAssetImport(context.Background(), usecase.CreateAssetImportInput{
+		FileName: "grid_assets.csv", File: openSample(t), Mode: valueobject.ImportModeStrict,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, output.Import)
+	assert.Equal(t, valueobject.ImportOutcomeStrictBlocked, output.Import.Outcome)
+	assert.Len(t, output.Report.Rejected, 17, "every rejected row is still reported")
+	assert.Zero(t, countRows(t, db, "asset"))
+
+	var record struct {
+		Mode, Outcome                                                     string
+		TotalRows, ImportedRows, UnchangedRows, RejectedRows, WarningRows int
+	}
+	require.NoError(t, db.Table("asset_import").
+		Select("mode, outcome, total_rows, imported_rows, unchanged_rows, rejected_rows, warning_rows").Scan(&record).Error)
+	assert.Equal(t, "STRICT", record.Mode)
+	assert.Equal(t, "STRICT_BLOCKED", record.Outcome)
+	assert.Equal(t, []int{222, 205, 0, 17, 2},
+		[]int{record.TotalRows, record.ImportedRows, record.UnchangedRows, record.RejectedRows, record.WarningRows})
+	assert.EqualValues(t, 1, countRows(t, db, "asset_import"))
+}
+
+func TestCreateAssetImport_StrictCleanFileCommits(t *testing.T) {
+	db := pgtest.Open(t)
+	uc := newImportUsecase(db, asset_repository.NewAssetRepository(db))
+
+	output := commit(t, uc, valueobject.ImportModeStrict,
+		"SS-C,,SUBSTATION,Substation C,IN_SERVICE,22,,,,,",
+		"TX-C,SS-C,TRANSFORMER,Transformer C,IN_SERVICE,22,1000,,,,",
+		"LV-C,SS-C,LV_BOARD,Board C,IN_SERVICE,0.4,,,,,",
+	)
+
+	assert.Equal(t, valueobject.ImportOutcomeCommitted, output.Import.Outcome)
+	assert.EqualValues(t, 3, countRows(t, db, "asset"))
+}
+
+func importSample(t *testing.T, uc usecase.AssetImportUsecase) usecase.CreateAssetImportOutput {
+	t.Helper()
+	output, err := uc.CreateAssetImport(context.Background(), usecase.CreateAssetImportInput{
+		FileName: "grid_assets.csv", File: openSample(t), Mode: valueobject.ImportModePartial,
+	})
+	require.NoError(t, err)
+	return output
+}
+
+// TestCreateAssetImport_Reimport runs the re-import rules against values read
+// back from PostgreSQL (dates, NUMERIC, NULLs), not just in memory (US4).
+func TestCreateAssetImport_Reimport(t *testing.T) {
+	db := pgtest.Open(t)
+	uc := newImportUsecase(db, asset_repository.NewAssetRepository(db))
+	first := importSample(t, uc)
+	require.Equal(t, valueobject.ImportOutcomeCommitted, first.Import.Outcome)
+
+	t.Run("the sample a second time adds nothing (FR-018)", func(t *testing.T) {
+		second := importSample(t, uc)
+
+		assert.Equal(t, valueobject.ImportOutcomeNothingToCommit, second.Import.Outcome)
+		assert.Equal(t, []int{222, 0, 205, 17},
+			[]int{second.Import.TotalRows, second.Import.ImportedRows, second.Import.UnchangedRows, second.Import.RejectedRows})
+		assert.Equal(t, first.Report.Rejected, second.Report.Rejected, "the same 17 rejections")
+		assert.EqualValues(t, 205, countRows(t, db, "asset"))
+		assert.EqualValues(t, 2, countRows(t, db, "asset_import"))
+	})
+
+	t.Run("a stored ID with a changed status is ASSET_ID_CONFLICT naming the field (FR-019)", func(t *testing.T) {
+		output := commit(t, uc, valueobject.ImportModePartial,
+			"TX-001-1,SS-001,TRANSFORMER,Aurora Transformer T1,MAINTENANCE,22,2000,Arcwell Industries,TXR-2000,TX00101A,12/3/10")
+
+		assert.Equal(t, valueobject.ImportOutcomeNothingToCommit, output.Import.Outcome)
+		require.Len(t, output.Report.Rejected, 1)
+		assert.Equal(t, errorcode.AssetIDConflict, output.Report.Rejected[0].Errors[0].Code)
+		assert.Equal(t, []any{"TX-001-1", "operational_status"}, output.Report.Rejected[0].Errors[0].Args)
+
+		var status string
+		require.NoError(t, db.Table("asset").Select("operational_status").Where("asset_id = ?", "TX-001-1").Scan(&status).Error)
+		assert.Equal(t, "IN_SERVICE", status, "the stored asset is not edited")
+	})
+
+	t.Run("a transformer-only file under stored SS-001 commits", func(t *testing.T) {
+		output := commit(t, uc, valueobject.ImportModePartial,
+			"TX-001-9,SS-001,TRANSFORMER,Aurora Transformer T9,IN_SERVICE,22,500,,,,")
+
+		assert.Equal(t, valueobject.ImportOutcomeCommitted, output.Import.Outcome)
+		assert.EqualValues(t, 206, countRows(t, db, "asset"))
+	})
+}
+
+// TestCreateAssetImport_ConflictStoredBetweenValidateAndConfirm: a row that was
+// new when checked is rejected at confirm when another import has meanwhile
+// stored the same ID with different values (US2 scenario 3, FR-022).
+func TestCreateAssetImport_ConflictStoredBetweenValidateAndConfirm(t *testing.T) {
+	db := pgtest.Open(t)
+	uc := newImportUsecase(db, asset_repository.NewAssetRepository(db))
+	ours := "SS-Q,,SUBSTATION,Substation Q,IN_SERVICE,22,,,,,"
+
+	checked, err := uc.ValidateAssetImport(context.Background(), usecase.ValidateAssetImportInput{
+		FileName: "q.csv", File: csvBody(ours), Mode: valueobject.ImportModePartial,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 1, checked.Report.Counts.ToImport)
+
+	commit(t, uc, valueobject.ImportModePartial, "SS-Q,,SUBSTATION,Other name,IN_SERVICE,22,,,,,")
+	confirmed := commit(t, uc, valueobject.ImportModePartial, ours)
+
+	assert.Equal(t, valueobject.ImportOutcomeNothingToCommit, confirmed.Import.Outcome)
+	require.Len(t, confirmed.Report.Rejected, 1)
+	assert.Equal(t, errorcode.AssetIDConflict, confirmed.Report.Rejected[0].Errors[0].Code)
+	assert.EqualValues(t, 1, countRows(t, db, "asset"))
+}
+
+// TestCreateAssetImport_ConcurrentOverlappingImports: two imports sharing rows
+// run at the same time. The lock serialises them, so the second sees the
+// first's rows as unchanged instead of failing on the unique key (FR-024).
+func TestCreateAssetImport_ConcurrentOverlappingImports(t *testing.T) {
+	db := pgtest.Open(t)
+	uc := newImportUsecase(db, asset_repository.NewAssetRepository(db))
+	shared := []string{
+		"SS-O,,SUBSTATION,Substation O,IN_SERVICE,22,,,,,",
+		"TX-O,SS-O,TRANSFORMER,Transformer O,IN_SERVICE,22,1000,,,,",
+	}
+
+	type result struct {
+		output usecase.CreateAssetImportOutput
+		err    error
+	}
+	run := func(extra string) <-chan result {
+		done := make(chan result, 1)
+		go func() {
+			output, err := uc.CreateAssetImport(context.Background(), usecase.CreateAssetImportInput{
+				FileName: "file.csv", File: csvBody(append(append([]string(nil), shared...), extra)...),
+				Mode: valueobject.ImportModePartial,
+			})
+			done <- result{output, err}
+		}()
+		return done
+	}
+
+	fileA := run("LV-A,SS-O,LV_BOARD,Board A,IN_SERVICE,0.4,,,,,")
+	fileB := run("LV-B,SS-O,LV_BOARD,Board B,IN_SERVICE,0.4,,,,,")
+	a, b := <-fileA, <-fileB
+
+	require.NoError(t, a.err)
+	require.NoError(t, b.err)
+	unchanged := []int{a.output.Report.Counts.Unchanged, b.output.Report.Counts.Unchanged}
+	assert.ElementsMatch(t, []int{0, 2}, unchanged, "whichever ran second saw the shared rows as unchanged")
+	assert.Equal(t, 4, a.output.Report.Counts.ToImport+b.output.Report.Counts.ToImport, "3 new, then 1 new")
+	assert.EqualValues(t, 4, countRows(t, db, "asset"))
+	assert.EqualValues(t, 2, countRows(t, db, "asset_import"))
+}

@@ -9,19 +9,26 @@ import (
 	"smart-grid-asset-registry/domain/valueobject"
 )
 
-// checkHierarchy applies the parent rules (spec FR-011 – FR-016a) to every
-// row whose own fields are valid, and lists every rule a row breaks. All
-// decisions use maps built from the whole file, never the row sequence, so
-// the result is the same for any row order (FR-017):
+// fileIndex is what the hierarchy rules know about the whole file. Every
+// decision uses it, never the row sequence, so the result is the same for
+// any row order (FR-017).
+type fileIndex struct {
+	idCount    map[string]int
+	uniqueByID map[string]*candidate
+	cycles     map[string][]string
+}
+
+// checkHierarchy applies the parent rules (spec FR-011 – FR-015, FR-016a) to
+// every row whose own fields are valid, and lists every rule a row breaks:
 //
 //  1. SUBSTATION_HAS_PARENT / PARENT_REQUIRED / SELF_PARENT /
 //     PARENT_NOT_FOUND — the parent reference itself;
 //  2. INVALID_PARENT_TYPE — against the in-file row or the stored asset;
-//  3. CYCLE_DETECTED — every row on a parent-pointer cycle;
-//  4. PARENT_REJECTED — repeated until nothing changes: a row whose in-file
-//     parent is rejected (never added to cycle members, whose parent is
-//     already reported as part of the cycle).
-func checkHierarchy(candidates []*candidate, stored StoredAssets) {
+//  3. CYCLE_DETECTED — every row on a parent-pointer cycle.
+//
+// PARENT_REJECTED (FR-016) comes later, from propagateRejectedParents, once
+// the re-import rules have also had their say.
+func checkHierarchy(candidates []*candidate, stored StoredAssets) fileIndex {
 	idCount := map[string]int{}
 	for _, c := range candidates {
 		if c.assetID != "" {
@@ -46,7 +53,7 @@ func checkHierarchy(candidates []*candidate, stored StoredAssets) {
 		}
 	}
 
-	propagateRejectedParents(candidates, idCount, uniqueByID, cycles)
+	return fileIndex{idCount: idCount, uniqueByID: uniqueByID, cycles: cycles}
 }
 
 func checkParentReference(
@@ -174,8 +181,10 @@ func findCycles(uniqueByID map[string]*candidate) map[string][]string {
 
 // propagateRejectedParents adds PARENT_REJECTED to valid-field rows whose
 // in-file parent is rejected, until nothing changes, so it reaches the whole
-// subtree below a rejected row.
-func propagateRejectedParents(candidates []*candidate, idCount map[string]int, uniqueByID map[string]*candidate, cycles map[string][]string) {
+// subtree below a rejected row. Cycle members are skipped: their parent is
+// already reported as part of the cycle.
+func propagateRejectedParents(candidates []*candidate, index fileIndex) {
+	idCount, uniqueByID, cycles := index.idCount, index.uniqueByID, index.cycles
 	for changed := true; changed; {
 		changed = false
 		for _, c := range candidates {

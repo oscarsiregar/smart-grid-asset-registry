@@ -2,7 +2,7 @@
 
 MODULE := smart-grid-asset-registry
 # Same exclusions as .gitlab-ci.yml go_test.
-TEST_PKGS = $(shell go list ./... | grep -vE '^$(MODULE)/(cmd(/.*)?|internal/bootstrap$$|internal/routes$$|internal/mocks(/.*)?|internal/repository/psql/model$$|domain/(repository|service|dto|entity|errorcode)$$)')
+TEST_PKGS = $(shell go list ./... | grep -vE '^$(MODULE)/(cmd(/.*)?|internal/bootstrap$$|internal/routes$$|internal/mocks(/.*)?|internal/repository/psql/model$$|domain/(repository|service|dto|errorcode)$$)')
 
 run:            ## run the API locally (reads .env)
 	go run ./cmd/api

@@ -23,8 +23,14 @@ type candidate struct {
 	serialNumber      string
 	commissionedDate  string
 
-	fieldIssues     []Issue
+	fieldIssues []Issue
+	// hierarchyIssues holds every rule broken against other rows or the
+	// store: the parent rules and ASSET_ID_CONFLICT.
 	hierarchyIssues []Issue
+
+	// unchanged is set when the row's asset ID is stored with the same
+	// values (FR-018); such a row is neither imported nor rejected.
+	unchanged bool
 
 	// asset is built by checkFields when the row's own fields are valid.
 	asset *entity.Asset

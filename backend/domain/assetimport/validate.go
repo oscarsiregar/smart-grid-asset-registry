@@ -11,8 +11,10 @@ import (
 // any order give an identical report (spec FR-017).
 //
 // Order of the rules: field rules per row and duplicate IDs over the file,
-// then the hierarchy rules on rows whose fields are valid, then serial-number
-// warnings on the accepted rows.
+// then the hierarchy rules on rows whose fields are valid, then the re-import
+// rules against the stored assets, then PARENT_REJECTED (so a conflicting
+// row's children are rejected too), then serial-number warnings on the rows
+// that are not rejected.
 func Validate(file ParsedFile, stored StoredAssets) Report {
 	candidates := make([]*candidate, 0, len(file.Rows))
 	for _, row := range file.Rows {
@@ -23,7 +25,9 @@ func Validate(file ParsedFile, stored StoredAssets) Report {
 		checkFields(c, file.HeaderFieldCount)
 	}
 	checkDuplicateAssetIDs(candidates)
-	checkHierarchy(candidates, stored)
+	index := checkHierarchy(candidates, stored)
+	checkReimport(candidates, stored)
+	propagateRejectedParents(candidates, index)
 	warnings := serialWarnings(candidates, stored)
 
 	return buildReport(candidates, warnings)
@@ -42,7 +46,11 @@ func buildReport(candidates []*candidate, warnings []Warning) Report {
 
 	for _, c := range candidates {
 		if !c.rejected() {
-			report.Accepted = append(report.Accepted, c.asset)
+			if c.unchanged {
+				report.UnchangedRows = append(report.UnchangedRows, c.row.Number)
+			} else {
+				report.Accepted = append(report.Accepted, c.asset)
+			}
 			continue
 		}
 		report.Rejected = append(report.Rejected, RejectedRow{
@@ -52,6 +60,7 @@ func buildReport(candidates []*candidate, warnings []Warning) Report {
 		})
 	}
 
+	sort.Ints(report.UnchangedRows)
 	sort.Slice(report.Rejected, func(i, j int) bool { return report.Rejected[i].Row < report.Rejected[j].Row })
 	sortParentsFirst(report.Accepted)
 
