@@ -6,9 +6,9 @@ import {
 	checkIsAddressableAssetId,
 	getAssetLocationText,
 	getAssetPath,
-	getStatusText,
 } from "../../../../../../libs/helpers/helpers.js";
 import { assetTypeToLabel } from "../../../../../../libs/maps.js";
+import { StatusBadge } from "../../../../../status-badge/status-badge.js";
 import styles from "./styles.module.css";
 
 type Properties = {
@@ -39,7 +39,7 @@ const SearchResult: React.FC<Properties> = ({ result }: Properties) => {
 			)}
 			<span className={styles["facts"]}>
 				<span>{assetTypeToLabel[result.assetType]}</span>
-				<span>{getStatusText(result.operationalStatus)}</span>
+				<StatusBadge isCompact status={result.operationalStatus} />
 				<span className={styles["location"]}>
 					{getAssetLocationText(result.ancestorAssetIds)}
 				</span>

@@ -1,33 +1,63 @@
 .table {
 	width: 100%;
+	overflow: hidden;
 	font-size: var(--font-size-body-sm);
-	border-collapse: collapse;
+	border-spacing: 0;
+	border-collapse: separate;
+	background-color: var(--bg-warning);
+	border: var(--border-width-hairline) solid
+		color-mix(in srgb, var(--fg-warning) 30%, transparent);
+	border-radius: var(--radius-xl);
 }
 
 .caption {
-	padding-bottom: var(--space-8);
+	padding-bottom: var(--space-10);
+	font-size: var(--font-size-meta);
 	font-weight: 600;
-	color: var(--text-strong);
+	color: var(--fg-warning);
 	text-align: left;
+	text-transform: uppercase;
+	letter-spacing: 1px;
 }
 
 .cell {
-	padding: var(--space-8) var(--space-10);
+	padding: var(--space-10) var(--space-16);
 	vertical-align: top;
 	text-align: left;
-	border-bottom: var(--border-width-hairline) solid var(--border-subtle);
+	border-bottom: var(--border-width-hairline) solid
+		color-mix(in srgb, var(--fg-warning) 20%, transparent);
+}
+
+thead .cell {
+	padding-block: var(--space-8);
+	font-size: var(--font-size-meta);
+	font-weight: 600;
+	color: var(--text-muted);
+}
+
+tbody tr:last-child .cell {
+	border-bottom: 0;
 }
 
 .number {
+	width: 1%;
+	font-family: var(--font-family-mono);
 	white-space: nowrap;
 }
 
 .code {
-	font-family: "IBM Plex Mono", monospace;
-	font-size: var(--font-size-label-sm);
+	display: inline-block;
+	padding: 1px var(--space-6);
+	font-family: var(--font-family-mono);
+	font-size: var(--font-size-meta);
+	color: var(--fg-warning);
+	border: var(--border-width-hairline) solid
+		color-mix(in srgb, var(--fg-warning) 40%, transparent);
+	border-radius: var(--radius-sm);
 }
 
 .empty {
 	margin: 0;
+	font-size: var(--font-size-body-sm);
 	color: var(--text-muted);
 }

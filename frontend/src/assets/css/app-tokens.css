@@ -1,0 +1,20 @@
+/*
+ * Tokens specific to the asset registry, layered on the template's tokens.css
+ * (which stays unchanged).
+ */
+:root {
+	/* The asset tree needs more room than a navigation list. */
+	--layout-sidebar-width: 320px;
+	--layout-content-max-width: 1200px;
+	--layout-drawer-max-width: 960px;
+
+	/* Operational status: colour is always paired with a shape (status badge). */
+	--status-in-service: var(--fg-success);
+	--status-maintenance: var(--fg-warning);
+	--status-out-of-service: var(--fg-danger);
+	--status-none: var(--text-faint);
+	--shadow-overlay: 0 16px 40px rgb(0 0 0 / 45%);
+	--z-index-header: 2;
+	--z-index-sidebar: 20;
+	--z-index-scrim: 19;
+}

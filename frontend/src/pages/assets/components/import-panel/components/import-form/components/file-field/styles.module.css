@@ -1,24 +1,56 @@
 .field {
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-4);
+	gap: var(--space-8);
 }
 
 .label {
-	font-size: var(--font-size-body-sm);
-	font-weight: 500;
-	color: var(--text-body);
+	font-size: var(--font-size-meta);
+	font-weight: 600;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 1px;
 }
 
 .input {
+	width: 100%;
+	padding: var(--space-8);
 	font-family: inherit;
 	font-size: var(--font-size-body-sm);
 	color: var(--text-body);
+	cursor: pointer;
+	background-color: var(--surface-inset);
+	border: var(--border-width-hairline) solid var(--border-default);
+	border-radius: var(--radius-lg);
+}
+
+.input:hover {
+	border-color: var(--border-strong);
 }
 
 .input:focus-visible {
-	outline: var(--border-width-focus) solid var(--border-focus);
-	outline-offset: var(--border-width-focus);
+	outline: none;
+	border-color: var(--border-focus);
+	box-shadow: 0 0 0 1px var(--border-focus);
+}
+
+.input::file-selector-button {
+	height: var(--size-control-h-md);
+	padding: 0 var(--space-12);
+	margin-right: var(--space-12);
+	font-family: inherit;
+	font-size: var(--font-size-body-sm);
+	font-weight: 600;
+	color: var(--text-strong);
+	cursor: pointer;
+	background-color: var(--surface-raised);
+	border: var(--border-width-hairline) solid var(--border-strong);
+	border-radius: var(--radius-md);
+}
+
+.input:hover::file-selector-button {
+	color: var(--text-accent);
+	border-color: var(--border-accent);
 }
 
 .description {
