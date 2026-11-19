@@ -8,7 +8,7 @@ import { config } from "~/libs/modules/config/config.js";
 
 import styles from "./styles.module.css";
 
-const errorAction = { label: "Back Home", url: AppRoute.DASHBOARD };
+const errorAction = { label: "Back Home", url: AppRoute.ROOT };
 
 const getErrorDetails = (error: unknown): string => {
 	if (isRouteErrorResponse(error)) {

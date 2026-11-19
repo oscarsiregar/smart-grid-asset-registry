@@ -22,9 +22,6 @@ type Config struct {
 	DBMaxIdleConns    int
 	DBMaxOpenConns    int
 	DBConnMaxLifetime int
-
-	InternalServiceSecret string
-	JWTSecret             string
 }
 
 // Load reads .env (if present, for local dev) and then real environment
@@ -41,7 +38,7 @@ func Load() (*Config, error) {
 	viper.AutomaticEnv()
 
 	viper.SetDefault("APP_HOST", "0.0.0.0")
-	viper.SetDefault("APP_PORT", 3030)
+	viper.SetDefault("APP_PORT", 8080)
 	viper.SetDefault("DB_PORT", 5432)
 	viper.SetDefault("DB_MAX_IDLE_CONNS", 10)
 	viper.SetDefault("DB_MAX_OPEN_CONNS", 100)
@@ -62,9 +59,6 @@ func Load() (*Config, error) {
 		DBMaxIdleConns:    viper.GetInt("DB_MAX_IDLE_CONNS"),
 		DBMaxOpenConns:    viper.GetInt("DB_MAX_OPEN_CONNS"),
 		DBConnMaxLifetime: viper.GetInt("DB_CONN_MAX_LIFETIME"),
-
-		InternalServiceSecret: viper.GetString("INTERNAL_SERVICE_SECRET"),
-		JWTSecret:             viper.GetString("JWT_SECRET"),
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -85,8 +79,6 @@ func (c *Config) Validate() error {
 		{"DB_USER", c.DBUser},
 		{"DB_PASSWORD", c.DBPassword},
 		{"DB_NAME", c.DBName},
-		{"INTERNAL_SERVICE_SECRET", c.InternalServiceSecret},
-		{"JWT_SECRET", c.JWTSecret},
 	}
 
 	var missing []string

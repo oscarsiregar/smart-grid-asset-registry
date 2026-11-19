@@ -1,18 +1,3 @@
-<!--
-Sync Impact Report
-- Version change: (template, unversioned) → 1.0.0
-- Principles defined (initial ratification):
-  I. Follow the Template
-  II. Validation Lives in the Backend
-  III. Predictable, Explainable Imports
-  IV. Test the Rules
-  V. Usable and Accessible
-- Added sections: Template Exceptions, Definition of Done, Governance
-- Removed sections: none
-- Templates: none modified (dependent templates read this file at runtime)
-- Deferred TODOs: none
--->
-
 # Smart Grid Asset Registry Constitution
 
 A web app that imports a CSV of grid assets (substations and their equipment, linked by
@@ -68,6 +53,19 @@ be conveyed by colour alone; panels MUST trap focus and close on Escape.
 5. **No API version prefix**: routes live under `/api` (for example `/api/imports`).
 6. **English messages**: the error message catalog holds English text only.
 7. **Template example modules** are removed before delivery.
+8. **No CHECK constraints**: enum and range columns are plain columns validated by the
+   backend, overriding the template's CHECK pattern (follows from Principle II).
+9. **English documentation**: project documentation (root `docs/`, `backend/docs/api/*`,
+   READMEs) is written in English; the template's existing Indonesian rule files stay as
+   they are.
+10. **Pure import rules package**: the import rules live in their own package
+    `backend/domain/assetimport/`, importing only the standard library and other `domain`
+    packages.
+11. **Integration test packages**: real-PostgreSQL integration tests live in test-only
+    packages (`backend/internal/integrationtest/` and `backend/internal/testsupport/pgtest/`)
+    and are skipped when `TEST_DATABASE_URL` is not set.
+12. **In-memory uploads**: uploaded CSV files are parsed in memory and never stored, so the
+    template's file-storage rules do not apply.
 
 ## Definition of Done
 
@@ -84,4 +82,4 @@ file with a semantic version bump (MAJOR: principle removed or redefined; MINOR:
 or section added or materially expanded; PATCH: wording clarifications). Plans and reviews
 MUST check compliance with these principles and the Definition of Done.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-19
+**Version**: 1.1.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-19

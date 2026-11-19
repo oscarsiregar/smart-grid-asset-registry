@@ -1,0 +1,107 @@
+# Local stack (constitution, Template Exception 3):
+#   docker compose up --build            db (55432), api (8080), web (3000)
+#   docker compose --profile test run --rm backend-test
+#   docker compose --profile test run --rm frontend-test
+#
+# Host ports default to the constitution's 55432 / 8080 / 3000; override them
+# with DB_HOST_PORT, API_HOST_PORT and WEB_HOST_PORT only when another local
+# stack already uses those ports.
+#
+# The credentials below are fixed local-development values for a database
+# that only exists on the developer's machine; they are not secrets.
+
+name: smart-grid-asset-registry
+
+x-db-credentials: &db-credentials
+  DB_USER: postgres
+  DB_PASSWORD: postgres
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: asset_registry
+    ports:
+      - "${DB_HOST_PORT:-55432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d asset_registry"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  api:
+    build: ./backend
+    environment:
+      <<: *db-credentials
+      APP_NAME: smart-grid-asset-registry
+      APP_ENV: dev
+      APP_HOST: 0.0.0.0
+      APP_PORT: "8080"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: asset_registry
+    ports:
+      - "${API_HOST_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/api/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_APP_NODE_ENV: production
+        VITE_APP_API_ORIGIN_URL: /api
+    ports:
+      - "${WEB_HOST_PORT:-3000}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # --- profile "test": the Definition of Done checks, in containers ---
+
+  backend-test:
+    profiles: ["test"]
+    image: golang:1.26.9
+    working_dir: /src
+    command: make check
+    environment:
+      TEST_DATABASE_URL: postgres://postgres:postgres@db:5432/asset_registry_test?sslmode=disable
+    volumes:
+      - ./backend:/src
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend-test:
+    profiles: ["test"]
+    image: node:24.19.0
+    working_dir: /app
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm test"
+    environment:
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+      # Keep pnpm's package store in a volume, not in the bind-mounted source.
+      pnpm_config_store_dir: /pnpm-store
+    volumes:
+      - ./frontend:/app
+      # Linux node_modules inside the container; never the host's copy.
+      - /app/node_modules
+      - pnpm-store:/pnpm-store
+
+volumes:
+  db-data:
+  go-mod-cache:
+  go-build-cache:
+  pnpm-store:

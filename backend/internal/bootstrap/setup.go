@@ -4,12 +4,13 @@
 package bootstrap
 
 import (
-	"backend-template/internal/config"
-	"backend-template/internal/handler/product"
-	"backend-template/internal/repository/psql/gormtx"
-	product_repository "backend-template/internal/repository/psql/product"
-	"backend-template/internal/routes"
-	product_usecase "backend-template/internal/usecase/product"
+	"smart-grid-asset-registry/internal/config"
+	asset_import "smart-grid-asset-registry/internal/handler/asset_import"
+	asset_repository "smart-grid-asset-registry/internal/repository/psql/asset"
+	asset_import_repository "smart-grid-asset-registry/internal/repository/psql/asset_import"
+	"smart-grid-asset-registry/internal/repository/psql/gormtx"
+	"smart-grid-asset-registry/internal/routes"
+	asset_import_usecase "smart-grid-asset-registry/internal/usecase/asset_import"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
@@ -18,23 +19,23 @@ import (
 
 func SetupDependencies(app *fiber.App, db *gorm.DB, cfg *config.Config, log *logrus.Logger) *routes.RouteDependencies {
 	// --- external services (internal/service/*) ---
-	// e.g. userManagementService := user_management_service.NewUserManagementService(cfg.UserManagementBaseURL, cfg.InternalServiceSecret, log)
 
 	// --- repositories ---
-	productRepository := product_repository.NewProductRepository(db)
+	assetRepository := asset_repository.NewAssetRepository(db)
+	assetImportRepository := asset_import_repository.NewAssetImportRepository(db)
 
 	txManager := gormtx.NewTransactionManager(db)
 
 	// --- usecases ---
-	productUsecase := product_usecase.NewProductUsecase(txManager, productRepository, log)
+	assetImportUsecase := asset_import_usecase.NewAssetImportUsecase(txManager, assetRepository, assetImportRepository, log)
 
 	// --- handlers ---
-	productHandler := product.NewProductHandler(productUsecase)
+	assetImportHandler := asset_import.NewAssetImportHandler(assetImportUsecase)
 
 	return &routes.RouteDependencies{
-		App:            app,
-		DB:             db,
-		Cfg:            cfg,
-		ProductHandler: productHandler,
+		App:                app,
+		DB:                 db,
+		Cfg:                cfg,
+		AssetImportHandler: assetImportHandler,
 	}
 }

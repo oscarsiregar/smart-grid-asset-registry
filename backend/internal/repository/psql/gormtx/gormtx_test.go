@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"backend-template/domain/repository"
+	"smart-grid-asset-registry/domain/repository"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"

@@ -2,12 +2,12 @@ import { type FetchBaseQueryError } from "@reduxjs/toolkit/query/react";
 
 import { ErrorCode } from "~/libs/enums/enums.js";
 import {
-	type ServerCommonErrorResponse,
+	type ServerErrorData,
 	type ServerErrorResponse,
-	type ServerValidationErrorResponse,
 } from "~/libs/types/types.js";
 
 import { type ServerError } from "../types/server-error.type.js";
+import { getErrorCodeByStatus } from "./get-error-code-by-status.helper.js";
 import { getFetchErrorMessage } from "./get-fetch-error-message.helper.js";
 import { getRetryAfterSeconds } from "./get-retry-after-seconds.helper.js";
 
@@ -15,79 +15,64 @@ const checkIsRecord = (value: unknown): value is Record<string, unknown> => {
 	return typeof value === "object" && value !== null;
 };
 
-const checkIsCommonErrorResponse = (
-	value: unknown,
-): value is ServerCommonErrorResponse => {
+const checkIsServerErrorData = (value: unknown): value is ServerErrorData => {
 	return (
 		checkIsRecord(value) &&
-		typeof value["code"] === "string" &&
-		(Object.values(ErrorCode) as string[]).includes(value["code"]) &&
-		typeof value["message"] === "string"
-	);
-};
-
-const checkIsValidationErrorResponse = (
-	payload: unknown,
-): payload is ServerValidationErrorResponse => {
-	return (
-		checkIsRecord(payload) &&
-		"details" in payload &&
-		Array.isArray((payload as ServerValidationErrorResponse).details)
+		typeof value["errorCode"] === "string" &&
+		(value["details"] === undefined || Array.isArray(value["details"]))
 	);
 };
 
 const checkIsServerErrorResponse = (
 	payload: unknown,
 ): payload is ServerErrorResponse => {
-	if (!checkIsCommonErrorResponse(payload)) {
-		return false;
-	}
-
-	if (payload.code === ErrorCode.VALIDATION_FAILED) {
-		return checkIsValidationErrorResponse(payload);
-	}
-
-	return true;
+	return (
+		checkIsRecord(payload) &&
+		typeof payload["code"] === "number" &&
+		typeof payload["message"] === "string" &&
+		(payload["data"] === null || checkIsServerErrorData(payload["data"]))
+	);
 };
 
+/**
+ * Normalizes a failed request into a `ServerError`. The code is the server's
+ * `data.errorCode` when the body is a go-common error envelope that carries
+ * one; otherwise it is derived from the HTTP status.
+ */
 const toServerError = (
 	error: FetchBaseQueryError,
 	headers?: Headers,
 ): ServerError => {
-	if (checkIsServerErrorResponse(error.data)) {
-		if (
-			error.data.code === ErrorCode.VALIDATION_FAILED &&
-			checkIsValidationErrorResponse(error.data)
-		) {
-			return {
-				code: ErrorCode.VALIDATION_FAILED,
-				details: error.data.details,
-				message: error.data.message,
-				status: error.status,
-			};
-		}
-
-		if (error.data.code === ErrorCode.TOO_MANY_REQUESTS) {
-			return {
-				code: ErrorCode.TOO_MANY_REQUESTS,
-				message: error.data.message,
-				retryAfterSeconds: getRetryAfterSeconds(headers),
-				status: error.status,
-			};
-		}
-
+	if (!checkIsServerErrorResponse(error.data)) {
 		return {
-			code: error.data.code,
-			message: error.data.message,
+			code: getErrorCodeByStatus(error.status),
+			message: getFetchErrorMessage(error.status),
 			status: error.status,
 		};
 	}
 
-	return {
-		code: ErrorCode.INTERNAL_SERVER_ERROR,
-		message: getFetchErrorMessage(error.status),
-		status: error.status,
-	};
+	const { data, message } = error.data;
+	const code = data?.errorCode ?? getErrorCodeByStatus(error.status);
+
+	if (code === ErrorCode.VALIDATION_FAILED && data?.details) {
+		return {
+			code: ErrorCode.VALIDATION_FAILED,
+			details: data.details,
+			message,
+			status: error.status,
+		};
+	}
+
+	if (code === ErrorCode.TOO_MANY_REQUESTS) {
+		return {
+			code: ErrorCode.TOO_MANY_REQUESTS,
+			message,
+			retryAfterSeconds: getRetryAfterSeconds(headers),
+			status: error.status,
+		};
+	}
+
+	return { code, message, status: error.status };
 };
 
 export { toServerError };

@@ -1,44 +1,35 @@
 package routes
 
 import (
-	"backend-template/internal/config"
-	"backend-template/internal/handler/product"
+	"smart-grid-asset-registry/internal/config"
+	asset_import "smart-grid-asset-registry/internal/handler/asset_import"
+	"smart-grid-asset-registry/pkg/gocommon/pkg/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
-	pkg_middleware_fiber "repo.smf-indonesia.co.id/package-helper/go-common/pkg/middleware/fiber"
-	"repo.smf-indonesia.co.id/package-helper/go-common/pkg/utils"
 )
 
 type RouteDependencies struct {
-	App            *fiber.App
-	DB             *gorm.DB
-	Cfg            *config.Config
-	ProductHandler product.ProductHandler
+	App                *fiber.App
+	DB                 *gorm.DB
+	Cfg                *config.Config
+	AssetImportHandler asset_import.AssetImportHandler
 }
 
+// RegisterRoutes is the only place routes are registered.
+//
+// Every route is public and lives under /api (constitution, Template
+// Exceptions 1 and 5): the app has no users, so the template's
+// InternalSecret → Identity → JWTVerifyStrict chain does not apply. If users
+// are ever introduced, restore that chain (backend/docs/rules/07-keamanan.md).
 func RegisterRoutes(deps *RouteDependencies) {
-	v1 := deps.App.Group("/v1")
+	api := deps.App.Group("/api")
 
-	// Public: liveness/readiness probe (pings the DB).
-	utils.RegisterHealthCheck(v1, deps.DB, nil)
+	// Liveness/readiness probe (pings the DB).
+	utils.RegisterHealthCheck(api, deps.DB, nil)
 
-	// Every business route MUST hang off this group. The chain order is
-	// mandatory (see docs/rules/07-security.md):
-	//   1. InternalSecretFromEnv — request must come from the BFF
-	//   2. Identity              — reads X-User-* headers into ctx.Locals
-	//   3. JWTVerifyStrict       — re-verifies the JWT, 401 when missing/invalid
-	// Never register a business route on v1 or deps.App directly.
-	authenticated := v1.Group("",
-		pkg_middleware_fiber.InternalSecretFromEnv(deps.Cfg.InternalServiceSecret),
-		pkg_middleware_fiber.Identity(),
-		pkg_middleware_fiber.JWTVerifyStrict(deps.Cfg.JWTSecret),
-	)
-
-	productGroup := authenticated.Group("/products")
-	productGroup.Get("/", deps.ProductHandler.GetListProduct)
-	productGroup.Post("/", deps.ProductHandler.CreateProduct)
-	productGroup.Get("/:id", deps.ProductHandler.GetProductDetail)
-	productGroup.Put("/:id", deps.ProductHandler.UpdateProduct)
-	productGroup.Delete("/:id", deps.ProductHandler.DeleteProduct)
+	// Static routes are registered before any parameterised route.
+	importGroup := api.Group("/imports")
+	importGroup.Post("/validate", deps.AssetImportHandler.ValidateAssetImport)
+	importGroup.Post("/", deps.AssetImportHandler.CreateAssetImport)
 }

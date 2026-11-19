@@ -1,6 +1,5 @@
 const APIPath = {
-	AUTH: "/auth",
-	NOTES: "/notes",
+	IMPORTS: "/imports",
 } as const;
 
 export { APIPath };

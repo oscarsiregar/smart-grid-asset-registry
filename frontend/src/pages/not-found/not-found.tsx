@@ -4,7 +4,7 @@ import { AppRoute, HTTPCode } from "~/libs/enums/enums.js";
 
 import styles from "./styles.module.css";
 
-const notFoundAction = { label: "Back Home", url: AppRoute.DASHBOARD };
+const notFoundAction = { label: "Back Home", url: AppRoute.ROOT };
 
 const NotFound: React.FC = () => (
 	<main>

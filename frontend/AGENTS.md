@@ -3,15 +3,15 @@
 Instructions for an AI assistant working in this frontend.
 
 > **Project-specific:** this app has no authentication (an approved exception to the template, see
-> `.specify/memory/constitution.md` → *Template Exceptions* no. 1). There is no sign-in, no private routes and no auth state;
-> template auth pieces exist only until they are removed.
+> `.specify/memory/constitution.md` → _Template Exceptions_ no. 1). There is no sign-in, no private routes and no auth state;
+> the template's auth pieces have been removed.
 
 ## Working approach
 
 - Read [docs/code-conventions.md](docs/code-conventions.md) before writing code. It is the source of truth; follow it
   over general habits.
-- Follow the closest existing example before inventing a pattern. For a new feature, copy the shape of `modules/notes`
-  and `pages/notes` as described in [docs/adding-a-feature.md](docs/adding-a-feature.md).
+- Follow the closest existing example before inventing a pattern. For a new feature, copy the shape of `modules/imports`
+  and `pages/assets` as described in [docs/adding-a-feature.md](docs/adding-a-feature.md).
 - Make the smallest coherent change that solves the request. No unrelated refactoring.
 - Ask before adding a dependency, changing the API contract, changing authentication, or changing tooling.
 - State any low-risk assumption you make.

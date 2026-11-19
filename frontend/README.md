@@ -1,19 +1,28 @@
-# Frontend template
+# Smart Grid Asset Registry — frontend
 
-A React + TypeScript frontend skeleton with strict conventions, extracted from the Promptomat project. It ships with
-the full infrastructure (store, API layer, error handling, notifications, forms, routing), a sign-in / sign-up flow,
-and one example CRUD feature (`notes`) to copy from.
+React + TypeScript single-page app for importing grid-asset CSV files: choose a file and a mode, see the server's
+validation result (counts, rejected rows, warnings), then save it. Built on the company frontend template (store,
+API layer, error handling, notifications, forms, routing) with strict conventions.
 
 - Rules: [docs/code-conventions.md](docs/code-conventions.md)
 - Recipe for a new feature: [docs/adding-a-feature.md](docs/adding-a-feature.md)
 - Review rubric: [docs/quality-criteria.md](docs/quality-criteria.md)
+- Architecture: [../docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
 
-## Requirements
+The reference feature is the CSV import: `src/modules/imports` (endpoints, DTOs, schema) and `src/pages/assets`
+(the `/assets` page and its import panel, opened with `?panel=import`). There is no sign-in: the app has no users
+(constitution, Template Exception 1).
+
+## Prerequisites
 
 - Node.js 24 (`.nvmrc`)
 - pnpm 11 (`corepack enable`)
+- The backend on `http://localhost:8080` for the dev server, for example `docker compose up -d db api` from the
+  repository root
 
-## Getting started
+No private packages and no credentials are needed.
+
+## Run
 
 ```
 cp .env.example .env
@@ -21,14 +30,23 @@ pnpm install
 pnpm start:dev
 ```
 
-The dev server runs on `VITE_APP_DEVELOPMENT_PORT` and proxies `VITE_APP_API_ORIGIN_URL` to
-`VITE_APP_PROXY_SERVER_URL`, so the browser talks to one origin and no CORS setup is needed.
+The dev server runs on `VITE_APP_DEVELOPMENT_PORT` (3000) and proxies `VITE_APP_API_ORIGIN_URL` (`/api`) to
+`VITE_APP_PROXY_SERVER_URL` (`http://localhost:8080`), so the browser talks to one origin and needs no CORS setup.
+Stop the compose `web` service first if it is running, since it also uses port 3000.
 
-To install the git hooks (pre-commit lint, commit message check), initialise a git repository, then run:
+To install the git hooks (pre-commit lint, commit message check), run `pnpm ci:prepare` once.
+
+## Test
 
 ```
-pnpm ci:prepare
+pnpm lint
+pnpm build
+pnpm test
 ```
+
+Tests use Vitest + React Testing Library with `fetch` mocked (Template Exception 2) and sit next to the code they
+cover. The same tests run in a container from the repository root:
+`docker compose --profile test run --rm frontend-test`.
 
 ## Scripts
 
@@ -37,49 +55,34 @@ pnpm ci:prepare
 | `pnpm start:dev` | Vite dev server                                                               |
 | `pnpm build`     | Type check + production build into `build/`                                   |
 | `pnpm preview`   | Serve the production build                                                    |
+| `pnpm test`      | Vitest, once                                                                  |
 | `pnpm lint`      | Every check (types, ESLint, Stylelint, Prettier, ls-lint, editorconfig, knip) |
 | `pnpm format`    | Apply Prettier                                                                |
 
 ## Environment
 
-| Variable                    | Used by        | Meaning                                     |
-| --------------------------- | -------------- | ------------------------------------------- |
-| `VITE_APP_NODE_ENV`         | app            | `local`, `development`, or `production`     |
-| `VITE_APP_API_ORIGIN_URL`   | app, dev proxy | Base path of the API, for example `/api/v1` |
-| `VITE_APP_DEVELOPMENT_PORT` | dev server     | Port of the Vite dev server                 |
-| `VITE_APP_PROXY_SERVER_URL` | dev server     | Backend the dev proxy forwards to           |
+| Variable                    | Used by        | Meaning                                 |
+| --------------------------- | -------------- | --------------------------------------- |
+| `VITE_APP_NODE_ENV`         | app            | `local`, `development`, or `production` |
+| `VITE_APP_API_ORIGIN_URL`   | app, dev proxy | Base path of the API: `/api`            |
+| `VITE_APP_DEVELOPMENT_PORT` | dev server     | Port of the Vite dev server             |
+| `VITE_APP_PROXY_SERVER_URL` | dev server     | Backend the dev proxy forwards to       |
 
-## Backend contract the template expects
+Everything prefixed `VITE_` ships to the browser; never put a secret there.
 
-| Method | Path                       | Body                            | Response          |
-| ------ | -------------------------- | ------------------------------- | ----------------- |
-| POST   | `/auth/sign-in`            | `{ email, password }`           | `{ token, user }` |
-| POST   | `/auth/sign-up`            | `{ email, nickname, password }` | `{ token, user }` |
-| GET    | `/auth/authenticated-user` |                                 | `user`            |
-| GET    | `/notes`                   |                                 | `NoteDto[]`       |
-| POST   | `/notes`                   | `{ title, content }`            | `NoteDto`         |
-| DELETE | `/notes/:id`               |                                 | empty             |
+## Backend contract
 
-Authenticated requests carry `Authorization: Bearer <token>`. Errors are `{ code, message }` with a code from
-`ErrorCode`; validation errors add `details: [{ path, message }]`. A missing or expired token must answer
-`UNAUTHENTICATED`.
+| Method | Path                    | Body (multipart)                    | Response                             |
+| ------ | ----------------------- | ----------------------------------- | ------------------------------------ |
+| POST   | `/api/imports/validate` | `file`, `mode` (`PARTIAL`/`STRICT`) | `200`, import result, nothing stored |
+| POST   | `/api/imports`          | `file`, `mode`                      | `201`, import result with the record |
 
-## Starting a new project from the template
-
-1. Copy the folder and rename `name` in `package.json`.
-2. Set `APP_NAME` in `src/libs/constants/app-name.constant.ts` and `<title>` in `index.html`.
-3. Replace `src/assets/img/logo.svg`, `public/favicon.ico`, the fonts, and the colors in `tokens.css` if the brand
-   changes.
-4. Adapt `ErrorCode`, `AuthApiPath`, and `UserDto` to your backend.
-5. Delete `modules/notes` and `pages/notes` once your first real feature exists, together with `APIPath.NOTES`,
-   `AppRoute.NOTES`, its route, and its navigation item. `pnpm lint:trash` lists anything left behind.
+Responses use the go-common envelope `{ code, status, message, data }`; `baseQuery` unwraps `data`. Errors carry
+their application code in `data.errorCode` (for example `IMPORT_MISSING_COLUMNS`). The full contract is in
+[../specs/001-csv-import/contracts/imports-api.md](../specs/001-csv-import/contracts/imports-api.md).
 
 ## Docker
 
-```
-docker build --build-arg VITE_APP_NODE_ENV=production --build-arg VITE_APP_API_ORIGIN_URL=/api/v1 -t frontend .
-```
-
-The image serves `build/` with nginx and proxies `/api` to the `backend` upstream in `nginx/nginx.conf`
-(`localhost:3001` by default). Point it at your backend host before deploying. `pnpm-lock.yaml` must exist, so run
-`pnpm install` once before the first build.
+The root `docker-compose.yml` builds this folder as the `web` service: the image builds the app with
+`VITE_APP_API_ORIGIN_URL=/api` and serves `build/` with nginx on port 80 (host port 3000), proxying `/api` to the
+`api` service (`nginx/nginx.conf`).

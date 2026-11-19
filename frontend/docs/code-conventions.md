@@ -23,6 +23,7 @@ so they depend on review. Codes such as `B10` or `A9` refer to the rubric in [qu
 | Styling      | CSS Modules + design tokens in `tokens.css`   |
 | Class names  | `clsx`, through `getValidClasses`             |
 | Icons        | SVG files imported as components (`?react`)   |
+| Tests        | Vitest + React Testing Library (jsdom)        |
 
 **Don't** add a library that duplicates one above, such as axios next to RTK Query, Formik next to React Hook Form,
 styled-components next to CSS Modules, or moment/dayjs where `Intl` is enough. A new dependency needs a reason that
@@ -46,7 +47,7 @@ src/
 │   ├── enums/                App-wide constant objects + enums.ts barrel
 │   ├── helpers/              App-wide pure functions + helpers.ts barrel
 │   ├── hooks/                App-wide hooks (imported directly, no barrel)
-│   ├── modules/              Infrastructure singletons: api, config, navigation, notification, storage, store
+│   ├── modules/              Infrastructure singletons: api, config, notification, store, testing
 │   └── types/                App-wide types + types.ts barrel
 ├── modules/                  Feature data layer, one folder per backend resource
 │   └── <feature>/
@@ -63,18 +64,18 @@ src/
 
 ### Who owns what
 
-| Layer                     | Owns                                                                       | Must not                                                                                     |
-| ------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `pages/<page>`            | Screen layout, coordinating feature behavior, page copy                    | Define API endpoints or DTOs                                                                 |
-| `pages/<page>/components` | UI used by one page                                                        | Be imported by another page (promote it to `libs/components`)                                |
-| `libs/components`         | Generic, reusable UI with no feature knowledge                             | Import from `modules/*` or `pages/*` (exceptions: app shell, private route, which wire auth) |
-| `modules/<feature>`       | Endpoints, DTO types, validation schemas, feature hooks, API tags          | Render JSX or own styles                                                                     |
-| `libs/modules`            | Infrastructure singletons (store, base API, config, storage, notification) | Know about any feature                                                                       |
+| Layer                     | Owns                                                              | Must not                                                      |
+| ------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------- |
+| `pages/<page>`            | Screen layout, coordinating feature behavior, page copy           | Define API endpoints or DTOs                                  |
+| `pages/<page>/components` | UI used by one page                                               | Be imported by another page (promote it to `libs/components`) |
+| `libs/components`         | Generic, reusable UI with no feature knowledge                    | Import from `modules/*` or `pages/*`                          |
+| `modules/<feature>`       | Endpoints, DTO types, validation schemas, feature hooks, API tags | Render JSX or own styles                                      |
+| `libs/modules`            | Infrastructure singletons (store, base API, config, notification) | Know about any feature                                        |
 
 **Do**
 
 - Put a component in `pages/<page>/components` first. Promote it to `libs/components` only when a second page needs it.
-- Nest components inside the component that owns them (`notes-list/components/note-item`) when nothing else uses them.
+- Nest components inside the component that owns them (`import-panel/components/outcome-banner`) when nothing else uses them.
 
 **Don't**
 
@@ -90,20 +91,20 @@ src/
 
 File and folder names are kebab-case (`ls-lint`). A file carries the suffix of its role:
 
-| Suffix                   | Contains                                   | Example                          |
-| ------------------------ | ------------------------------------------ | -------------------------------- |
-| `*.tsx`                  | One React component, named after the file  | `note-item.tsx` → `NoteItem`     |
-| `*.type.ts`              | One type                                   | `note-dto.type.ts` → `NoteDto`   |
-| `*.enum.ts`              | One constant object (`as const`)           | `app-route.enum.ts` → `AppRoute` |
-| `*.constant.ts`          | One constant                               | `bearer.constant.ts` → `BEARER`  |
-| `*.helper.ts`            | One function                               | `format-note-date.helper.ts`     |
-| `*.hook.ts`              | One hook                                   | `use-sign-out.hook.ts`           |
-| `*.validation-schema.ts` | One Zod schema                             | `sign-in.validation-schema.ts`   |
-| `*.module.ts`            | A class implementing infrastructure        | `base-storage.module.ts`         |
-| `*.slice.ts`             | A Redux slice                              | `navigation.slice.ts`            |
-| `*-api.ts`               | RTK Query endpoints of one feature         | `notes-api.ts`                   |
-| `styles.module.css`      | Styles of the component in the same folder |                                  |
-| `maps.ts`                | Lookup objects keyed by an enum            | `notificationTypeToIconName`     |
+| Suffix                   | Contains                                   | Example                                         |
+| ------------------------ | ------------------------------------------ | ----------------------------------------------- |
+| `*.tsx`                  | One React component, named after the file  | `outcome-banner.tsx` → `OutcomeBanner`          |
+| `*.type.ts`              | One type                                   | `import-result-dto.type.ts` → `ImportResultDto` |
+| `*.enum.ts`              | One constant object (`as const`)           | `app-route.enum.ts` → `AppRoute`                |
+| `*.constant.ts`          | One constant                               | `app-name.constant.ts` → `APP_NAME`             |
+| `*.helper.ts`            | One function                               | `get-outcome-summary.helper.ts`                 |
+| `*.hook.ts`              | One hook                                   | `use-panel.hook.ts`                             |
+| `*.validation-schema.ts` | One Zod schema                             | `import-file.validation-schema.ts`              |
+| `*.module.ts`            | Infrastructure implementation              | `store.module.ts`                               |
+| `*.slice.ts`             | A Redux slice (none exists today)          | `<name>.slice.ts`                               |
+| `*-api.ts`               | RTK Query endpoints of one feature         | `imports-api.ts`                                |
+| `styles.module.css`      | Styles of the component in the same folder |                                                 |
+| `maps.ts`                | Lookup objects keyed by an enum            | `notificationTypeToIconName`                    |
 
 ### 3.2 One declaration per file
 
@@ -122,7 +123,7 @@ number, regex, or string. Nothing checks it automatically, so it is enforced in 
 - Put two exported types in one `*.type.ts`, or three constants in one `constants.ts`.
 - Declare a type, enum, or constant inside a component file "because only this component uses it". Use the
   component's `libs/` folder.
-- Keep a set of user-facing messages as loose strings. They go into an enum of their own (`NotesPageMessage`).
+- Keep a set of user-facing messages as loose strings. They go into an enum of their own (`ImportPanelMessage`).
 
 ### 3.3 Barrels
 
@@ -142,14 +143,14 @@ number, regex, or string. Nothing checks it automatically, so it is enforced in 
 
 | Kind                           | Style                                     | Example                                        |
 | ------------------------------ | ----------------------------------------- | ---------------------------------------------- |
-| Variable, function, property   | camelCase, starts with a lowercase letter | `formatNoteDate`, `isLoading`                  |
-| Function                       | Starts with a verb (B20)                  | `getValidClasses`, `checkIsAuthPath`           |
+| Variable, function, property   | camelCase, starts with a lowercase letter | `getOutcomeSummary`, `isLoading`               |
+| Function                       | Starts with a verb (B20)                  | `getValidClasses`, `checkIsFailure`            |
 | Boolean                        | `is`/`has`/`should`/`can` prefix (B19)    | `isRequired`, `hasError`, `shouldOpenInNewTab` |
 | Boolean-returning function     | `check` prefix 🔒                         | `checkIsServerError`                           |
-| Array                          | Plural noun (B18)                         | `notes`, `NAVIGATION_ITEMS`                    |
+| Array                          | Plural noun (B18)                         | `rejectedRows`, `NAVIGATION_ITEMS`             |
 | Constant                       | `UPPER_SNAKE_CASE` (B22)                  | `EMPTY_LENGTH`                                 |
-| Constant object ("enum")       | PascalCase name, `UPPER_SNAKE` keys (B23) | `AppRoute.SIGN_IN`                             |
-| Component, class, type         | PascalCase                                | `NoteItem`, `BaseStorage`, `NoteDto`           |
+| Constant object ("enum")       | PascalCase name, `UPPER_SNAKE` keys (B23) | `AppRoute.ASSETS`                              |
+| Component, class, type         | PascalCase                                | `OutcomeBanner`, `ImportResultDto`             |
 | Component props type           | Always `Properties`                       | `type Properties = { ... }`                    |
 | Event handler inside component | `handle` + subject + event (A10)          | `handleDeleteClick`, `handleFormSubmit`        |
 | Callback prop                  | `on` + event (A9)                         | `onClick`, `onSubmit`                          |
@@ -160,7 +161,7 @@ number, regex, or string. Nothing checks it automatically, so it is enforced in 
 
 - Abbreviate: `properties` not `props`, `parameters` not `params`, `reference` not `ref`, `error` not `err`,
   `event` not `e`, `response` not `res`, `arguments_` not `args`.
-- Put the data type in the name (B17): `notes`, not `notesArray`.
+- Put the data type in the name (B17): `warnings`, not `warningsArray`.
 - Repeat the module name inside it (A5): inside `storage`, `get()` not `getStorage()`.
 - Use transliterated or non-English names (B25).
 
@@ -176,13 +177,14 @@ number, regex, or string. Nothing checks it automatically, so it is enforced in 
   `import { Button } from "~/libs/components/button/button.js";`.
 - Use the `~/` alias for imports that cross into another top-level tree (`libs`, `modules`, `pages`).
 - Use relative imports within the same feature, page, or component.
-- Mark type imports inline: `import { type NoteDto } from "…";`.
+- Mark type imports inline: `import { type ImportResultDto } from "…";`.
 - Let the linter sort imports, keys, members, and exports. Run `pnpm exec eslint . --fix` and `pnpm format`.
 
 **Don't**
 
 - Use `export const x = …` or `export default` (config files at the root are the only exception).
-- Import `useDispatch` or `useSelector` from `react-redux`. Use `useAppDispatch` / `useAppSelector`.
+- Import `useDispatch` or `useSelector` from `react-redux` in components. The app has no slice today; the first
+  slice adds typed `useAppDispatch` / `useAppSelector` hooks in `libs/hooks` and everything uses those.
 - Use a relative path that climbs out of the current feature (`../../../libs/...`). Use `~/`.
 
 ---
@@ -252,8 +254,8 @@ export { Chip };
 
 **Do**
 
-- Type components as `React.FC<Properties>`. Generic form controls (`Input`, `Textarea`) use a generic function
-  returning `React.JSX.Element`.
+- Type components as `React.FC<Properties>`. Generic form controls (`FileField`, `ModeField`
+  in the import form) take a generic field name and return `React.JSX.Element`.
 - Destructure props in the parameter list and give defaults there.
 - Accept `className` on reusable components and merge it last with `getValidClasses`.
 - Wrap every handler passed to a JSX prop in `useCallback`, or hoist it out of the component 🔒 (`react/jsx-no-bind`).
@@ -275,7 +277,7 @@ export { Chip };
 
 **Do**
 
-- Name hooks `use…` and put each in its own `*.hook.ts` folder (`libs/hooks/use-debounce/use-debounce.hook.ts`).
+- Name hooks `use…` and put each in its own `*.hook.ts` folder (`libs/hooks/use-panel/use-panel.hook.ts`).
 - Place a hook where it is used: `libs/hooks` if app-wide, `modules/<feature>/libs/hooks` if it belongs to a
   feature, `pages/<page>/libs/hooks` if only one page needs it.
 - Return a stable API: memoize returned callbacks with `useCallback`.
@@ -290,7 +292,8 @@ export { Chip };
 
 **Do**
 
-- Label every input (`Input` and `Textarea` do this; use `isLabelHidden` to hide it visually only).
+- Label every input with a visible `<label>` or `<legend>`; link a description with `aria-describedby`
+  (see `file-field.tsx`). Use `.visually-hidden` to hide a label visually only.
 - Give icon-only buttons an `aria-label` or a `.visually-hidden` text (A2).
 - Mark decorative icons `aria-hidden` (the `Icon` component does).
 - Fill `alt` on content images, and use `alt=""` on decorative ones (B5).
@@ -348,34 +351,40 @@ All server communication goes through one `baseApi` (`libs/modules/api/base-api.
 with `injectEndpoints`.
 
 ```ts
-const notesApi = baseApi
-	.enhanceEndpoints({ addTagTypes: [NotesApiTag.NOTE] })
-	.injectEndpoints({
-		endpoints: (builder) => ({
-			getNotes: builder.query<NoteDto[], undefined>({
-				providesTags: [NotesApiTag.NOTE],
-				query: () => ({ url: APIPath.NOTES }),
+const importsApi = baseApi.injectEndpoints({
+	endpoints: (builder) => ({
+		validateImport: builder.mutation<ImportResultDto, ImportRequestDto>({
+			// The panel renders file-level errors itself.
+			extraOptions: { shouldSuppressToast: true },
+			query: (payload) => ({
+				body: createImportFormData(payload),
+				method: HTTPMethod.POST,
+				url: `${APIPath.IMPORTS}${ImportsApiPath.VALIDATE}`,
 			}),
 		}),
-	});
+	}),
+});
 ```
+
+The `imports` feature has mutations only, so it declares no tags. A feature with queries adds them with
+`enhanceEndpoints({ addTagTypes: [...] })`.
 
 **Do**
 
 - Put endpoints in `modules/<feature>/<feature>-api.ts` and export only the generated hooks.
-- Declare tags in a `<Feature>ApiTag` enum. Queries `providesTags`, mutations `invalidatesTags`.
+- Declare tags, when the feature has queries, in a `<Feature>ApiTag` enum. Queries `providesTags`, mutations
+  `invalidatesTags`.
 - Build URLs from `APIPath` plus a feature `<Feature>ApiPath` enum. Fill parameters with `configureString`.
 - Pass `extraOptions: { shouldSuppressToast: true }` on mutations whose error the UI renders itself (forms).
 - Use `skipToken` or `skip` instead of calling a query with incomplete arguments.
 - Use `onQueryStarted` + `upsertQueryData` / `updateQueryData` for optimistic or derived cache updates.
-- Call `baseApi.util.resetApiState()` when the session ends (see `useSignOut`).
 
 **Don't**
 
 - Call `fetch`, axios, or `XMLHttpRequest` directly.
 - Create a second `createApi`.
 - Copy query data into component state or a slice.
-- Store server data in a Redux slice. Slices are for client-only global state, such as the pending redirect.
+- Store server data in a Redux slice. Slices are for client-only global state.
 - Invalidate everything to "be safe". Invalidate the tags the mutation actually changes.
 
 ---
@@ -385,37 +394,29 @@ const notesApi = baseApi
 **Do**
 
 - Keep UI state local (`useState`) unless more than one distant part of the tree needs it.
-- Use a Redux slice in `libs/modules/<name>/<name>.slice.ts` for app-wide client state, registered in `store.module.ts`.
-- Read and write it through `useAppSelector` / `useAppDispatch`.
-- Put state that should survive a reload in the URL (search parameters) or in `storage`.
+- Use a Redux slice in `libs/modules/<name>/<name>.slice.ts` for app-wide client state, registered in
+  `store.module.ts` (none exists today).
+- Put state that should survive a reload in the URL (search parameters), as the import panel does with
+  `?panel=import` (`use-panel.hook.ts`).
 
 **Don't**
 
 - Use React context for state that changes often across the app. Context is fine for a stable dependency, such as
   a provider-scoped API.
-- Use `localStorage` directly. Use `storage` with a key from `StorageKey`.
+- Use `localStorage` directly. Nothing is persisted on the client today; add a storage module in `libs/modules`
+  first if that changes.
 
 ---
 
 ## 10. Forms
 
-Forms use `useAppForm` (React Hook Form + Zod) and the controlled `Input` / `Textarea` components.
+Forms use `useAppForm` (React Hook Form + Zod) with controlled field components (`useController`).
 
 ```tsx
-const { clearErrors, control, handleSubmit, setError } =
-	useAppForm<SignInRequestDto>({
-		defaultValues: DEFAULT_SIGN_IN_PAYLOAD,
-		validationSchema: signInValidationSchema,
-	});
-
-const { hasFieldErrors } = useServerFormErrors({
-	clearErrors,
-	error,
-	fields: SIGN_IN_FIELDS,
-	setError,
+const { control, handleSubmit } = useAppForm<ImportRequestDto>({
+	defaultValues: DEFAULT_IMPORT_PAYLOAD,
+	validationSchema: importFileValidationSchema,
 });
-const generalError =
-	hasFieldErrors || checkIsToastedError(error) ? undefined : error;
 ```
 
 **Do**
@@ -423,8 +424,10 @@ const generalError =
 - Define the Zod schema in `modules/<feature>/libs/validation-schemas/<name>.validation-schema.ts`, export it from
   the barrel as `<name>ValidationSchema`, and derive the request type with `z.infer`.
 - Keep validation limits in a `<Feature>ValidationRule` enum and messages in a `<Feature>ValidationMessage` enum.
-- Keep the default payload and the list of server-mappable fields as constants in the form's `libs/constants`.
-- Map server validation errors onto fields with `useServerFormErrors`; show anything else with `FormAlert`.
+- Keep the default payload and other form constants in the form's `libs/constants`.
+- Keep business rules on the server: the import form's schema only checks that a file is chosen (constitution,
+  principle II).
+- Show a server error that is not already a toast with `FormAlert`.
 - Use `noValidate` on `<form>` so Zod, not the browser, owns validation messages.
 - Disable or show loading on the submit button while the mutation runs.
 - Catch a rejected `.unwrap()` when you await it; the error is already in the mutation state.
@@ -433,35 +436,38 @@ const generalError =
 
 - Use uncontrolled `register` and raw `<input>` elements in pages.
 - Validate by hand in the submit handler.
-- Show the same error twice: an error already shown as a toast (`checkIsToastedError`) is not repeated in `FormAlert`.
+- Show the same error twice: an error already shown as a toast is not repeated in `FormAlert`.
 
 ---
 
 ## 11. Errors and notifications
 
-`baseQuery` (`libs/modules/api/libs/helpers/base-query.helper.ts`) normalizes every failure into a `ServerError` and
-handles the cross-cutting cases:
+`baseQuery` (`libs/modules/api/libs/helpers/base-query.helper.ts`) unwraps the go-common success envelope
+`{ code, status, message, data }` to its `data`, and normalizes every failure into a `ServerError`
+(`to-server-error.helper.ts`).
 
-| Server error code       | What happens                                                                    |
-| ----------------------- | ------------------------------------------------------------------------------- |
-| `UNAUTHENTICATED`       | Token dropped, cache reset, redirect to sign in (toast only if a token existed) |
-| `FORBIDDEN`             | Toast, then redirect to `/no-access`                                            |
-| `INTERNAL_SERVER_ERROR` | Toast (also used for network, timeout, and parse failures)                      |
-| `VALIDATION_FAILED`     | Nothing global; the form maps `details` onto fields                             |
-| Anything else           | Toast, unless the endpoint set `shouldSuppressToast`                            |
+The backend answers errors as `{ code, status: "error", message, data }`. When the error has an application error
+code, it is in `data.errorCode` (for example `IMPORT_MISSING_COLUMNS`), and that becomes the `ServerError` code. When
+there is none (500, proxy or network failures), the code is derived from the HTTP status:
 
-The backend is expected to answer errors as `{ code, message }`, plus `details: [{ path, message }]` for
-`VALIDATION_FAILED`. Adjust `ErrorCode` and `toServerError` if your API differs.
+| HTTP status / failure          | `ServerError.code`      | What happens                                         |
+| ------------------------------ | ----------------------- | ---------------------------------------------------- |
+| `data.errorCode` present       | that code               | Toast, unless the endpoint set `shouldSuppressToast` |
+| 404 without a code             | `NOT_FOUND`             | Same as above                                        |
+| 413 without a code             | `PAYLOAD_TOO_LARGE`     | Same as above                                        |
+| 429                            | `TOO_MANY_REQUESTS`     | Same as above; `retryAfterSeconds` from the header   |
+| 500, network, timeout, parsing | `INTERNAL_SERVER_ERROR` | Always a toast                                       |
+
+The app has no authentication (constitution, Template Exception 1), so there is no 401/403 handling.
 
 **Do**
 
 - Use `showNotification({ message, type })` for feedback outside React or after an action.
-- Narrow unknown errors with `checkIsServerError`, `checkIsValidationError`, `getErrorMessage`.
+- Narrow unknown errors with `checkIsServerError` and `getErrorMessage`.
 - Let unexpected render errors reach the route `errorElement` (`ErrorPage`).
 
 **Don't**
 
-- Handle 401/403 in a page. `baseQuery` already does.
 - Swallow an error without the UI showing it somewhere.
 
 ---
@@ -471,15 +477,14 @@ The backend is expected to answer errors as `{ code, message }`, plus `details: 
 **Do**
 
 - Add every path to `AppRoute`. Reference routes only through it.
-- Register pages in `src/index.tsx` as `lazy` routes, so each page is its own chunk.
-- Put signed-in pages under `PrivateRoute` → `AuthenticatedShell`.
-- Navigate in components with `Link`, `ButtonLink`, `Navigate`, or `useNavigate`.
-- Navigate from outside React (API layer) by dispatching `setRedirect`; `useRedirect` in `App` performs it.
+- Register pages in `src/index.tsx` as `lazy` routes under the `AppShell` children, so each page is its own chunk
+  and shares the header.
+- Navigate in components with `Link`, `Navigate`, or `useNavigate`.
 - Type link targets as `NavigableRoute` so `AppRoute.ANY` cannot be linked to.
 
 **Don't**
 
-- Write path strings inline (`to="/notes"`).
+- Write path strings inline (`to="/assets"`).
 - Use `<a href>` for internal navigation.
 - Use `window.location` to navigate.
 
@@ -523,12 +528,11 @@ The backend is expected to answer errors as `{ code, message }`, plus `details: 
 
 - Render user content as text (React escapes it). If HTML or Markdown rendering is ever needed, sanitize it (B43).
 - Open external links with `NEW_TAB_LINK_ATTRIBUTES` (`rel="noreferrer"`).
-- Keep the token in `storage` under `StorageKey.TOKEN`, and drop it on sign-out and on 401.
 
 **Don't**
 
 - Use `dangerouslySetInnerHTML` with unsanitized input.
-- Log tokens, passwords, or personal data.
+- Log secrets or personal data.
 
 ---
 
@@ -545,21 +549,24 @@ The backend is expected to answer errors as `{ code, message }`, plus `details: 
 | `pnpm lint:trash`  | Unused files, exports, and dependencies (knip) |
 | `pnpm lint`        | All of the above                               |
 | `pnpm build`       | Type check + production bundle                 |
+| `pnpm test`        | Vitest + React Testing Library, `fetch` mocked |
 | `pnpm format`      | Rewrites formatting                            |
 
 **Do**
 
-- Run `pnpm lint` and `pnpm build` before calling a change done.
+- Run `pnpm lint`, `pnpm build` and `pnpm test` before calling a change done.
+- Put a test next to the code it covers (`<name>.test.tsx` / `<name>.test.ts`). Mock `fetch` with `vi.stubGlobal`
+  and render through a real store (`createStore(config)`), as `import-panel.test.tsx` does.
 - Pin exact dependency versions (B32). `saveExact` in `pnpm-workspace.yaml` does this for `pnpm add`.
 - Remove code, files, and dependencies that nothing uses (B33, B34). `knip` reports them.
-- Write commit messages in Conventional Commits form (`feat: add notes page`); `commitlint` checks it.
+- Write commit messages in Conventional Commits form (`feat: add import panel`); `commitlint` checks it.
 
 **Don't**
 
 - Disable a lint rule in source (B26), or skip hooks with `--no-verify`.
 - Leave commented-out code.
 
-There is no test runner configured. Do not claim behavior is tested when only lint and build ran.
+Do not claim behavior is tested when only lint and build ran.
 
 ---
 
@@ -570,10 +577,10 @@ There is no test runner configured. Do not claim behavior is tested when only li
 - [ ] No magic numbers or loose user-facing strings.
 - [ ] Imports use `~/` across trees, `.js` extensions, inline `type`.
 - [ ] Server data comes from RTK Query; tags are provided and invalidated correctly.
-- [ ] Forms use `useAppForm` + a Zod schema; server field errors are mapped.
+- [ ] Forms use `useAppForm` + a Zod schema; server errors are shown once.
 - [ ] Loading, error, empty, and success states are rendered.
 - [ ] Handlers are memoized; no inline functions in JSX props.
 - [ ] Styles are in a CSS module, use tokens, no nesting, no `!important`.
 - [ ] Interactive elements are labelled and keyboard reachable.
 - [ ] New routes are in `AppRoute` and registered lazily.
-- [ ] `pnpm lint` and `pnpm build` pass.
+- [ ] `pnpm lint`, `pnpm build` and `pnpm test` pass.
