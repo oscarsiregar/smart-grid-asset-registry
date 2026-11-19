@@ -54,7 +54,9 @@ SUBSTATION 0, TRANSFORMER 1, LV_BOARD 2, SWITCHBOARD 3, SWITCHBOARD_PANEL 4 — 
 | `FindPath(ctx, trx, assetID string)` | `[]*entity.AssetNode`, substation first, the asset last | empty slice |
 | `CountDescendantsByType(ctx, trx, assetID string)` | `map[valueobject.AssetType]int`, every level below the asset | empty map |
 
-`FindAssetNodesFilter{ ParentAssetID *string }` — `nil` = top level (substations).
+`FindAssetNodesFilter{ ParentAssetID *string }` — `nil` = top level (substations). A filter struct with a single
+field goes beyond the template's "struct above three parameters" rule on purpose: the search feature will add
+its filters here instead of changing the method signature.
 
 A projection struct `model.AssetNode` (not a table) carries the query columns plus `child_count`; the mapper
 `ToEntityAssetNodes` converts it.

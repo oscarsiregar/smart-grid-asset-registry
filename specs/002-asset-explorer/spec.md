@@ -179,6 +179,9 @@ unchanged.
 - **Unknown asset ID in the address**: "not found" state in the details area (story 3, scenario 4), not an
   error. The same applies when the ID has different letter case from a stored ID: asset IDs match exactly.
 - **Blank address segment** (for example `/assets/`): treated as the overview with no asset selected.
+- **IDs `.` and `..`**: feature 001 accepts them as asset IDs, but browsers rewrite these path segments
+  (even when encoded), so such an asset cannot be opened by its own address. It is still listed in the tree and
+  can be selected there, and its details are shown. This is a known limitation; FR-017 holds for every other ID.
 - **Asset with no children**: shown in the tree without an expand control; a substation with no children shows
   all three groups as empty and all four counts as 0.
 - **Many children**: a substation or switchboard with hundreds or thousands of children lists every child at
@@ -223,7 +226,8 @@ unchanged.
   type except substation.
 - **FR-009**: A blank optional attribute MUST be shown as "Not recorded" (or "No status recorded" for the
   operational status), never as an empty space or zero.
-- **FR-010**: Numbers MUST be shown as stored, with their unit (kV, kVA); dates MUST be shown as calendar dates
+- **FR-010**: Numbers MUST be shown by value with their unit (kV, kVA), so trailing zeros typed in the CSV are
+  not kept (`22.50` shows as `22.5 kV`); dates MUST be shown as calendar dates
   in an unambiguous format (for example 2010-03-12).
 - **FR-011**: The details MUST show the selected asset's path from its substation down to the asset itself (for
   example `SS-001 › SWB-001-1 › PNL-001-1-3`), each step with its asset ID. Every ancestor in the path, like
@@ -244,7 +248,8 @@ unchanged.
 **Addresses and navigation**
 
 - **FR-017**: Each asset MUST have a stable address that contains its asset ID (for example
-  `/assets/<asset_id>`), with characters that are special in addresses encoded so every stored ID round-trips.
+  `/assets/<asset_id>`), with characters that are special in addresses encoded so every stored ID round-trips,
+  except the IDs `.` and `..` (see Edge Cases).
 - **FR-018**: Selecting an asset (in the tree, through its path or parent, or through a listed child) MUST change the
   address to that asset's address and add a browser history entry, so back and forward move between selections.
 - **FR-019**: Opening an asset's address directly or refreshing it MUST select that asset, show its details,
@@ -302,9 +307,10 @@ unchanged.
 - **SC-004**: Opening an address with an unknown asset ID shows the "not found" state, never an error
   message, in 100% of attempts.
 - **SC-005**: An operator can go from the overview to the details of a specific switchboard panel, knowing its
-  substation and switchboard, in under 30 seconds.
+  substation and switchboard, in under 30 seconds. This is checked qualitatively, by a hand walk-through
+  (expand the substation, expand the switchboard, select the panel), not by a timed test.
 - **SC-006**: With 50,000 stored assets, the tree's top level appears within 2 seconds, and expanding a node or
-  selecting an asset shows its content within 1 second on a typical office connection.
+  selecting an asset shows its content within 1 second, measured against the local Docker Compose stack.
 - **SC-007**: After an import that adds assets, the new assets are visible in the tree without reloading the
   page in 100% of attempts.
 - **SC-008**: Every loading, empty, error and not-found state can be understood from its text alone, without

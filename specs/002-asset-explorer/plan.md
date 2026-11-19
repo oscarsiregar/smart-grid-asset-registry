@@ -38,8 +38,8 @@ Toolkit / RTK Query, CSS Modules (frontend). No new dependency.
 **Performance Goals**: with 50 000 stored assets, top level within 2 s, expanding a node or selecting an asset
 within 1 s (SC-006)
 
-**Constraints**: complete lists, no paging (clarification Q1); every asset ID round-trips through the address
-(FR-017); state in the URL (principle V); no frontend business rules (principle II)
+**Constraints**: complete lists, no paging (clarification Q1); every asset ID except `.` and `..` round-trips
+through the address (FR-017); state in the URL (principle V); no frontend business rules (principle II)
 
 **Scale/Scope**: up to ~50 000 assets (5 MB import limit); hierarchy at most 3 levels; 2 endpoints, 1 page
 
