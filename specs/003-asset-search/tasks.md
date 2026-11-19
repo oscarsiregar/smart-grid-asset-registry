@@ -106,7 +106,7 @@ compare with opening `/assets/PNL-001-1-01` directly (quickstart API A, B, C, E,
 - [X] T032 [P] [US1] Implement `frontend/src/pages/assets/components/asset-search/components/search-form/search-form.tsx` (+ `styles.module.css`): `useAppForm` with `assetSearchValidationSchema`, defaults from the address, the restored `Input` with a search icon, **Search** and **Clear** buttons — T022 passes
 - [X] T033 [P] [US1] Implement `frontend/src/pages/assets/components/asset-search/components/search-results/search-results.tsx` and `components/search-result/search-result.tsx` (+ `styles.module.css` each): `searchAssets` query, `role="region"` labelled "Search results", the summary, one list item per result with the shared `Link` to `getAssetPath`, plain text for `checkIsAddressableAssetId(id) === false` — T023 passes
 - [X] T034 [US1] Implement `frontend/src/pages/assets/components/asset-search/asset-search.tsx` (form + results) and update `frontend/src/pages/assets/components/asset-explorer/asset-explorer.tsx` to render the search form above the tree area and the results in place of the tree while `use-asset-search` reports a search; `frontend/src/pages/assets/assets.tsx` unchanged apart from passing what the explorer needs — T025 passes
-- [ ] T035 [US1] **Checkpoint — real stack**: `docker compose up --build -d --wait`; quickstart API A, B, C, E, F, G, H, J and UI 1, 2, 3, 8, 11; `make check`, `make lint`, `pnpm lint`, `pnpm build`, `pnpm test` exit 0; list the UI steps left for the user
+- [x] T035 [US1] **Checkpoint — real stack**: `docker compose up --build -d --wait`; quickstart API A, B, C, E, F, G, H, J and UI 1, 2, 3, 8, 11; `make check`, `make lint`, `pnpm lint`, `pnpm build`, `pnpm test` exit 0; list the UI steps left for the user
 
 **Checkpoint**: The search finds assets and opens them through feature 002 (MVP).
 
@@ -131,7 +131,7 @@ compare with opening `/assets/PNL-001-1-01` directly (quickstart API A, B, C, E,
 - [X] T041 [US2] Parse `assetType` in `backend/internal/handler/asset/get_list_asset.go` with `valueobject.ParseAssetType` (failure → `apperr.BadRequest(errorcode.InvalidRequest, "assetType is not a valid asset type")`) and pass it in the usecase input; confirm the usecase forwards it — T036 and T037 pass, then T038 against `TEST_DATABASE_URL`
 - [X] T042 [P] [US2] Implement `frontend/src/pages/assets/components/asset-search/components/search-form/components/asset-type-field/asset-type-field.tsx` (+ `styles.module.css`; `useController`, labels from `assetTypeToLabel`, like the import form's mode field), the page enum `frontend/src/pages/assets/libs/enums/asset-type-filter.enum.ts` (`AssetTypeFilter.ALL`, + `enums.ts` export) and its mapping to `null` on submit and add it to `frontend/src/pages/assets/components/asset-search/components/search-form/search-form.tsx` — T039 passes
 - [X] T043 [P] [US2] Pass the address's type to the query and the summary in `frontend/src/pages/assets/components/asset-search/components/search-results/search-results.tsx` — T040 passes
-- [ ] T044 [US2] **Checkpoint — real stack**: rebuild; quickstart API D and UI 4 (type narrows, refresh keeps text and type); all five check commands exit 0; list the UI steps left for the user
+- [x] T044 [US2] **Checkpoint — real stack**: rebuild; quickstart API D and UI 4 (type narrows, refresh keeps text and type); all five check commands exit 0; list the UI steps left for the user
 
 **Checkpoint**: Stories 1 and 2 work.
 
@@ -154,7 +154,7 @@ shown search; the import panel and the search coexist.
 
 - [X] T048 [US3] Implement the states in `frontend/src/pages/assets/components/asset-search/components/search-results/search-results.tsx` with `frontend/src/pages/assets/components/asset-search/components/search-results/components/search-summary/search-summary.tsx` (+ `styles.module.css`) for the count / too-many / no-match texts, the refused state (the server's `INVALID_REQUEST` message, through `checkIsServerError`) and the retry row — T045 passes
 - [X] T049 [US3] Confirm FR-017 and the panel coexistence need no new code in `frontend/src/modules/imports/imports-api.ts` or `frontend/src/libs/hooks/use-panel/use-panel.hook.ts` (the `ASSET` tag of 002 and `usePanel` keeping other parameters); fix anything T046/T047 reveal — T046 and T047 pass
-- [ ] T050 [US3] **Checkpoint — real stack**: rebuild; quickstart API G, I and UI 5, 6, 7, 9, 10; all five check commands exit 0; list the UI steps left for the user
+- [x] T050 [US3] **Checkpoint — real stack**: rebuild; quickstart API G, I and UI 5, 6, 7, 9, 10; all five check commands exit 0; list the UI steps left for the user
 
 **Checkpoint**: All three stories work.
 
@@ -173,7 +173,7 @@ final Definition of Done run.
 - [X] T056 [P] Sync `AGENTS.md`'s Template Exceptions summary with constitution v1.3.0 (add Exception 14) and remove the "Sync Impact Report" HTML comment from the top of `.specify/memory/constitution.md`
 - [X] T057 [P] Security pass per `backend/docs/rules/07-keamanan.md` (minus auth): the search SQL uses `?` placeholders only and `ContainsPattern` escaping; `q` length validated (100); `limit` capped (100); logs carry the search length and counts, not the text or row contents; `git ls-files | grep -E '(^|/)\.env$'` is empty
 - [X] T058 Coverage gate: `make cover` in `backend/` (Go container) reports `internal/usecase` ≥ 80 %; add missing branch tests if not
-- [ ] T059 Final Definition of Done run (constitution): `docker compose up --build` starts cleanly (on a fresh volume too: a separate compose project such as `docker compose -p asset-registry-dod` with other host ports, removed afterwards, if the main volume must be kept); `docker compose --profile test run --rm backend-test` and `frontend-test` exit 0; `make lint`, `pnpm lint`, `pnpm build`, `pnpm test` exit 0; full [quickstart.md](quickstart.md) (API A–J, UI 1–12 including the hand checks for SC-003 and SC-006, scale check) plus a regression run of features 001 and 002's API scenarios; `docs/ARCHITECTURE.md` and `docs/KNOWN_LIMITATIONS.md` reflect the final code; no secrets committed. Record every command with its exit code and list the UI steps left for the user
+- [x] T059 Final Definition of Done run (constitution): `docker compose up --build` starts cleanly (on a fresh volume too: a separate compose project such as `docker compose -p asset-registry-dod` with other host ports, removed afterwards, if the main volume must be kept); `docker compose --profile test run --rm backend-test` and `frontend-test` exit 0; `make lint`, `pnpm lint`, `pnpm build`, `pnpm test` exit 0; full [quickstart.md](quickstart.md) (API A–J, UI 1–12 including the hand checks for SC-003 and SC-006, scale check) plus a regression run of features 001 and 002's API scenarios; `docs/ARCHITECTURE.md` and `docs/KNOWN_LIMITATIONS.md` reflect the final code; no secrets committed. Record every command with its exit code and list the UI steps left for the user
 
 ---
 

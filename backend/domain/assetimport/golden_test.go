@@ -32,9 +32,8 @@ type golden struct {
 
 // TestGolden_SampleFile pins the result of the supplied sample CSV against an
 // empty store (constitution, principle IV). The expected values in
-// testdata/grid_assets.golden.json were derived by hand from the spec's rules
-// (research R12) and checked row by row against the file; they are not
-// generated from this implementation.
+// testdata/grid_assets.golden.json follow the spec's rules for each row
+// (research R12); they are not generated from this implementation.
 func TestGolden_SampleFile(t *testing.T) {
 	raw, err := os.ReadFile(goldenFile)
 	require.NoError(t, err)

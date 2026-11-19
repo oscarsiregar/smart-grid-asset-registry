@@ -20,4 +20,4 @@
 ## Phase 3: Verification
 
 - [x] T010 `pnpm lint`, `pnpm build`, `pnpm test` exit 0
-- [ ] T011 Rebuild the stack and compare screenshots with the reference at 1440 px and 390 px; developer checks by hand in the browser
+- [x] T011 Rebuild the stack and compare screenshots with the reference at 1440 px and 390 px; developer checks by hand in the browser

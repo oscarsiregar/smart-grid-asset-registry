@@ -118,7 +118,7 @@ and check every attribute against the CSV row (quickstart UI 3, 5; API B, C, E).
 - [X] T044 [P] [US1] Implement the tree in `frontend/src/pages/assets/components/asset-tree/`: `asset-tree.tsx` (`role="tree"`, top-level query, loading/error rows), `components/tree-node/tree-node.tsx` (`role="treeitem"`, `aria-level`, `aria-expanded` only when `childCount > 0`, label is a `Link` to `getAssetPath`, separate expand toggle), `components/tree-children/tree-children.tsx` (`role="group"`, mounted only while expanded, its own `getAssetNodes(id)` query, loading / error + retry rows), `components/status-label/status-label.tsx` (words + icon, nothing for IN_SERVICE), each with `styles.module.css`; expansion state local in `asset-tree.tsx` — T034 passes
 - [X] T045 [P] [US1] Implement the details in `frontend/src/pages/assets/components/asset-details/`: `asset-details.tsx` (`getAssetDetail` with `skipToken` when nothing is selected), `components/asset-path/asset-path.tsx` (ordered links, current asset not a link), `components/asset-attributes/asset-attributes.tsx` (`<dl>`, "Not recorded", units, dates as received), `components/details-message/details-message.tsx` (prompt / loading / error + retry), each with `styles.module.css` — T036 passes
 - [X] T046 [US1] Implement `frontend/src/pages/assets/components/asset-explorer/asset-explorer.tsx` (two columns, stacked under the narrow breakpoint, tokens only) and `frontend/src/pages/assets/components/empty-registry/empty-registry.tsx`; update `frontend/src/pages/assets/assets.tsx` to read `assetId` from `useParams`, render the empty state or the explorer, keep the import panel — T037 passes
-- [ ] T047 [US1] **Checkpoint — real stack**: `docker compose up --build -d --wait`; import the sample; quickstart API B, C, E and UI 3 and 5 (tree, lazy expansion seen in the browser's network tab, details of `PNL-001-1-01`); `make check`, `make lint`, `pnpm lint`, `pnpm build`, `pnpm test` exit 0; list the UI steps left for the user
+- [x] T047 [US1] **Checkpoint — real stack**: `docker compose up --build -d --wait`; import the sample; quickstart API B, C, E and UI 3 and 5 (tree, lazy expansion seen in the browser's network tab, details of `PNL-001-1-01`); `make check`, `make lint`, `pnpm lint`, `pnpm build`, `pnpm test` exit 0; list the UI steps left for the user
 
 **Checkpoint**: The explorer works for browsing and details (MVP).
 
@@ -148,7 +148,7 @@ check its panels (quickstart API D, J; UI 4).
 - [X] T056 [US2] Extend `backend/internal/usecase/asset/get_asset_detail.go` and add `toDescendantCounts` in `backend/internal/usecase/asset/helpers.go` — T049 passes
 - [X] T057 [US2] Add `DescendantCountsResponse` to `backend/domain/dto/asset.go` and map it in `backend/internal/handler/asset/helpers.go` — T050 and T051 pass
 - [X] T058 [P] [US2] Add `descendant-counts-dto.type.ts` and the `descendantCounts` field to `frontend/src/modules/assets/libs/types/`; implement `child-groups/child-groups.tsx`, `descendant-counts/descendant-counts.tsx`, `child-list/child-list.tsx` (each with `styles.module.css`) under `frontend/src/pages/assets/components/asset-details/components/`, grouping consecutive children by `assetType` in the order received (no re-sorting, principle II), and render them from `asset-details.tsx` — T052 and T053 pass
-- [ ] T059 [US2] **Checkpoint — real stack**: rebuild; quickstart API D and J and UI 4 (select `SS-001`, then `SWB-001-1` from the Switchboards group); all five check commands exit 0; list the UI steps left for the user
+- [x] T059 [US2] **Checkpoint — real stack**: rebuild; quickstart API D and J and UI 4 (select `SS-001`, then `SWB-001-1` from the Switchboards group); all five check commands exit 0; list the UI steps left for the user
 
 **Checkpoint**: Stories 1 and 2 work.
 
@@ -176,7 +176,7 @@ round-trip an ID with `/` and a space (quickstart API F–I; UI 6–8).
 - [X] T066 [P] [US3] Implement `frontend/src/pages/assets/libs/hooks/use-expanded-nodes/use-expanded-nodes.hook.ts` (expanded set + "adjust state when the selection changes" during render, research R8) and use it in `asset-tree.tsx` instead of the plain local state — T062 passes
 - [X] T067 [P] [US3] Implement `frontend/src/pages/assets/libs/helpers/check-is-asset-not-found.helper.ts` (+ test) and the not-found variant of `details-message.tsx` — T064 passes
 - [X] T068 [US3] Selection highlight and scroll in `frontend/src/pages/assets/components/asset-tree/components/tree-node/tree-node.tsx` (`aria-selected`, marker + bold, not colour alone; `scrollIntoView({ block: "nearest" })` in an effect on the selected element only when the selection changes) — T063 passes
-- [ ] T069 [US3] **Checkpoint — real stack**: rebuild; quickstart API F, G, H, I and UI 6, 7, 8 (new tab, refresh, back/forward, not found, the `SS/9 A` address); all five check commands exit 0; list the UI steps left for the user
+- [x] T069 [US3] **Checkpoint — real stack**: rebuild; quickstart API F, G, H, I and UI 6, 7, 8 (new tab, refresh, back/forward, not found, the `SS/9 A` address); all five check commands exit 0; list the UI steps left for the user
 
 **Checkpoint**: Stories 1–3 work.
 
@@ -199,7 +199,7 @@ the new substation is in the tree, the selection is unchanged (quickstart UI 2, 
 
 - [X] T072 [US4] In `frontend/src/modules/imports/imports-api.ts`: `enhanceEndpoints({ addTagTypes: [AssetsApiTag.ASSET] })` and `invalidatesTags: (result) => (result?.isCommitted ? [AssetsApiTag.ASSET] : [])` on `createImport`, importing `AssetsApiTag` from `~/modules/assets/assets.js` — T070 passes
 - [X] T073 [US4] Make `frontend/src/pages/assets/assets.tsx` render the import panel in both the empty state and the explorer and keep the path when the panel opens/closes (`usePanel` only touches search parameters) — T071 passes
-- [ ] T074 [US4] **Checkpoint — real stack**: `docker compose down -v && docker compose up --build -d --wait`; quickstart UI 1, 2 and 10 (empty state, first import fills the tree without reload, panel over a selected asset, re-import "Nothing to commit" leaves the tree unchanged); all five check commands exit 0; list the UI steps left for the user
+- [x] T074 [US4] **Checkpoint — real stack**: `docker compose down -v && docker compose up --build -d --wait`; quickstart UI 1, 2 and 10 (empty state, first import fills the tree without reload, panel over a selected asset, re-import "Nothing to commit" leaves the tree unchanged); all five check commands exit 0; list the UI steps left for the user
 
 **Checkpoint**: All four stories work.
 
@@ -218,7 +218,7 @@ of Done run.
 - [X] T080 [P] Security pass per `backend/docs/rules/07-keamanan.md` (minus auth): the new SQL uses `?` placeholders only (no concatenation, no `Sprintf`); logs carry asset IDs and counts, no row contents; `ASSET_NOT_FOUND` and `500` leak no detail; `git ls-files | grep -E '(^|/)\.env$'` is empty
 - [X] T081 Coverage gate: `make cover` in `backend/` (Go container) reports `internal/usecase` ≥ 80 %; add missing branch tests if not
 - [X] T082 [P] Remove the "Sync Impact Report" HTML comment from the top of `.specify/memory/constitution.md` (review scaffolding left by the v1.2.0 amendment)
-- [ ] T083 Final Definition of Done run (constitution): `docker compose down -v && docker compose up --build` starts cleanly; `docker compose --profile test run --rm backend-test` and `frontend-test` exit 0; `make lint`, `pnpm lint`, `pnpm build`, `pnpm test` exit 0; full [quickstart.md](quickstart.md) (API A–J, UI 1–12 including the qualitative panel walk-through for SC-005, scale check against the local compose stack for SC-006) in the real app, plus a regression run of feature 001's API scenarios A–I; `docs/ARCHITECTURE.md` and `docs/KNOWN_LIMITATIONS.md` reflect the final code; no secrets committed. Record every command with its exit code and list the UI steps left for the user
+- [x] T083 Final Definition of Done run (constitution): `docker compose down -v && docker compose up --build` starts cleanly; `docker compose --profile test run --rm backend-test` and `frontend-test` exit 0; `make lint`, `pnpm lint`, `pnpm build`, `pnpm test` exit 0; full [quickstart.md](quickstart.md) (API A–J, UI 1–12 including the qualitative panel walk-through for SC-005, scale check against the local compose stack for SC-006) in the real app, plus a regression run of feature 001's API scenarios A–I; `docs/ARCHITECTURE.md` and `docs/KNOWN_LIMITATIONS.md` reflect the final code; no secrets committed. Record every command with its exit code and list the UI steps left for the user
 
 ---
 
