@@ -66,10 +66,12 @@ Constants: `usecase.MaxLimit = 100` (template rule 04), `usecase.SearchDefaultLi
 
 ## Frontend (`frontend/src/modules/assets`)
 
-- Query `searchAssets({ q, assetType })`; types `AssetSearchItemDto` (`AssetNodeDto` + `ancestorAssetIds:
+- Query `searchAssets({ q, assetType })` → `GET /api/assets?q=…[&assetType=…]` without `page` or `limit` (the
+  backend's default page of 50 applies; the frontend keeps no copy of it); types `AssetSearchItemDto` (`AssetNodeDto` + `ancestorAssetIds:
   string[]`), `AssetSearchResultDto` (`items`, `totalItems`), `AssetSearchRequestDto` (`q`, `assetType | null`).
 - Validation schema `assetSearchValidationSchema`: `q` trimmed, 1–100 characters; `assetType` one of `AssetType`
-  or the "all types" value.
+  or `null` (all types). The select's "All types" option is `AssetTypeFilter.ALL` in `pages/assets/libs/enums`,
+  mapped to `null` by the form.
 
 ## State (frontend, not persisted)
 

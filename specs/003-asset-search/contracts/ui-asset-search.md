@@ -13,6 +13,8 @@ Page code: `frontend/src/pages/assets`; data: `frontend/src/modules/assets` ([as
 | `/assets/<id>?q=<text>` (typed by hand) | the results in place of the tree, the details of `<id>` |
 | `…&panel=import` | the import panel over the page; the search is kept |
 
+The address's `type` parameter is sent to the API as `assetType`; `q` keeps its name.
+
 Submitting the form pushes a history entry with `q` (and `type`); clearing removes both. A result links to
 `/assets/<id>` **without** the search, so following it leaves the search and Back returns to it.
 
@@ -48,8 +50,8 @@ Shown only when at least one asset is stored (the empty registry state of 002 ha
 | State | Shows |
 |---|---|
 | Running | "Searching…" (`role="status"`) |
-| Matches ≤ 50 | "N assets match "<text>"" (and " of type <Type>" when chosen), then the list |
-| Matches > 50 | "Showing 50 of N assets that match "<text>". Add more of the ID or name, or choose a type, to narrow the search." then the first 50 |
+| All matches received | "N assets match "<text>"" (and " of type <Type>" when chosen), then the list |
+| More matches than received | "Showing <items received> of N assets that match "<text>". Add more of the ID or name, or choose a type, to narrow the search." then the received items (the backend's first 50) |
 | No match | "No asset matches "<text>"" (+ " of type <Type>"). "Check the spelling, or search all types." |
 | Failure | "The search could not be completed." + **Try again** |
 

@@ -52,7 +52,8 @@ empty for a substation), and `totalItems` is the number of all matches.
 
 **Rationale**: The user asked to extend the existing list read and its filter, and it is the template's way
 (`GetListXxx` with filter parameters). The frontend's first page of 50 is exactly spec FR-010 (clarification:
-first 50 plus the total, no paging UI); the API still accepts `page` so it stays a normal template list.
+first 50 plus the total, no paging UI); the frontend sends neither `page` nor `limit`, so the 50 lives only in
+the backend's default (principle II). The API still accepts `page`/`limit` so it stays a normal template list.
 
 **Alternatives**: a separate `GET /api/assets/search` (a parallel read; its path would also collide with an asset
 whose ID is `search` under `/api/assets/:assetId`); a POST search body (not a read in REST terms, not cacheable);
@@ -131,11 +132,14 @@ the search on the asset page).
 
 ## R7. Frontend data and form
 
-**Decision**: `modules/assets` gets a query `searchAssets({ q, assetType })` → `GET /api/assets?q=…&limit=50`,
+**Decision**: `modules/assets` gets a query `searchAssets({ q, assetType })` → `GET /api/assets?q=…` (no `page` or
+`limit`: the backend's default page of 50 applies, and the frontend shows "Showing <items received> of
+<totalItems>" from the response, so it never holds its own copy of the limit),
 `providesTags: [AssetsApiTag.ASSET]` (so a committed import refreshes a shown search, FR-017, through 002's
 invalidation), `shouldSuppressToast` (the results area renders failures). DTOs `AssetSearchItemDto` and
 `AssetSearchResultDto`; a Zod schema `assetSearchValidationSchema` (text trimmed, 1–100 characters; type one of
-the five or "all"). The page's search form uses `useAppForm` with that schema, the template `Input` restored from
+the five or `null` for all types). The select's "All types" option is a page value (`AssetTypeFilter.ALL` in
+`pages/assets/libs/enums`) that the form turns into `null`. The page's search form uses `useAppForm` with that schema, the template `Input` restored from
 git history (below), and a page-specific type field (a native `<select>` through `useController`, like the import
 form's mode field). The form's defaults come from the address, so a refresh fills the field.
 

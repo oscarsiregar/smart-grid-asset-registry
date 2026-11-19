@@ -59,6 +59,8 @@ Note: the rate limiter counts non-2xx responses (20 per 15 minutes); scenario I 
    Import a file with a new matching asset: the search refreshes and lists it.
 10. Stop the `api` container and search: "The search could not be completed." + **Try again**; restart `api`, retry.
 11. Keyboard only: Tab to the search field, type, Enter; Tab through the results and Enter on one.
+12. By hand (SC-003, SC-006): from `/assets`, reach the highlighted details of a known ID through the search in
+    under 15 seconds; with a greyscale filter, every search state is readable from its text alone.
 
 ## 4. Scale check (SC-005)
 
