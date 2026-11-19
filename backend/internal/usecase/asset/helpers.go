@@ -1,7 +1,12 @@
 package asset_usecase
 
-import "errors"
+// topLevelLogValue names the top level in logs, where there is no parent ID.
+const topLevelLogValue = "(top level)"
 
-// errNotImplemented marks the method skeletons until user story 1 fills them
-// (tasks.md T023, T038, T039).
-var errNotImplemented = errors.New("not implemented yet")
+// parentLogValue is the parentAssetId log field: the ID, or the top level.
+func parentLogValue(parentAssetID *string) string {
+	if parentAssetID == nil {
+		return topLevelLogValue
+	}
+	return *parentAssetID
+}

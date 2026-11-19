@@ -1,3 +1,4 @@
+export { type GeneratedRoutePath } from "./generated-route-path.type.js";
 export { type NavigableRoute } from "./navigable-route.type.js";
 export { type ServerErrorData } from "./server-error-data.type.js";
 export { type ServerErrorDetail } from "./server-error-detail.type.js";

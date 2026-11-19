@@ -34,4 +34,10 @@ func RegisterRoutes(deps *RouteDependencies) {
 	importGroup := api.Group("/imports")
 	importGroup.Post("/validate", deps.AssetImportHandler.ValidateAssetImport)
 	importGroup.Post("/", deps.AssetImportHandler.CreateAssetImport)
+
+	// Read-only asset explorer (feature 002); complete lists, no paging
+	// (Template Exception 13).
+	assetGroup := api.Group("/assets")
+	assetGroup.Get("/", deps.AssetHandler.GetListAsset)
+	assetGroup.Get("/:assetId", deps.AssetHandler.GetAssetDetail)
 }

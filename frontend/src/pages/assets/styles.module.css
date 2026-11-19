@@ -8,8 +8,3 @@
 	display: flex;
 	gap: var(--space-12);
 }
-
-.empty {
-	margin: 0;
-	color: var(--text-muted);
-}
