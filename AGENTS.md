@@ -48,6 +48,9 @@ specs/      one folder per feature: spec.md, plan.md, tasks.md
 12. Uploaded CSV files are parsed in memory and never stored.
 13. The asset hierarchy reads (top-level substations, the children of one asset) return every row,
     without `page`/`limit`; other list endpoints keep the template's paging.
+14. The asset search loads every match, orders it with the domain's natural asset order (exact
+    matches first) and pages in the usecase; the API keeps `page`/`limit`/`totalItems`. Other paged
+    lists page in SQL.
 
 The constitution holds the full text and the reasons.
 
