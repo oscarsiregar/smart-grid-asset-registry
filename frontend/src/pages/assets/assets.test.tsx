@@ -479,3 +479,91 @@ describe("Assets page: addresses", () => {
 		).not.toBeInTheDocument();
 	});
 });
+
+// ---- The import panel on the explorer (user story 4) ------------------------
+
+const IMPORT_COUNTS = {
+	imported: 1,
+	rejected: 0,
+	total: 1,
+	unchanged: 0,
+	warningRows: 0,
+};
+
+const createImportResult = (isCommitted: boolean) => ({
+	counts: IMPORT_COUNTS,
+	fileName: "grid_assets.csv",
+	import: isCommitted
+		? { createdAt: "2026-11-19T10:15:00Z", id: "6f1c2c1e" }
+		: null,
+	isCommitted,
+	mode: "PARTIAL",
+	outcome: isCommitted ? "COMMITTED" : "VALIDATED_ONLY",
+	rejectedRows: [],
+	warnings: [],
+});
+
+// An empty registry until the import commits; then one substation.
+const serveFirstImport = (): void => {
+	let isCommitted = false;
+	vi.stubGlobal(
+		"fetch",
+		vi.fn((request: Request): Promise<Response> => {
+			if (request.url.endsWith("/imports/validate")) {
+				return respondWith(HTTPCode.OK, createImportResult(false));
+			}
+
+			if (request.url.endsWith("/imports")) {
+				isCommitted = true;
+
+				return respondWith(HTTPCode.OK, createImportResult(true));
+			}
+
+			return respondWith(HTTPCode.OK, isCommitted ? TOP_LEVEL : EMPTY);
+		}),
+	);
+};
+
+describe("Assets page: import panel on the explorer", () => {
+	it("keeps the selected asset in the address while the panel opens and closes", async () => {
+		stubRoutedApi();
+		renderAssets("/assets/SS-001");
+		await findSelectedNode("SS-001");
+
+		fireEvent.click(screen.getByRole("button", { name: "Import CSV" }));
+
+		expect(getDialog()).toHaveAttribute("open");
+		expect(screen.getByTestId("pathname")).toHaveTextContent("/assets/SS-001");
+		expect(screen.getByTestId("search")).toHaveTextContent("?panel=import");
+
+		fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+		expect(getDialog()).not.toHaveAttribute("open");
+		expect(screen.getByTestId("pathname")).toHaveTextContent("/assets/SS-001");
+		expect(screen.getByTestId("search")).toBeEmptyDOMElement();
+		expect(await findSelectedNode("SS-001")).toBeInTheDocument();
+	});
+
+	it("replaces the empty state with the tree after the first committed import", async () => {
+		serveFirstImport();
+		renderAssets("/assets");
+		await screen.findByText("No assets have been imported yet.");
+
+		fireEvent.click(screen.getByRole("button", { name: "Import CSV" }));
+		fireEvent.change(screen.getByLabelText("CSV file"), {
+			target: { files: [new File(["asset_id"], "grid_assets.csv")] },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Check file" }));
+		fireEvent.click(
+			await screen.findByRole("button", { name: "Save 1 assets" }),
+		);
+		await screen.findByText(/^Committed/);
+		fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+		expect(await screen.findByRole("tree")).toBeInTheDocument();
+		expect(
+			screen.queryByText("No assets have been imported yet."),
+		).not.toBeInTheDocument();
+		expect(await findNode("SS-001")).toBeInTheDocument();
+	});
+});

@@ -1,12 +1,13 @@
 # Smart Grid Asset Registry — backend
 
-Go API that validates grid-asset CSV files and stores the accepted assets in PostgreSQL.
+Go API that validates grid-asset CSV files, stores the accepted assets in PostgreSQL, and serves the stored
+hierarchy to the explorer.
 **Go 1.26 · Fiber v2 · GORM / PostgreSQL · local go-common**, layered handler → usecase → repository with the
 contracts in `domain/`.
 
 > **Rules: [AGENTS.md](AGENTS.md)** (short, binding) · details in **[docs/rules/](docs/rules/)** (Indonesian,
 > kept from the template) · adding a feature: **[docs/menambah-fitur.md](docs/menambah-fitur.md)** · API:
-> **[docs/api/asset-import.md](docs/api/asset-import.md)** · architecture: [../docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
+> **[docs/api/asset-import.md](docs/api/asset-import.md)**, **[docs/api/asset.md](docs/api/asset.md)** · architecture: [../docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
 
 ## Prerequisites
 
@@ -33,6 +34,8 @@ authentication: every route is public and lives under `/api` (Template Exception
 | `GET` | `/api/health` | liveness / readiness (pings the database) |
 | `POST` | `/api/imports/validate` | check a CSV file against the stored assets; stores nothing |
 | `POST` | `/api/imports` | re-validate and commit a CSV file in one transaction |
+| `GET` | `/api/assets[?parentAssetId=]` | the top level (every substation) or one asset's children, complete and ordered |
+| `GET` | `/api/assets/:assetId` | one asset (ID percent-encoded): attributes, path, children, and counts for a substation |
 
 ## Test
 
