@@ -25,6 +25,20 @@ expands the asset's ancestors, highlights it, scrolls it into view and shows its
 an unknown ID. This feature adds a search to the same page. A search only *finds* assets; showing a found asset is
 done by going to its address, so the result looks exactly as if the operator had opened that address.
 
+## Clarifications
+
+### Session 2026-11-19
+
+- Q: How many results are shown, and how are the rest reached? → A: The first 50 matches plus the total count and
+  a request to refine the search; no paging (FR-010).
+- Q: When does a search run? → A: Only when the operator presses Enter or the search button, never while typing
+  (FR-004).
+- Q: After a result is selected, do the results stay? → A: No; the page leaves the search: the address becomes the
+  asset's own address without the search, and Back returns to the results (FR-011).
+- Q: Where do the results appear? → A: In place of the tree: the search field sits above the tree area, and while a
+  search is shown its results take the tree's place; the details area stays beside them (FR-001, FR-013).
+- Q: Does a type alone, with no text, list assets of that type? → A: No; a type only narrows a text search (FR-005).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Find an asset by ID or name and open it (Priority: P1)
@@ -102,7 +116,7 @@ while the server is stopped.
    the operator is told how many assets match in total, and is asked to refine the search with more text or a
    type.
 4. **Given** the server cannot be reached, **When** a search is started, **Then** the results area says the search
-   failed and offers to try again; the tree and the details area keep working.
+   failed and offers to try again; the details area keeps working, and clearing the search brings back the tree.
 
 ---
 
@@ -133,7 +147,8 @@ while the server is stopped.
 
 **Searching**
 
-- **FR-001**: The asset page MUST offer a search field whenever at least one asset is stored.
+- **FR-001**: The asset page MUST offer a search field above the tree area whenever at least one asset is stored.
+  While a search is shown, its results MUST take the tree's place in that area; the details area stays as it is.
 - **FR-002**: A search MUST match every stored asset whose asset ID or asset name contains the search text,
   ignoring letter case and ignoring leading and trailing spaces in the text; a text that equals an ID or a name is
   the exact case of the same rule.
@@ -142,7 +157,8 @@ while the server is stopped.
 - **FR-004**: A search MUST be started explicitly (by pressing Enter in the field or a search button); a blank text
   MUST NOT start a search.
 - **FR-005**: The operator MUST be able to limit a search to one asset type (substation, transformer, LV board,
-  switchboard, switchboard panel) or search all types; the default is all types.
+  switchboard, switchboard panel) or search all types; the default is all types. A type only narrows a text
+  search: a type with a blank text MUST NOT start a search.
 - **FR-006**: The search text and the chosen type MUST be part of the page address, so refresh, a shared link and
   Back/Forward show the same search.
 
@@ -160,20 +176,22 @@ while the server is stopped.
   matches") and ask the operator to refine the search with more text or a type; there is no paging or "show more".
 - **FR-011**: Selecting a result MUST go to that asset's address from feature 002 (`/assets/<asset_id>`), adding a
   history entry; what the page then shows (ancestors expanded, asset highlighted and in view, details) MUST be the
-  same as opening that address directly. The search MUST NOT implement its own way of revealing or showing an
-  asset.
+  same as opening that address directly. The address MUST be exactly the asset's address, without the search,
+  so the results are no longer shown; Back MUST return to the search and its results. The search MUST NOT
+  implement its own way of revealing or showing an asset.
 - **FR-012**: A result whose asset cannot be selected (IDs `.` and `..`, feature 002 edge case) MUST be listed with
   its details as text and MUST say that it cannot be opened.
-- **FR-013**: Clearing the search MUST return the page to the tree without a search, and remove the search from
-  the address.
+- **FR-013**: Clearing the search MUST show the tree again in place of the results, and remove the search from the
+  address.
 
 **States**
 
-- **FR-014**: While a search is running, the results area MUST say so; the rest of the page MUST stay usable.
+- **FR-014**: While a search is running, the results area MUST say so; the search field, the details area and the
+  import panel MUST stay usable.
 - **FR-015**: A search that matches nothing MUST say so in words, naming the search text and the chosen type, and
   MUST suggest how to widen it.
-- **FR-016**: A search that fails MUST say so in words and offer a retry; the tree and the details area MUST keep
-  working.
+- **FR-016**: A search that fails MUST say so in words and offer a retry; the details area MUST keep working, and
+  clearing the search MUST bring back the tree.
 - **FR-017**: After an import that commits assets, a shown search MUST be refreshed without a page reload; an
   import that commits nothing MUST NOT change it.
 
@@ -212,7 +230,7 @@ while the server is stopped.
 
 - Features 001 and 002 are in place: assets are created by imports, and the explorer, its addresses, its reveal and
   highlight behaviour and its not-found state exist and are reused unchanged.
-- The search is part of the asset page, next to the tree; there is no separate search page.
+- The search is part of the asset page; there is no separate search page.
 - "Partial" means "contains" (anywhere in the ID or name), not only "starts with"; "exact" is the case where the
   text equals the whole ID or name, and such matches are listed first.
 - Letter case is ignored in searches, unlike addresses; accents and other characters are compared as typed (no
@@ -220,10 +238,6 @@ while the server is stopped.
 - Only asset ID and asset name are searched; manufacturer, model, serial number and other attributes are not.
 - A search is started on request (Enter or button), not on every keystroke; this keeps results predictable and
   avoids a request per character.
-- Selecting a result leaves the search: the address becomes the asset's address without the search, and Back
-  returns to the results.
 - At most 50 results are shown, with the total count; reaching a match beyond the first 50 means refining the
   search. Because exact matches come first and asset IDs are unique, a search for a full asset ID always lists
   that asset first, however many other assets contain the text.
-- The type filter narrows a text search; choosing a type without any text does not start a search (browsing all
-  assets of a type is not part of this feature).
