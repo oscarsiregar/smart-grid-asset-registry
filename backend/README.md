@@ -1,7 +1,7 @@
 # Smart Grid Asset Registry — backend
 
 Go API that validates grid-asset CSV files, stores the accepted assets in PostgreSQL, and serves the stored
-hierarchy to the explorer.
+hierarchy and the asset search to the explorer.
 **Go 1.26 · Fiber v2 · GORM / PostgreSQL · local go-common**, layered handler → usecase → repository with the
 contracts in `domain/`.
 
@@ -35,6 +35,7 @@ authentication: every route is public and lives under `/api` (Template Exception
 | `POST` | `/api/imports/validate` | check a CSV file against the stored assets; stores nothing |
 | `POST` | `/api/imports` | re-validate and commit a CSV file in one transaction |
 | `GET` | `/api/assets[?parentAssetId=]` | the top level (every substation) or one asset's children, complete and ordered |
+| `GET` | `/api/assets?q=[&assetType=][&page=&limit=]` | search by asset ID or name (contains, letter case ignored; `q` ≤ 100 characters); exact matches first; paged, 50 by default, at most 100; each item with `ancestorAssetIds` |
 | `GET` | `/api/assets/:assetId` | one asset (ID percent-encoded): attributes, path, children, and counts for a substation |
 
 ## Test

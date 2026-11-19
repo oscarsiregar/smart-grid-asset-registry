@@ -157,3 +157,55 @@ func TestAssetSearch_WildcardsAreLiteral(t *testing.T) {
 	assert.Equal(t, []string{"A%B"}, percent)
 	assert.Equal(t, []string{"A_B"}, underscore)
 }
+
+type storedTypedName struct {
+	AssetID   string
+	AssetName string
+	AssetType string
+}
+
+// expectedTypedMatches is expectedMatches limited to one asset type.
+func expectedTypedMatches(t *testing.T, db *gorm.DB, text string, assetType valueobject.AssetType) []string {
+	t.Helper()
+	var rows []storedTypedName
+	require.NoError(t, db.Table("asset").Select("asset_id, asset_name, asset_type").Scan(&rows).Error)
+
+	needle := strings.ToLower(text)
+	matches := []string{}
+	for _, row := range rows {
+		matchesText := strings.Contains(strings.ToLower(row.AssetID), needle) ||
+			strings.Contains(strings.ToLower(row.AssetName), needle)
+		if matchesText && row.AssetType == assetType.String() {
+			matches = append(matches, row.AssetID)
+		}
+	}
+	slices.Sort(matches)
+	return matches
+}
+
+// TestAssetSearch_ByType narrows a search to each type in turn (US2).
+func TestAssetSearch_ByType(t *testing.T) {
+	db := pgtest.Open(t)
+	importSample(t, newImportUsecase(db, asset_repository.NewAssetRepository(db)))
+	uc := newExplorerUsecase(db)
+
+	types := []valueobject.AssetType{
+		valueobject.AssetTypeSubstation, valueobject.AssetTypeTransformer, valueobject.AssetTypeLVBoard,
+		valueobject.AssetTypeSwitchboard, valueobject.AssetTypeSwitchboardPanel,
+	}
+	for _, assetType := range types {
+		t.Run(assetType.String(), func(t *testing.T) {
+			output, err := uc.GetListAsset(context.Background(), usecase.GetListAssetInput{
+				Search: "001", AssetType: &assetType, Limit: usecase.MaxLimit,
+			})
+			require.NoError(t, err)
+
+			for _, node := range output.Assets {
+				assert.Equal(t, assetType, node.AssetType, node.AssetID)
+			}
+			want := expectedTypedMatches(t, db, "001", assetType)
+			assert.Equal(t, want, sortedCopy(nodeIDs(output.Assets)))
+			assert.Equal(t, len(want), output.TotalItems)
+		})
+	}
+}

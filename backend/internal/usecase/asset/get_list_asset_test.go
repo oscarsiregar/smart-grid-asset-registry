@@ -362,3 +362,16 @@ func TestGetListAsset_SearchLogging(t *testing.T) {
 		assert.NotContains(t, logs.String(), `"level":"error"`)
 	})
 }
+
+func TestGetListAsset_SearchByType(t *testing.T) {
+	d := newDeps(t)
+	panel := valueobject.AssetTypeSwitchboardPanel
+	d.assetRepo.EXPECT().FindNodes(mock.Anything, nil, repository.FindAssetNodesFilter{
+		Search: pointer("001"), AssetType: &panel,
+	}).Return([]*entity.AssetNode{}, nil)
+
+	output, err := d.usecase().GetListAsset(context.Background(), usecase.GetListAssetInput{Search: "001", AssetType: &panel})
+
+	require.NoError(t, err)
+	assert.Zero(t, output.TotalItems)
+}

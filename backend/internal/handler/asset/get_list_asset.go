@@ -6,6 +6,7 @@ import (
 	"smart-grid-asset-registry/domain/dto"
 	"smart-grid-asset-registry/domain/errorcode"
 	"smart-grid-asset-registry/domain/usecase"
+	"smart-grid-asset-registry/domain/valueobject"
 	"smart-grid-asset-registry/internal/apperr"
 	"smart-grid-asset-registry/pkg/gocommon/response"
 
@@ -28,6 +29,13 @@ func (h assetHandler) GetListAsset(ctx *fiber.Ctx) error {
 	}
 	if request.ParentAssetID != "" {
 		input.ParentAssetID = &request.ParentAssetID
+	}
+	if request.AssetType != "" {
+		assetType, err := valueobject.ParseAssetType(request.AssetType)
+		if err != nil {
+			return apperr.BadRequest(errorcode.InvalidRequest, "assetType is not a valid asset type")
+		}
+		input.AssetType = &assetType
 	}
 
 	output, err := h.assetUsecase.GetListAsset(ctx.UserContext(), input)

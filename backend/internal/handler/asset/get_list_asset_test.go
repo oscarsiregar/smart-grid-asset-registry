@@ -208,3 +208,39 @@ func TestAssetHandler_GetListAsset_Search(t *testing.T) {
 		assert.JSONEq(t, `{"errorCode":"INVALID_REQUEST"}`, string(decodeEnvelope(t, resp.Body).Data))
 	})
 }
+
+func TestAssetHandler_GetListAsset_SearchType(t *testing.T) {
+	t.Run("a known type is passed to the usecase", func(t *testing.T) {
+		uc := mocksusecase.NewAssetUsecase(t)
+		uc.EXPECT().GetListAsset(mock.Anything, mock.MatchedBy(func(in usecase.GetListAssetInput) bool {
+			return in.Search == "001" && in.AssetType != nil && *in.AssetType == valueobject.AssetTypeSwitchboardPanel
+		})).Return(usecase.GetListAssetOutput{}, nil)
+
+		resp := doGet(t, newTestApp(NewAssetHandler(uc)), "/api/assets?q=001&assetType=SWITCHBOARD_PANEL")
+
+		assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+	})
+
+	t.Run("an unknown type is 400 INVALID_REQUEST and the usecase is not called", func(t *testing.T) {
+		uc := mocksusecase.NewAssetUsecase(t)
+
+		resp := doGet(t, newTestApp(NewAssetHandler(uc)), "/api/assets?q=x&assetType=FOO")
+
+		require.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+		body := decodeEnvelope(t, resp.Body)
+		assert.Equal(t, "Invalid request: assetType is not a valid asset type", body.Message)
+		assert.JSONEq(t, `{"errorCode":"INVALID_REQUEST"}`, string(body.Data))
+	})
+
+	t.Run("a type without a text reaches the usecase, which refuses it", func(t *testing.T) {
+		uc := mocksusecase.NewAssetUsecase(t)
+		uc.EXPECT().GetListAsset(mock.Anything, mock.MatchedBy(func(in usecase.GetListAssetInput) bool {
+			return in.Search == "" && in.AssetType != nil && *in.AssetType == valueobject.AssetTypeTransformer
+		})).Return(usecase.GetListAssetOutput{}, apperr.BadRequest(errorcode.InvalidRequest, "assetType requires q"))
+
+		resp := doGet(t, newTestApp(NewAssetHandler(uc)), "/api/assets?assetType=TRANSFORMER")
+
+		require.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+		assert.Equal(t, "Invalid request: assetType requires q", decodeEnvelope(t, resp.Body).Message)
+	})
+}

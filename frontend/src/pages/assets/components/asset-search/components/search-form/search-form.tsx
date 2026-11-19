@@ -10,6 +10,7 @@ import {
 } from "~/modules/assets/assets.js";
 
 import { AssetsPageMessage } from "../../../../libs/enums/enums.js";
+import { AssetTypeField } from "./components/asset-type-field/asset-type-field.js";
 import { EMPTY_SEARCH } from "./libs/constants/constants.js";
 import styles from "./styles.module.css";
 
@@ -68,6 +69,7 @@ const SearchForm: React.FC<Properties> = ({
 					placeholder={AssetsPageMessage.SEARCH_FIELD_PLACEHOLDER}
 				/>
 			</div>
+			<AssetTypeField control={control} name="assetType" />
 			<div className={styles["actions"]}>
 				<Button label={AssetsPageMessage.SEARCH_BUTTON_LABEL} type="submit" />
 				{activeSearch && (

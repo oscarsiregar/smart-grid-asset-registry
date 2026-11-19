@@ -665,3 +665,79 @@ describe("Assets page: search", () => {
 		expect(screen.queryByRole("search")).not.toBeInTheDocument();
 	});
 });
+
+// ---- A search's states on the page (feature 003, user story 3) ------------
+
+type SearchAnswer = "failed" | "pending";
+
+// The routed API, except that every search fails or never answers.
+const stubSearchAnswer = (answer: SearchAnswer): void => {
+	const routed = stubRoutedApi();
+	vi.stubGlobal(
+		"fetch",
+		vi.fn((request: Request): Promise<Response> => {
+			if (!request.url.startsWith(`${API}?q=`)) {
+				return routed(request);
+			}
+
+			return answer === "failed"
+				? respondWith(HTTPCode.INTERNAL_SERVER_ERROR, null)
+				: new Promise<Response>(() => {});
+		}),
+	);
+};
+
+describe("Assets page: search states", () => {
+	it("keeps the details area working when the search fails; Clear brings the tree back", async () => {
+		stubSearchAnswer("failed");
+		renderAssets("/assets/SS-001?q=x");
+
+		expect(
+			await screen.findByText("The search could not be completed."),
+		).toBeInTheDocument();
+		expect(
+			await screen.findByRole("heading", { name: SUBSTATION.assetName }),
+		).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+
+		expect(await screen.findByRole("tree")).toBeInTheDocument();
+		expect(screen.getByTestId("pathname")).toHaveTextContent("/assets/SS-001");
+		expect(screen.getByTestId("search")).toBeEmptyDOMElement();
+	});
+
+	it("keeps the search when the import panel opens and closes", async () => {
+		stubRoutedApi();
+		renderAssets("/assets?q=PNL-001-1-01");
+		await screen.findByRole("link", { name: /PNL-001-1-01/ });
+
+		fireEvent.click(screen.getByRole("button", { name: "Import CSV" }));
+
+		expect(getDialog()).toHaveAttribute("open");
+		const opened = new URLSearchParams(
+			screen.getByTestId("search").textContent,
+		);
+		expect(opened.get("q")).toBe("PNL-001-1-01");
+		expect(opened.get("panel")).toBe("import");
+
+		fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+		expect(screen.getByTestId("search")).toHaveTextContent("?q=PNL-001-1-01");
+		expect(
+			screen.getByRole("region", { name: "Search results" }),
+		).toBeInTheDocument();
+	});
+
+	it("lets the field be edited and the import panel open while a search runs", async () => {
+		stubSearchAnswer("pending");
+		renderAssets("/assets?q=PNL");
+		expect(await screen.findByText("Searching…")).toBeInTheDocument();
+
+		const field = screen.getByRole("textbox", { name: "Search assets" });
+		fireEvent.change(field, { target: { value: "PNL-001" } });
+		expect(field).toHaveValue("PNL-001");
+
+		fireEvent.click(screen.getByRole("button", { name: "Import CSV" }));
+		expect(getDialog()).toHaveAttribute("open");
+	});
+});

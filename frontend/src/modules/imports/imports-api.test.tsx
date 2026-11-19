@@ -8,6 +8,7 @@ import { createStore } from "~/libs/modules/store/store.module.js";
 import {
 	useGetAssetDetailQuery,
 	useGetAssetNodesQuery,
+	useSearchAssetsQuery,
 } from "~/modules/assets/assets.js";
 
 import {
@@ -337,4 +338,55 @@ describe("createImport and the asset explorer", () => {
 		expect(importState.isError).toBe(true);
 		expect(countAssetRequests(fetchMock)).toEqual(ONE_REQUEST_EACH);
 	});
+});
+
+// ---- Refreshing a shown search after an import (feature 003, FR-017) -------
+
+const SEARCH_URL = "http://localhost/api/assets?q=SS";
+
+const useSearchAndImport = () => ({
+	createImport: useCreateImportMutation(),
+	search: useSearchAssetsQuery({ assetType: null, q: "SS" }),
+});
+
+const renderSearchAndImport = () => {
+	const store = createStore(config);
+	const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+		<Provider store={store}>{children}</Provider>
+	);
+
+	return renderHook(() => useSearchAndImport(), { wrapper });
+};
+
+const countSearchRequests = (
+	fetchMock: ReturnType<typeof serveExplorer>,
+): number =>
+	fetchMock.mock.calls.filter(([request]) => request.url === SEARCH_URL).length;
+
+describe("createImport and a shown search", () => {
+	it.each([
+		["committed", "committed", TWO_REQUESTS],
+		["saved nothing", RESULT, ONE_REQUEST],
+	] as const)(
+		"requests the search again only when the import committed (%s)",
+		async (_label, answer, expectedRequests) => {
+			const fetchMock = serveExplorer(answer);
+			const rendered = renderSearchAndImport();
+			await waitFor(() => {
+				expect(rendered.result.current.search.isSuccess).toBe(true);
+			});
+
+			await act(async () => {
+				const [createImport] = rendered.result.current.createImport;
+				await createImport({
+					file: new File(["asset_id"], "grid.csv"),
+					mode: ImportMode.PARTIAL,
+				});
+			});
+
+			await waitFor(() => {
+				expect(countSearchRequests(fetchMock)).toBe(expectedRequests);
+			});
+		},
+	);
 });

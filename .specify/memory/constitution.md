@@ -1,13 +1,3 @@
-<!--
-Sync Impact Report
-- Version change: 1.2.0 → 1.3.0 (MINOR: Template Exceptions expanded)
-- Modified principles: none
-- Added: Template Exception 14 (search ordering and paging in the usecase)
-- Removed sections: none
-- Templates: none modified (dependent templates read this file at runtime)
-- Follow-up: none
--->
-
 # Smart Grid Asset Registry Constitution
 
 A web app that imports a CSV of grid assets (substations and their equipment, linked by

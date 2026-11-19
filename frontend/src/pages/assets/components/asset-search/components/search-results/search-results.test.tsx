@@ -1,12 +1,20 @@
-import { render, screen, within } from "@testing-library/react";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { HTTPCode } from "~/libs/enums/enums.js";
 import { config } from "~/libs/modules/config/config.js";
+import { bindShowNotification } from "~/libs/modules/notification/notification.js";
 import { createStore } from "~/libs/modules/store/store.module.js";
 import {
+	type AssetSearchRequestDto,
 	type AssetSearchResultDto,
 	AssetType,
 	OperationalStatus,
@@ -62,11 +70,14 @@ const stubSearch = (data: AssetSearchResultDto) => {
 	return fetchMock;
 };
 
-const renderResults = (q = "aurora"): void => {
+const renderResults = (
+	q = "aurora",
+	assetType: AssetSearchRequestDto["assetType"] = null,
+): void => {
 	render(
 		<Provider store={createStore(config)}>
 			<MemoryRouter>
-				<SearchResults search={{ assetType: null, q }} />
+				<SearchResults search={{ assetType, q }} />
 			</MemoryRouter>
 		</Provider>,
 	);
@@ -151,5 +162,139 @@ describe("SearchResults", () => {
 		await screen.findAllByRole("listitem");
 		const [[request]] = fetchMock.mock.calls as unknown as [[Request]];
 		expect(new URL(request.url).searchParams.get("q")).toBe("PNL 1");
+	});
+
+	it("names the type in the summary and sends it", async () => {
+		const fetchMock = stubSearch(RESULT);
+		renderResults("aurora", AssetType.SWITCHBOARD_PANEL);
+
+		expect(
+			await screen.findByText(
+				"3 assets match “aurora” of type Switchboard panel",
+			),
+		).toBeInTheDocument();
+		const [[request]] = fetchMock.mock.calls as unknown as [[Request]];
+		expect(new URL(request.url).searchParams.get("assetType")).toBe(
+			"SWITCHBOARD_PANEL",
+		);
+	});
+
+	it("says it is searching while the request runs", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(() => new Promise<Response>(() => {})),
+		);
+		renderResults();
+
+		expect(await screen.findByRole("status")).toHaveTextContent("Searching…");
+	});
+});
+
+// ---- The states of a search (user story 3) ---------------------------------
+
+// The first request and the retry.
+const RETRIED_REQUESTS = 2;
+
+// A broad search: more matches than the backend's first page.
+const BROAD_TOTAL = 1234;
+
+const stubError = (status: number, body: unknown) => {
+	const fetchMock = vi.fn(() =>
+		Promise.resolve(Response.json(body, { status })),
+	);
+	vi.stubGlobal("fetch", fetchMock);
+
+	return fetchMock;
+};
+
+const TOO_LONG_MESSAGE = "Invalid request: q must be at most 100 characters";
+
+const stubRefused = () =>
+	stubError(HTTPCode.BAD_REQUEST, {
+		code: HTTPCode.BAD_REQUEST,
+		data: { errorCode: "INVALID_REQUEST" },
+		message: TOO_LONG_MESSAGE,
+		status: "error",
+	});
+
+const stubFailure = () =>
+	stubError(HTTPCode.INTERNAL_SERVER_ERROR, {
+		code: HTTPCode.INTERNAL_SERVER_ERROR,
+		data: null,
+		message: "Internal Server Error",
+		status: "error",
+	});
+
+describe("SearchResults states", () => {
+	it("says no asset matches, with a hint, and lists nothing", async () => {
+		stubSearch({ items: [], totalItems: 0 });
+		const showNotificationMock = vi.fn();
+		const unbind = bindShowNotification(showNotificationMock);
+		renderResults("NO-SUCH-ASSET");
+
+		expect(
+			await screen.findByText("No asset matches “NO-SUCH-ASSET”"),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText("Check the spelling, or search all types."),
+		).toBeInTheDocument();
+		expect(screen.queryByRole("list")).not.toBeInTheDocument();
+		expect(showNotificationMock).not.toHaveBeenCalled();
+		unbind();
+	});
+
+	it("names the type when nothing of that type matches", async () => {
+		stubSearch({ items: [], totalItems: 0 });
+		renderResults("aurora", AssetType.TRANSFORMER);
+
+		expect(
+			await screen.findByText("No asset matches “aurora” of type Transformer"),
+		).toBeInTheDocument();
+	});
+
+	it("says how many of the matches are shown when there are more", async () => {
+		stubSearch({ items: RESULT.items, totalItems: BROAD_TOTAL });
+		renderResults("-");
+
+		// The count shown is the number of items received.
+		expect(
+			await screen.findByText(
+				`Showing ${String(RESULT.items.length)} of ${String(BROAD_TOTAL)} assets that match “-”. Add more of the ID or name, or choose a type, to narrow the search.`,
+			),
+		).toBeInTheDocument();
+		expect(screen.getAllByRole("listitem")).toHaveLength(RESULT.items.length);
+	});
+
+	it("shows a refused search's message as sent, without a retry or a toast", async () => {
+		stubRefused();
+		const showNotificationMock = vi.fn();
+		const unbind = bindShowNotification(showNotificationMock);
+		renderResults("x");
+
+		expect(await screen.findByText(TOO_LONG_MESSAGE)).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: "Try again" }),
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByText("The search could not be completed."),
+		).not.toBeInTheDocument();
+		expect(showNotificationMock).not.toHaveBeenCalled();
+		unbind();
+	});
+
+	it("says a failed search could not be completed and retries it", async () => {
+		const fetchMock = stubFailure();
+		renderResults();
+
+		expect(
+			await screen.findByText("The search could not be completed."),
+		).toBeInTheDocument();
+		expect(fetchMock).toHaveBeenCalledOnce();
+
+		fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalledTimes(RETRIED_REQUESTS);
+		});
 	});
 });

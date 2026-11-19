@@ -54,7 +54,7 @@ Shown only when at least one asset is stored (the empty registry state of 002 ha
 | More matches than received | "Showing <items received> of N assets that match “<text>”. Add more of the ID or name, or choose a type, to narrow the search." then the received items (the backend's first 50) |
 | No match | "No asset matches “<text>”" (+ " of type <Type>"). "Check the spelling, or search all types." |
 | Refused (`400 INVALID_REQUEST`) | the server's message as sent, for example "Invalid request: q must be at most 100 characters"; no retry (the same search would be refused again); the form stays editable |
-| Failure | "The search could not be completed." + **Try again** |
+| Failure | "The search could not be completed." + **Try again** (a 500 also raises the app-wide error toast, as everywhere else) |
 
 Each result (a list item) shows: the asset ID and name as one link to `/assets/<id>`; the type in words; the
 status in words ("No status recorded" for none); and the location — the ancestor IDs joined with " › ", or

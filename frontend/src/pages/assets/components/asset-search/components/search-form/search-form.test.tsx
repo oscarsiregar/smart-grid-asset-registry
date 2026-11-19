@@ -106,4 +106,31 @@ describe("SearchForm", () => {
 
 		expect(onClear).toHaveBeenCalledOnce();
 	});
+
+	it("submits the chosen type", async () => {
+		const { onSubmit } = renderForm();
+
+		fireEvent.change(getField(), { target: { value: "001" } });
+		fireEvent.change(screen.getByRole("combobox", { name: "Asset type" }), {
+			target: { value: AssetType.SWITCHBOARD_PANEL },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Search" }));
+
+		await waitFor(() => {
+			expect(onSubmit).toHaveBeenCalledWith({
+				assetType: AssetType.SWITCHBOARD_PANEL,
+				q: "001",
+			});
+		});
+	});
+
+	it("starts with the type from the address", () => {
+		renderForm({
+			activeSearch: { assetType: AssetType.TRANSFORMER, q: "TX" },
+		});
+
+		expect(
+			screen.getByRole("combobox", { name: "Asset type" }),
+		).toHaveDisplayValue("Transformer");
+	});
 });
