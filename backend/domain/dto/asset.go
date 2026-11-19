@@ -47,9 +47,18 @@ type AssetResponse struct {
 }
 
 // AssetDetailResponse: Path runs from the substation down to the asset;
-// Children is never null. US2 adds descendantCounts.
+// Children is never null; DescendantCounts is null unless a substation.
 type AssetDetailResponse struct {
-	Asset    AssetResponse       `json:"asset"`
-	Path     []AssetNodeResponse `json:"path"`
-	Children []AssetNodeResponse `json:"children"`
+	Asset            AssetResponse             `json:"asset"`
+	Path             []AssetNodeResponse       `json:"path"`
+	Children         []AssetNodeResponse       `json:"children"`
+	DescendantCounts *DescendantCountsResponse `json:"descendantCounts"`
+}
+
+// DescendantCountsResponse counts every level below a substation by type.
+type DescendantCountsResponse struct {
+	Transformers      int `json:"transformers"`
+	LVBoards          int `json:"lvBoards"`
+	Switchboards      int `json:"switchboards"`
+	SwitchboardPanels int `json:"switchboardPanels"`
 }

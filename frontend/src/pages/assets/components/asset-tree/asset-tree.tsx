@@ -1,11 +1,16 @@
-import { useCallback, useRef, useState } from "react";
+import { skipToken } from "@reduxjs/toolkit/query/react";
+import { useCallback, useMemo, useRef } from "react";
 
 import { Button } from "~/libs/components/button/button.js";
 import { ButtonVariant, ControlSize } from "~/libs/enums/enums.js";
-import { useGetAssetNodesQuery } from "~/modules/assets/assets.js";
+import {
+	useGetAssetDetailQuery,
+	useGetAssetNodesQuery,
+} from "~/modules/assets/assets.js";
 
 import { TREE_ROOT_LEVEL } from "../../libs/constants/constants.js";
 import { AssetsPageMessage } from "../../libs/enums/enums.js";
+import { useExpandedNodes } from "../../libs/hooks/use-expanded-nodes/use-expanded-nodes.hook.js";
 import { useTreeKeyboard } from "../../libs/hooks/use-tree-keyboard/use-tree-keyboard.hook.js";
 import { TreeNode } from "./components/tree-node/tree-node.js";
 import styles from "./styles.module.css";
@@ -14,52 +19,31 @@ type Properties = {
 	selectedAssetId: null | string;
 };
 
-const addAssetId = (
-	assetIds: ReadonlySet<string>,
-	assetId: string,
-): ReadonlySet<string> => new Set(assetIds).add(assetId);
-
-const removeAssetId = (
-	assetIds: ReadonlySet<string>,
-	assetId: string,
-): ReadonlySet<string> => {
-	const next = new Set(assetIds);
-	next.delete(assetId);
-
-	return next;
-};
-
 /**
  * The asset hierarchy as a WAI-ARIA navigation tree (research R8): every
  * substation at the top level, children loaded when a node is expanded.
- * Which nodes are expanded is local state; it is not kept across refresh.
+ * Which nodes are expanded is local state, not kept across refresh; the
+ * selected asset's ancestors are expanded from its path (spec FR-005,
+ * FR-019), read from the same cached detail query the details area uses.
  */
 const AssetTree: React.FC<Properties> = ({ selectedAssetId }: Properties) => {
 	const { data, isError, isLoading, refetch } = useGetAssetNodesQuery(null);
 	const treeReference = useRef<HTMLUListElement>(null);
-	const [expandedAssetIds, setExpandedAssetIds] = useState<ReadonlySet<string>>(
-		() => new Set(),
+	const { currentData: selectedDetail } = useGetAssetDetailQuery(
+		selectedAssetId ?? skipToken,
 	);
-
-	const handleExpand = useCallback((assetId: string): void => {
-		setExpandedAssetIds((current) => addAssetId(current, assetId));
-	}, []);
-
-	const handleCollapse = useCallback((assetId: string): void => {
-		setExpandedAssetIds((current) => removeAssetId(current, assetId));
-	}, []);
-
-	const handleToggle = useCallback((assetId: string): void => {
-		setExpandedAssetIds((current) =>
-			current.has(assetId)
-				? removeAssetId(current, assetId)
-				: addAssetId(current, assetId),
-		);
-	}, []);
+	const selectedPath = useMemo(
+		() => selectedDetail?.path.map((step) => step.assetId) ?? null,
+		[selectedDetail],
+	);
+	const { collapse, expand, expandedAssetIds, toggle } = useExpandedNodes({
+		selectedAssetId,
+		selectedPath,
+	});
 
 	const { focusedAssetId, handleFocus, handleKeyDown } = useTreeKeyboard({
-		onCollapse: handleCollapse,
-		onExpand: handleExpand,
+		onCollapse: collapse,
+		onExpand: expand,
 		preferredAssetId: selectedAssetId,
 		treeReference,
 	});
@@ -107,7 +91,7 @@ const AssetTree: React.FC<Properties> = ({ selectedAssetId }: Properties) => {
 					key={node.assetId}
 					level={TREE_ROOT_LEVEL}
 					node={node}
-					onToggle={handleToggle}
+					onToggle={toggle}
 					selectedAssetId={selectedAssetId}
 				/>
 			))}

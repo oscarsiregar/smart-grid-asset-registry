@@ -80,9 +80,11 @@ tree's layout).
   `generatePath(AppRoute.ASSETS_$ASSET_ID, { assetId })`.
 
 **Rationale**: FR-017 requires every stored ID to round-trip; feature 001 accepts any trimmed, non-blank text
-as an ID. The only exceptions are `.` and `..`: the URL standard treats them (encoded or not) as dot segments
-and browsers rewrite the path, so those assets are reachable through the tree only (spec edge case,
-KNOWN_LIMITATIONS). The natural key keeps addresses readable (`/assets/SS-001`) and matches the `asset_id` foreign key
+as an ID. The only exceptions are `.` and `..`: the URL standard treats them (encoded or not) as dot segments,
+and both the browser address and `fetch` rewrite the path (`/api/assets/%2E%2E` becomes `/api/`), so neither
+their address nor their detail request can be built. They stay listed and expandable in the tree (the
+children request carries the ID as a query parameter) but are not selectable (spec edge case,
+KNOWN_LIMITATIONS; decision 2026-11-19). The natural key keeps addresses readable (`/assets/SS-001`) and matches the `asset_id` foreign key
 (001 R7). Both probes are turned into tests (handler test, router test).
 
 **Alternatives**: UUID in the address (stable, but unreadable and not what the brief shows); ID in a query

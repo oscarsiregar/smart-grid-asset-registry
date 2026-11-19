@@ -10,15 +10,20 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// GetAssetDetail: GET /api/assets/:assetId. Decoding a percent-encoded ID is
-// added with user story 3 (research R2, tasks.md T065).
+// GetAssetDetail: GET /api/assets/:assetId, the ID percent-encoded
+// (research R2).
 func (h assetHandler) GetAssetDetail(ctx *fiber.Ctx) error {
 	var request dto.GetAssetDetailRequest
 	if err := ctx.ParamsParser(&request); err != nil {
 		return apperr.BadRequest(errorcode.InvalidRequest, "invalid path parameters")
 	}
 
-	output, err := h.assetUsecase.GetAssetDetail(ctx.UserContext(), usecase.GetAssetDetailInput{AssetID: request.AssetID})
+	assetID, err := decodeAssetID(request.AssetID)
+	if err != nil {
+		return err
+	}
+
+	output, err := h.assetUsecase.GetAssetDetail(ctx.UserContext(), usecase.GetAssetDetailInput{AssetID: assetID})
 	if err != nil {
 		return err
 	}

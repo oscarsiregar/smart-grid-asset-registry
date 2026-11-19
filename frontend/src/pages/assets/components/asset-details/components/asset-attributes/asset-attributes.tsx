@@ -3,11 +3,11 @@ import { configureString } from "~/libs/helpers/helpers.js";
 import { type AssetDto, type AssetNodeDto } from "~/modules/assets/assets.js";
 
 import { AssetsPageMessage } from "../../../../libs/enums/enums.js";
-import { getAssetPath } from "../../../../libs/helpers/helpers.js";
 import {
-	assetTypeToLabel,
-	operationalStatusToLabel,
-} from "../../../../libs/maps.js";
+	getAssetPath,
+	getStatusText,
+} from "../../../../libs/helpers/helpers.js";
+import { assetTypeToLabel } from "../../../../libs/maps.js";
 import styles from "./styles.module.css";
 
 type Properties = {
@@ -39,10 +39,7 @@ const AssetAttributes: React.FC<Properties> = ({
 		{ label: AssetsPageMessage.ATTRIBUTE_NAME, value: asset.assetName },
 		{
 			label: AssetsPageMessage.ATTRIBUTE_OPERATIONAL_STATUS,
-			value:
-				asset.operationalStatus === null
-					? AssetsPageMessage.STATUS_NONE
-					: operationalStatusToLabel[asset.operationalStatus],
+			value: getStatusText(asset.operationalStatus),
 		},
 		{
 			label: AssetsPageMessage.ATTRIBUTE_VOLTAGE,

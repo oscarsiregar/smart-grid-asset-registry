@@ -180,8 +180,10 @@ unchanged.
   error. The same applies when the ID has different letter case from a stored ID: asset IDs match exactly.
 - **Blank address segment** (for example `/assets/`): treated as the overview with no asset selected.
 - **IDs `.` and `..`**: feature 001 accepts them as asset IDs, but browsers rewrite these path segments
-  (even when encoded), so such an asset cannot be opened by its own address. It is still listed in the tree and
-  can be selected there, and its details are shown. This is a known limitation; FR-017 holds for every other ID.
+  (even when encoded, in the page address and in requests to the server), so such an asset can be neither
+  opened by its own address nor have its details loaded. It is still listed in the tree, with its type and
+  status, and can be expanded to reach its children; its label is plain text rather than a link, so it cannot
+  be selected. This is a known limitation; FR-017 holds for every other ID.
 - **Asset with no children**: shown in the tree without an expand control; a substation with no children shows
   all three groups as empty and all four counts as 0.
 - **Many children**: a substation or switchboard with hundreds or thousands of children lists every child at

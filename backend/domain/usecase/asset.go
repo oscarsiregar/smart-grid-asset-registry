@@ -39,6 +39,17 @@ type GetAssetDetailOutput struct {
 	Asset    *entity.Asset
 	Path     []*entity.AssetNode // substation first, the asset last
 	Children []*entity.AssetNode // ordered by entity.SortAssetNodes
+	// DescendantCounts is nil unless the asset is a substation (spec FR-013).
+	DescendantCounts *DescendantCounts
+}
+
+// DescendantCounts are the assets beneath a substation, on every level, by
+// type; a type with none is 0.
+type DescendantCounts struct {
+	Transformers      int
+	LVBoards          int
+	Switchboards      int
+	SwitchboardPanels int
 }
 
 // Validate checks the request shape only; whether the asset exists is the

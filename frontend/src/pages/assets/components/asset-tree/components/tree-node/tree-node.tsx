@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { Icon } from "~/libs/components/icon/icon.js";
 import { Link } from "~/libs/components/link/link.js";
@@ -9,7 +9,10 @@ import { type AssetNodeDto } from "~/modules/assets/assets.js";
 
 import { TREE_STEP } from "../../../../libs/constants/constants.js";
 import { AssetsPageMessage, TabIndex } from "../../../../libs/enums/enums.js";
-import { getAssetPath } from "../../../../libs/helpers/helpers.js";
+import {
+	checkIsAddressableAssetId,
+	getAssetPath,
+} from "../../../../libs/helpers/helpers.js";
 import { assetTypeToLabel } from "../../../../libs/maps.js";
 import { StatusLabel } from "../status-label/status-label.js";
 import { TreeChildren } from "../tree-children/tree-children.js";
@@ -27,7 +30,8 @@ type Properties = {
 /**
  * One node of the navigation tree (research R8): the label is a link, so
  * selecting is navigating; a separate toggle expands it. Only nodes with
- * children are expandable (spec FR-003).
+ * children are expandable (spec FR-003). The selected node is marked in words
+ * and bold, not by colour alone, and scrolled into view (spec FR-006).
  */
 const TreeNode: React.FC<Properties> = ({
 	expandedAssetIds,
@@ -37,8 +41,18 @@ const TreeNode: React.FC<Properties> = ({
 	onToggle,
 	selectedAssetId,
 }: Properties) => {
+	const nodeReference = useRef<HTMLLIElement>(null);
 	const isExpandable = node.childCount > EMPTY_LENGTH;
 	const isExpanded = isExpandable && expandedAssetIds.has(node.assetId);
+	const isSelected = node.assetId === selectedAssetId;
+
+	// Only when the node becomes selected (a click, a link, a deep link once
+	// its ancestors are expanded), not on every render.
+	useEffect(() => {
+		if (isSelected) {
+			nodeReference.current?.scrollIntoView({ block: "nearest" });
+		}
+	}, [isSelected]);
 
 	const handleToggleClick = useCallback((): void => {
 		onToggle(node.assetId);
@@ -51,19 +65,33 @@ const TreeNode: React.FC<Properties> = ({
 		{ assetId: node.assetId },
 	);
 
+	const labelContent = (
+		<>
+			<span className={styles["id"]}>{node.assetId}</span>
+			<span className={styles["name"]}>{node.assetName}</span>
+			<span className={styles["type"]}>{assetTypeToLabel[node.assetType]}</span>
+		</>
+	);
+
 	return (
 		<li
 			aria-expanded={isExpandable ? isExpanded : undefined}
 			aria-level={level}
-			aria-selected={node.assetId === selectedAssetId}
+			aria-selected={isSelected}
 			className={styles["node"]}
 			data-asset-id={node.assetId}
+			ref={nodeReference}
 			role="treeitem"
 			tabIndex={
 				node.assetId === focusedAssetId ? TabIndex.FOCUSABLE : TabIndex.SKIPPED
 			}
 		>
-			<div className={styles["row"]}>
+			<div
+				className={getValidClasses(
+					styles["row"],
+					isSelected && styles["selected"],
+				)}
+			>
 				{isExpandable ? (
 					<button
 						aria-label={toggleLabel}
@@ -83,19 +111,25 @@ const TreeNode: React.FC<Properties> = ({
 				) : (
 					<span className={styles["spacer"]} />
 				)}
-				<Link
-					className={styles["label"]}
-					hasDefaultStyles={false}
-					tabIndex={TabIndex.SKIPPED}
-					to={getAssetPath(node.assetId)}
-				>
-					<span className={styles["id"]}>{node.assetId}</span>
-					<span className={styles["name"]}>{node.assetName}</span>
-					<span className={styles["type"]}>
-						{assetTypeToLabel[node.assetType]}
-					</span>
-				</Link>
+				{checkIsAddressableAssetId(node.assetId) ? (
+					<Link
+						className={styles["label"]}
+						hasDefaultStyles={false}
+						tabIndex={TabIndex.SKIPPED}
+						to={getAssetPath(node.assetId)}
+					>
+						{labelContent}
+					</Link>
+				) : (
+					<span className={styles["label"]}>{labelContent}</span>
+				)}
 				<StatusLabel status={node.operationalStatus} />
+				{isSelected && (
+					<span className={styles["marker"]}>
+						<Icon className={styles["marker-icon"]} iconName={IconName.CHECK} />
+						{AssetsPageMessage.SELECTED_MARKER}
+					</span>
+				)}
 			</div>
 			{isExpanded && (
 				<TreeChildren

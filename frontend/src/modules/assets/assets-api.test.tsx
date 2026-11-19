@@ -44,6 +44,7 @@ const DETAIL: AssetDetailDto = {
 		voltageKv: 22,
 	},
 	children: [],
+	descendantCounts: null,
 	path: [
 		{
 			assetId: "SS/1",

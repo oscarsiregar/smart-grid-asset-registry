@@ -39,6 +39,8 @@ Narrow screens stack the tree above the details.
 - Expanding a node loads its children the first time (loading row "Loading…"; failure row "Could not load
   children" + **Try again**); later expansions use the cache.
 - Selected node: `aria-selected="true"`, a visible marker and bold text, scrolled into view.
+- A node whose asset ID is `.` or `..` has a plain-text label, not a link: it can be expanded but not selected
+  (browsers rewrite those path segments; spec edge case).
 - Keyboard: Tab enters the tree on the selected (or first) node; ↑/↓ move; → expands or moves to the first
   child; ← collapses or moves to the parent; Home/End; Enter follows the node's link.
 

@@ -1,6 +1,7 @@
 package asset
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -68,8 +69,30 @@ func TestAssetHandler_GetAssetDetail(t *testing.T) {
 				{"assetId":"SWB-001-1","assetName":"Switchboard 1","assetType":"SWITCHBOARD","operationalStatus":"OUT_OF_SERVICE","childCount":4},
 				{"assetId":"PNL-001-1-01","assetName":"Aurora Panel 1-1","assetType":"SWITCHBOARD_PANEL","operationalStatus":null,"childCount":0}
 			],
-			"children": []
+			"children": [],
+			"descendantCounts": null
 		}`, string(body.Data))
+	})
+
+	t.Run("a substation carries the counts of every type beneath it", func(t *testing.T) {
+		uc := mocksusecase.NewAssetUsecase(t)
+		uc.EXPECT().GetAssetDetail(mock.Anything, withAssetID("SS-001")).Return(usecase.GetAssetDetailOutput{
+			Asset: &entity.Asset{AssetID: "SS-001", AssetType: valueobject.AssetTypeSubstation, AssetName: "Aurora"},
+			Path:  []*entity.AssetNode{{AssetID: "SS-001", AssetName: "Aurora", AssetType: valueobject.AssetTypeSubstation}},
+			DescendantCounts: &usecase.DescendantCounts{
+				Transformers: 2, LVBoards: 1, Switchboards: 2, SwitchboardPanels: 10,
+			},
+		}, nil)
+
+		resp := doGet(t, newTestApp(NewAssetHandler(uc)), "/api/assets/SS-001")
+
+		require.Equal(t, fiber.StatusOK, resp.StatusCode)
+		var data struct {
+			DescendantCounts json.RawMessage `json:"descendantCounts"`
+		}
+		require.NoError(t, json.Unmarshal(decodeEnvelope(t, resp.Body).Data, &data))
+		assert.JSONEq(t, `{"transformers":2,"lvBoards":1,"switchboards":2,"switchboardPanels":10}`,
+			string(data.DescendantCounts))
 	})
 
 	t.Run("a substation has a null parent and a null date when none is stored", func(t *testing.T) {
@@ -101,5 +124,42 @@ func TestAssetHandler_GetAssetDetail(t *testing.T) {
 		body := decodeEnvelope(t, resp.Body)
 		assert.Equal(t, "No asset with ID NOPE exists.", body.Message)
 		assert.JSONEq(t, `{"errorCode":"ASSET_NOT_FOUND"}`, string(body.Data))
+	})
+}
+
+func TestAssetHandler_GetAssetDetail_DecodesTheAssetID(t *testing.T) {
+	cases := []struct {
+		name   string
+		target string
+		want   string
+	}{
+		{"an encoded slash", "/api/assets/SS%2F1", "SS/1"},
+		{"an encoded space", "/api/assets/SS%209%20A", "SS 9 A"},
+		{"an encoded percent sign", "/api/assets/50%25", "50%"},
+		{"an encoded question mark and hash", "/api/assets/x%3Fy%23z", "x?y#z"},
+		{"a plain ID is unchanged", "/api/assets/SS-001", "SS-001"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			uc := mocksusecase.NewAssetUsecase(t)
+			uc.EXPECT().GetAssetDetail(mock.Anything, withAssetID(tc.want)).Return(usecase.GetAssetDetailOutput{
+				Asset: &entity.Asset{AssetID: tc.want, AssetType: valueobject.AssetTypeSubstation},
+			}, nil)
+
+			resp := doGetRaw(t, newTestApp(NewAssetHandler(uc)), tc.target)
+
+			assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+		})
+	}
+
+	t.Run("a malformed escape is 400 INVALID_REQUEST and the usecase is not called", func(t *testing.T) {
+		uc := mocksusecase.NewAssetUsecase(t)
+
+		resp := doGetRaw(t, newTestApp(NewAssetHandler(uc)), "/api/assets/%zz")
+
+		require.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+		body := decodeEnvelope(t, resp.Body)
+		assert.Equal(t, "Invalid request: assetId must be valid percent-encoding", body.Message)
+		assert.JSONEq(t, `{"errorCode":"INVALID_REQUEST"}`, string(body.Data))
 	})
 }

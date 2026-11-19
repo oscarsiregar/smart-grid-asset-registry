@@ -35,6 +35,33 @@ const installDialogShim = (): void => {
 
 installDialogShim();
 
+/**
+ * jsdom has no layout, so it does not implement `scrollIntoView`. A no-op
+ * lets components call it; tests spy on it to check that they do.
+ */
+class ScrollShim extends HTMLElement {
+	public override scrollIntoView(): void {
+		// No layout to scroll in jsdom.
+	}
+}
+
+const installScrollShim = (): void => {
+	const native = Object.getOwnPropertyDescriptor(
+		Element.prototype,
+		"scrollIntoView",
+	);
+	const shim = Object.getOwnPropertyDescriptor(
+		ScrollShim.prototype,
+		"scrollIntoView",
+	);
+
+	if (shim && !native) {
+		Object.defineProperty(Element.prototype, "scrollIntoView", shim);
+	}
+};
+
+installScrollShim();
+
 afterEach(() => {
 	cleanup();
 });

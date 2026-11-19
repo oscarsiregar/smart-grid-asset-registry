@@ -1,13 +1,27 @@
 package asset
 
 import (
+	"net/url"
 	"time"
 
 	"smart-grid-asset-registry/domain/dto"
 	"smart-grid-asset-registry/domain/entity"
+	"smart-grid-asset-registry/domain/errorcode"
 	"smart-grid-asset-registry/domain/usecase"
 	"smart-grid-asset-registry/domain/valueobject"
+	"smart-grid-asset-registry/internal/apperr"
 )
+
+// decodeAssetID decodes the :assetId path segment. Fiber keeps path
+// parameters percent-encoded, so SS%2F1 arrives as is and becomes SS/1
+// (research R2); a malformed escape is 400 INVALID_REQUEST.
+func decodeAssetID(raw string) (string, error) {
+	assetID, err := url.PathUnescape(raw)
+	if err != nil {
+		return "", apperr.BadRequest(errorcode.InvalidRequest, "assetId must be valid percent-encoding")
+	}
+	return assetID, nil
+}
 
 func toAssetNodeResponse(node *entity.AssetNode) dto.AssetNodeResponse {
 	return dto.AssetNodeResponse{
@@ -51,9 +65,23 @@ func toAssetResponse(asset *entity.Asset) dto.AssetResponse {
 
 func toAssetDetailResponse(output usecase.GetAssetDetailOutput) dto.AssetDetailResponse {
 	return dto.AssetDetailResponse{
-		Asset:    toAssetResponse(output.Asset),
-		Path:     toAssetNodeResponses(output.Path),
-		Children: toAssetNodeResponses(output.Children),
+		Asset:            toAssetResponse(output.Asset),
+		Path:             toAssetNodeResponses(output.Path),
+		Children:         toAssetNodeResponses(output.Children),
+		DescendantCounts: toDescendantCountsResponse(output.DescendantCounts),
+	}
+}
+
+// toDescendantCountsResponse: nil (not a substation) stays null in JSON.
+func toDescendantCountsResponse(counts *usecase.DescendantCounts) *dto.DescendantCountsResponse {
+	if counts == nil {
+		return nil
+	}
+	return &dto.DescendantCountsResponse{
+		Transformers:      counts.Transformers,
+		LVBoards:          counts.LVBoards,
+		Switchboards:      counts.Switchboards,
+		SwitchboardPanels: counts.SwitchboardPanels,
 	}
 }
 

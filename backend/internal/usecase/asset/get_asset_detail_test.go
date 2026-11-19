@@ -29,6 +29,10 @@ func panelAsset() *entity.Asset {
 	}
 }
 
+func substationAsset() *entity.Asset {
+	return &entity.Asset{AssetID: "SS-001", AssetType: valueobject.AssetTypeSubstation, AssetName: "Aurora"}
+}
+
 func panelPath() []*entity.AssetNode {
 	return []*entity.AssetNode{
 		node("SS-001", valueobject.AssetTypeSubstation, 5),
@@ -75,6 +79,7 @@ func TestGetAssetDetail(t *testing.T) {
 				assert.Equal(t, []string{"SS-001", "SWB-001-1", "PNL-001-1-01"}, nodeIDs(output.Path))
 				assert.NotNil(t, output.Children)
 				assert.Empty(t, output.Children)
+				assert.Nil(t, output.DescendantCounts, "counts only for a substation")
 			},
 		},
 		{
@@ -94,7 +99,57 @@ func TestGetAssetDetail(t *testing.T) {
 				assert.Equal(t, "SWB-001-1", output.Asset.AssetID)
 				assert.Equal(t, []string{"SS-001", "SWB-001-1"}, nodeIDs(output.Path))
 				assert.Equal(t, []string{"PNL-001-1-01", "PNL-001-1-02", "PNL-001-1-10"}, nodeIDs(output.Children))
+				assert.Nil(t, output.DescendantCounts, "counts only for a substation")
 			},
+		},
+		{
+			name:  "a substation: its children and the counts of every type beneath it",
+			input: usecase.GetAssetDetailInput{AssetID: "SS-001"},
+			setup: func(d deps) {
+				d.assetRepo.EXPECT().FindByAssetID(mock.Anything, nil, "SS-001").Return(substationAsset(), nil)
+				d.assetRepo.EXPECT().FindPath(mock.Anything, nil, "SS-001").Return(panelPath()[:1], nil)
+				d.assetRepo.EXPECT().FindNodes(mock.Anything, nil, childrenOf("SS-001")).Return([]*entity.AssetNode{
+					node("SWB-001-1", valueobject.AssetTypeSwitchboard, 4),
+					node("TX-001-1", valueobject.AssetTypeTransformer, 0),
+				}, nil)
+				d.assetRepo.EXPECT().CountDescendantsByType(mock.Anything, nil, "SS-001").Return(map[valueobject.AssetType]int{
+					valueobject.AssetTypeTransformer:      2,
+					valueobject.AssetTypeLVBoard:          1,
+					valueobject.AssetTypeSwitchboard:      2,
+					valueobject.AssetTypeSwitchboardPanel: 10,
+				}, nil).Once()
+			},
+			check: func(t *testing.T, output usecase.GetAssetDetailOutput) {
+				assert.Equal(t, []string{"TX-001-1", "SWB-001-1"}, nodeIDs(output.Children))
+				assert.Equal(t, &usecase.DescendantCounts{
+					Transformers: 2, LVBoards: 1, Switchboards: 2, SwitchboardPanels: 10,
+				}, output.DescendantCounts)
+			},
+		},
+		{
+			name:  "a substation without children: every count is 0",
+			input: usecase.GetAssetDetailInput{AssetID: "SS-001"},
+			setup: func(d deps) {
+				d.assetRepo.EXPECT().FindByAssetID(mock.Anything, nil, "SS-001").Return(substationAsset(), nil)
+				d.assetRepo.EXPECT().FindPath(mock.Anything, nil, "SS-001").Return(panelPath()[:1], nil)
+				d.assetRepo.EXPECT().FindNodes(mock.Anything, nil, childrenOf("SS-001")).Return([]*entity.AssetNode{}, nil)
+				d.assetRepo.EXPECT().CountDescendantsByType(mock.Anything, nil, "SS-001").
+					Return(map[valueobject.AssetType]int{}, nil)
+			},
+			check: func(t *testing.T, output usecase.GetAssetDetailOutput) {
+				assert.Equal(t, &usecase.DescendantCounts{}, output.DescendantCounts)
+			},
+		},
+		{
+			name:  "CountDescendantsByType error is returned as-is",
+			input: usecase.GetAssetDetailInput{AssetID: "SS-001"},
+			setup: func(d deps) {
+				d.assetRepo.EXPECT().FindByAssetID(mock.Anything, nil, "SS-001").Return(substationAsset(), nil)
+				d.assetRepo.EXPECT().FindPath(mock.Anything, nil, "SS-001").Return(panelPath()[:1], nil)
+				d.assetRepo.EXPECT().FindNodes(mock.Anything, nil, childrenOf("SS-001")).Return([]*entity.AssetNode{}, nil)
+				d.assetRepo.EXPECT().CountDescendantsByType(mock.Anything, nil, "SS-001").Return(nil, repoErr)
+			},
+			wantErr: repoErr,
 		},
 		{
 			name:  "FindByAssetID error is returned as-is",

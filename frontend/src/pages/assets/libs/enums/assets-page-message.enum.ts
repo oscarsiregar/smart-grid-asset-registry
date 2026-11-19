@@ -34,6 +34,7 @@ const AssetsPageMessage = {
 	NOT_RECORDED: "Not recorded",
 	PATH_LABEL: "Path",
 	SELECT_PROMPT: "Select an asset in the tree to see its details.",
+	SELECTED_MARKER: "Selected",
 	STATUS_IN_SERVICE: "In service",
 	STATUS_MAINTENANCE: "Maintenance",
 	STATUS_NONE: "No status recorded",

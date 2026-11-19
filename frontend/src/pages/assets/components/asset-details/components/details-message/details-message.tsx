@@ -1,17 +1,24 @@
 import { Button } from "~/libs/components/button/button.js";
-import { ButtonVariant, ControlSize } from "~/libs/enums/enums.js";
+import { Link } from "~/libs/components/link/link.js";
+import { AppRoute, ButtonVariant, ControlSize } from "~/libs/enums/enums.js";
 
 import { AssetsPageMessage } from "../../../../libs/enums/enums.js";
 import styles from "./styles.module.css";
 
 type Properties = {
+	/** Offer the way back to the overview (the not-found state, spec FR-020). */
+	hasBackLink?: boolean;
 	isLoading?: boolean;
 	message: string;
 	onRetry?: (() => void) | undefined;
 };
 
-/** A details-area state in words: the prompt, loading, or a failure with a retry. */
+/**
+ * A details-area state in words: the prompt, loading, not found with a way
+ * back, or a failure with a retry.
+ */
 const DetailsMessage: React.FC<Properties> = ({
+	hasBackLink = false,
 	isLoading = false,
 	message,
 	onRetry,
@@ -23,6 +30,9 @@ const DetailsMessage: React.FC<Properties> = ({
 			</p>
 		) : (
 			<p className={styles["text"]}>{message}</p>
+		)}
+		{hasBackLink && (
+			<Link to={AppRoute.ASSETS}>{AssetsPageMessage.BACK_TO_ALL_ASSETS}</Link>
 		)}
 		{onRetry && (
 			<Button

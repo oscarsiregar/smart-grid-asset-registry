@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"smart-grid-asset-registry/domain/entity"
+	"smart-grid-asset-registry/domain/valueobject"
 )
 
 // AssetRepository: every method takes ctx and an optional trx (nil = run
@@ -27,4 +28,7 @@ type AssetRepository interface {
 	// FindPath returns the asset and its ancestors as nodes, substation first
 	// and the asset last; empty, non-nil when the asset is not stored.
 	FindPath(ctx context.Context, trx Tx, assetID string) ([]*entity.AssetNode, error)
+	// CountDescendantsByType counts the assets on every level below the
+	// asset, by type; a type without descendants is absent; never nil.
+	CountDescendantsByType(ctx context.Context, trx Tx, assetID string) (map[valueobject.AssetType]int, error)
 }

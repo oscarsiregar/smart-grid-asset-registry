@@ -6,6 +6,7 @@ import (
 	context "context"
 	entity "smart-grid-asset-registry/domain/entity"
 	repository "smart-grid-asset-registry/domain/repository"
+	valueobject "smart-grid-asset-registry/domain/valueobject"
 
 	mock "github.com/stretchr/testify/mock"
 )
@@ -21,6 +22,66 @@ type AssetRepository_Expecter struct {
 
 func (_m *AssetRepository) EXPECT() *AssetRepository_Expecter {
 	return &AssetRepository_Expecter{mock: &_m.Mock}
+}
+
+// CountDescendantsByType provides a mock function with given fields: ctx, trx, assetID
+func (_m *AssetRepository) CountDescendantsByType(ctx context.Context, trx repository.Tx, assetID string) (map[valueobject.AssetType]int, error) {
+	ret := _m.Called(ctx, trx, assetID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountDescendantsByType")
+	}
+
+	var r0 map[valueobject.AssetType]int
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, repository.Tx, string) (map[valueobject.AssetType]int, error)); ok {
+		return rf(ctx, trx, assetID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, repository.Tx, string) map[valueobject.AssetType]int); ok {
+		r0 = rf(ctx, trx, assetID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[valueobject.AssetType]int)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, repository.Tx, string) error); ok {
+		r1 = rf(ctx, trx, assetID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// AssetRepository_CountDescendantsByType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountDescendantsByType'
+type AssetRepository_CountDescendantsByType_Call struct {
+	*mock.Call
+}
+
+// CountDescendantsByType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - trx repository.Tx
+//   - assetID string
+func (_e *AssetRepository_Expecter) CountDescendantsByType(ctx interface{}, trx interface{}, assetID interface{}) *AssetRepository_CountDescendantsByType_Call {
+	return &AssetRepository_CountDescendantsByType_Call{Call: _e.mock.On("CountDescendantsByType", ctx, trx, assetID)}
+}
+
+func (_c *AssetRepository_CountDescendantsByType_Call) Run(run func(ctx context.Context, trx repository.Tx, assetID string)) *AssetRepository_CountDescendantsByType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(repository.Tx), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *AssetRepository_CountDescendantsByType_Call) Return(_a0 map[valueobject.AssetType]int, _a1 error) *AssetRepository_CountDescendantsByType_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *AssetRepository_CountDescendantsByType_Call) RunAndReturn(run func(context.Context, repository.Tx, string) (map[valueobject.AssetType]int, error)) *AssetRepository_CountDescendantsByType_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // CreateMany provides a mock function with given fields: ctx, trx, assets

@@ -17,8 +17,12 @@ import (
 	"gorm.io/gorm"
 )
 
-// sampleAssetCount is the number of rows of the sample the import accepts.
-const sampleAssetCount = 205
+// sampleAssetCount is the number of rows of the sample the import accepts;
+// sampleSubstationCount the number of substations among them.
+const (
+	sampleAssetCount      = 205
+	sampleSubstationCount = 13
+)
 
 func newExplorerUsecase(db *gorm.DB) usecase.AssetUsecase {
 	return asset_usecase.NewAssetUsecase(asset_repository.NewAssetRepository(db), quietLogger())
@@ -53,6 +57,35 @@ func walk(t *testing.T, uc usecase.AssetUsecase) map[string]int {
 	}
 	visit(nil)
 	return reached
+}
+
+// walkCounts counts the assets below assetID by type, expanding every node
+// through GetListAsset like the tree does.
+func walkCounts(t *testing.T, uc usecase.AssetUsecase, assetID string) *usecase.DescendantCounts {
+	t.Helper()
+	counts := &usecase.DescendantCounts{}
+	var visit func(parentAssetID string)
+	visit = func(parentAssetID string) {
+		output, err := uc.GetListAsset(context.Background(), usecase.GetListAssetInput{ParentAssetID: pointer(parentAssetID)})
+		require.NoError(t, err)
+		for _, node := range output.Assets {
+			switch node.AssetType {
+			case valueobject.AssetTypeTransformer:
+				counts.Transformers++
+			case valueobject.AssetTypeLVBoard:
+				counts.LVBoards++
+			case valueobject.AssetTypeSwitchboard:
+				counts.Switchboards++
+			case valueobject.AssetTypeSwitchboardPanel:
+				counts.SwitchboardPanels++
+			}
+			if node.ChildCount > 0 {
+				visit(node.AssetID)
+			}
+		}
+	}
+	visit(assetID)
+	return counts
 }
 
 // TestAssetExplorer_Sample browses the imported sample (US1, SC-001).
@@ -107,6 +140,34 @@ func TestAssetExplorer_Sample(t *testing.T) {
 		assert.Equal(t, valueobject.OperationalStatusMaintenance, *asset.OperationalStatus)
 		assert.Equal(t, []string{"SS-001", "SWB-001-1", "PNL-001-1-01"}, nodeIDs(output.Path))
 		assert.Empty(t, output.Children)
+	})
+
+	t.Run("SS-001 counts 2 transformers, 1 LV board, 2 switchboards, 10 panels", func(t *testing.T) {
+		output, err := uc.GetAssetDetail(ctx, usecase.GetAssetDetailInput{AssetID: "SS-001"})
+		require.NoError(t, err)
+
+		assert.Equal(t, &usecase.DescendantCounts{
+			Transformers: 2, LVBoards: 1, Switchboards: 2, SwitchboardPanels: 10,
+		}, output.DescendantCounts)
+	})
+
+	t.Run("every substation's counts equal a walk of its subtree (SC-002)", func(t *testing.T) {
+		substations := listIDs(t, uc, nil)
+		require.Len(t, substations, sampleSubstationCount)
+
+		for _, substationID := range substations {
+			output, err := uc.GetAssetDetail(ctx, usecase.GetAssetDetailInput{AssetID: substationID})
+			require.NoError(t, err, substationID)
+			assert.Equalf(t, walkCounts(t, uc, substationID), output.DescendantCounts, "%s", substationID)
+		}
+	})
+
+	t.Run("non-substations carry no counts", func(t *testing.T) {
+		for _, assetID := range []string{"TX-001-1", "SWB-001-1", "PNL-001-1-01"} {
+			output, err := uc.GetAssetDetail(ctx, usecase.GetAssetDetailInput{AssetID: assetID})
+			require.NoError(t, err, assetID)
+			assert.Nil(t, output.DescendantCounts, assetID)
+		}
 	})
 
 	t.Run("SWB-001-1 lists its panels in natural ID order", func(t *testing.T) {

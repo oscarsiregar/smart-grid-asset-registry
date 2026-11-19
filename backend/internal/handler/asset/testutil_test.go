@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"smart-grid-asset-registry/pkg/gocommon/pkg/utils"
@@ -28,6 +29,19 @@ func newTestApp(h AssetHandler) *fiber.App {
 func doGet(t *testing.T, app *fiber.App, target string) *http.Response {
 	t.Helper()
 	resp, err := app.Test(httptest.NewRequest(fiber.MethodGet, target, nil))
+	require.NoError(t, err)
+	return resp
+}
+
+// doGetRaw sends the target exactly as written, so a malformed escape such
+// as %zz reaches the router (httptest.NewRequest would reject it).
+func doGetRaw(t *testing.T, app *fiber.App, rawTarget string) *http.Response {
+	t.Helper()
+	req := httptest.NewRequest(fiber.MethodGet, "/", nil)
+	req.URL = &url.URL{Opaque: rawTarget}
+	// app.Test dumps RequestURI, which NewRequest already set to "/".
+	req.RequestURI = rawTarget
+	resp, err := app.Test(req)
 	require.NoError(t, err)
 	return resp
 }

@@ -52,6 +52,7 @@ const PATH: AssetNodeDto[] = [
 const CONTRACT_EXAMPLE: AssetDetailDto = {
 	asset: ASSET,
 	children: [],
+	descendantCounts: null,
 	path: PATH,
 };
 

@@ -7,6 +7,7 @@ import (
 	"smart-grid-asset-registry/domain/errorcode"
 	"smart-grid-asset-registry/domain/repository"
 	"smart-grid-asset-registry/domain/usecase"
+	"smart-grid-asset-registry/domain/valueobject"
 	"smart-grid-asset-registry/internal/apperr"
 	"smart-grid-asset-registry/pkg/gocommon/pkg/logger"
 )
@@ -44,6 +45,23 @@ func (u assetUsecase) GetAssetDetail(ctx context.Context, input usecase.GetAsset
 	}
 	entity.SortAssetNodes(children)
 
+	// Which types are counted, and only for a substation, is this usecase's
+	// decision; the repository only counts (research R4).
+	var descendantCounts *usecase.DescendantCounts
+	if asset.AssetType == valueobject.AssetTypeSubstation {
+		counts, err := u.assetRepository.CountDescendantsByType(ctx, noTransaction, input.AssetID)
+		if err != nil {
+			log.WithError(err).Error("failed to count descendants")
+			return usecase.GetAssetDetailOutput{}, err
+		}
+		descendantCounts = toDescendantCounts(counts)
+	}
+
 	log.WithField("assetId", input.AssetID).WithField("children", len(children)).Info("success")
-	return usecase.GetAssetDetailOutput{Asset: asset, Path: path, Children: children}, nil
+	return usecase.GetAssetDetailOutput{
+		Asset:            asset,
+		Path:             path,
+		Children:         children,
+		DescendantCounts: descendantCounts,
+	}, nil
 }

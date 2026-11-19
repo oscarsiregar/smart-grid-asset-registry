@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { HTTPCode } from "~/libs/enums/enums.js";
 import { config } from "~/libs/modules/config/config.js";
+import { bindShowNotification } from "~/libs/modules/notification/notification.js";
 import { createStore } from "~/libs/modules/store/store.module.js";
 import {
 	type AssetDetailDto,
@@ -29,6 +30,7 @@ const PANEL: AssetDetailDto = {
 		voltageKv: 22,
 	},
 	children: [],
+	descendantCounts: null,
 	path: [
 		{
 			assetId: "SS-001",
@@ -193,6 +195,12 @@ describe("AssetDetails", () => {
 				voltageKv: null,
 			},
 			children: [],
+			descendantCounts: {
+				lvBoards: 0,
+				switchboardPanels: 0,
+				switchboards: 0,
+				transformers: 0,
+			},
 			path: [substationStep],
 		};
 		vi.stubGlobal(
@@ -231,5 +239,164 @@ describe("AssetDetails", () => {
 			await screen.findByRole("heading", { name: "Aurora Panel A1" }),
 		).toBeInTheDocument();
 		expect(fetchMock).toHaveBeenCalledTimes(REQUESTS_WITH_RETRY);
+	});
+	it("shows a substation's child groups and the counts beneath it", async () => {
+		const [substationStep, switchboardStep] = PANEL.path;
+
+		if (!substationStep || !switchboardStep) {
+			throw new Error("The fixture has no substation or switchboard");
+		}
+
+		const substation: AssetDetailDto = {
+			asset: {
+				...PANEL.asset,
+				assetId: "SS-001",
+				assetName: "Aurora Substation",
+				assetType: AssetType.SUBSTATION,
+				parentAssetId: null,
+			},
+			children: [switchboardStep],
+			descendantCounts: {
+				lvBoards: 1,
+				switchboardPanels: 10,
+				switchboards: 2,
+				transformers: 2,
+			},
+			path: [substationStep],
+		};
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(() => respondWith(HTTPCode.OK, substation)),
+		);
+
+		renderDetails("SS-001");
+
+		expect(
+			await screen.findByRole("heading", { name: "Switchboards (1)" }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { name: "Beneath this substation" }),
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole("heading", { name: /^Switchboard panels/ }),
+		).not.toBeInTheDocument();
+	});
+
+	it("lists a switchboard's panels", async () => {
+		const [substationStep, switchboardStep, panelStep] = PANEL.path;
+
+		if (!substationStep || !switchboardStep || !panelStep) {
+			throw new Error("The fixture path is incomplete");
+		}
+
+		const switchboard: AssetDetailDto = {
+			asset: {
+				...PANEL.asset,
+				assetId: "SWB-001-1",
+				assetName: "Aurora Switchboard A",
+				assetType: AssetType.SWITCHBOARD,
+				parentAssetId: "SS-001",
+			},
+			children: [panelStep],
+			descendantCounts: null,
+			path: [substationStep, switchboardStep],
+		};
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(() => respondWith(HTTPCode.OK, switchboard)),
+		);
+
+		renderDetails("SWB-001-1");
+
+		expect(
+			await screen.findByRole("heading", { name: "Switchboard panels (1)" }),
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole("heading", { name: "Beneath this substation" }),
+		).not.toBeInTheDocument();
+	});
+
+	it("shows neither groups nor a child list for a panel", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(() => respondWith(HTTPCode.OK, PANEL)),
+		);
+
+		renderDetails("PNL-001-1-01");
+
+		await screen.findByRole("heading", { name: "Aurora Panel A1" });
+		expect(
+			screen.queryByRole("heading", {
+				name: /^(Transformers|Switchboard panels)/,
+			}),
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("heading", { name: "Beneath this substation" }),
+		).not.toBeInTheDocument();
+	});
+	it("shows ASSET_NOT_FOUND as a not-found state, not an error, without a toast", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(() =>
+				Promise.resolve(
+					Response.json(
+						{
+							code: HTTPCode.NOT_FOUND,
+							data: { errorCode: "ASSET_NOT_FOUND" },
+							message: "No asset with ID NOPE exists.",
+							status: "error",
+						},
+						{ status: HTTPCode.NOT_FOUND },
+					),
+				),
+			),
+		);
+		const showNotificationMock = vi.fn();
+		const unbind = bindShowNotification(showNotificationMock);
+
+		renderDetails("NOPE");
+
+		expect(
+			await screen.findByText("No asset with ID NOPE exists."),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("link", { name: "Back to all assets" }),
+		).toHaveAttribute("href", "/assets");
+		expect(
+			screen.queryByText("The asset could not be loaded."),
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: "Try again" }),
+		).not.toBeInTheDocument();
+		expect(showNotificationMock).not.toHaveBeenCalled();
+		unbind();
+	});
+
+	it("keeps a 404 without ASSET_NOT_FOUND as an error", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(() =>
+				Promise.resolve(
+					Response.json(
+						{
+							code: HTTPCode.NOT_FOUND,
+							data: null,
+							message: "Not Found",
+							status: "error",
+						},
+						{ status: HTTPCode.NOT_FOUND },
+					),
+				),
+			),
+		);
+
+		renderDetails("NOPE");
+
+		expect(
+			await screen.findByText("The asset could not be loaded."),
+		).toBeInTheDocument();
+		expect(
+			screen.queryByText("No asset with ID NOPE exists."),
+		).not.toBeInTheDocument();
 	});
 });
