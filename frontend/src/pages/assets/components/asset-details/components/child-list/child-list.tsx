@@ -1,13 +1,14 @@
+import { Icon } from "~/libs/components/icon/icon.js";
 import { Link } from "~/libs/components/link/link.js";
 import { EMPTY_LENGTH } from "~/libs/constants/constants.js";
+import { IconName } from "~/libs/enums/enums.js";
 import { configureString } from "~/libs/helpers/helpers.js";
 import { type AssetNodeDto } from "~/modules/assets/assets.js";
 
 import { AssetsPageMessage } from "../../../../libs/enums/enums.js";
-import {
-	getAssetPath,
-	getStatusText,
-} from "../../../../libs/helpers/helpers.js";
+import { getAssetPath } from "../../../../libs/helpers/helpers.js";
+import { IdTag } from "../../../id-tag/id-tag.js";
+import { StatusBadge } from "../../../status-badge/status-badge.js";
 import styles from "./styles.module.css";
 
 type Properties = {
@@ -16,9 +17,10 @@ type Properties = {
 };
 
 /**
- * Children under a heading with their number, each a link with ID, name and
- * status in words, in the order received; an empty list says "None"
- * (spec FR-012, FR-014, FR-015).
+ * Children under a heading with their number, each a row with name, ID tag
+ * and status badge, in the order received; an empty list says "None"
+ * (spec FR-012, FR-014, FR-015). The name link is stretched over the row, so
+ * the whole row opens the asset while there is still one link per row.
  */
 const ChildList: React.FC<Properties> = ({
 	childAssets,
@@ -37,13 +39,16 @@ const ChildList: React.FC<Properties> = ({
 			<ul className={styles["list"]}>
 				{childAssets.map((child) => (
 					<li className={styles["item"]} key={child.assetId}>
-						<Link className={styles["link"]} to={getAssetPath(child.assetId)}>
-							<span className={styles["id"]}>{child.assetId}</span>
-							<span>{child.assetName}</span>
+						<Link
+							className={styles["link"]}
+							hasDefaultStyles={false}
+							to={getAssetPath(child.assetId)}
+						>
+							<span className={styles["name"]}>{child.assetName}</span>
+							<IdTag assetId={child.assetId} />
 						</Link>
-						<span className={styles["status"]}>
-							{getStatusText(child.operationalStatus)}
-						</span>
+						<StatusBadge status={child.operationalStatus} />
+						<Icon className={styles["chevron"]} iconName={IconName.CHEVRON} />
 					</li>
 				))}
 			</ul>

@@ -5,46 +5,97 @@
 }
 
 .heading {
+	padding: 0 var(--space-12);
 	margin: 0;
-	font-size: var(--font-size-body-base);
+	font-size: var(--font-size-body-sm);
+	font-weight: 600;
 	color: var(--text-strong);
 }
 
 .empty {
+	padding: 0 var(--space-12);
 	margin: 0;
+	font-size: var(--font-size-body-sm);
 	color: var(--text-muted);
 }
 
 .list {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-4);
 	padding: 0;
 	margin: 0;
+	overflow: hidden;
 	list-style: none;
+	background-color: var(--surface-inset);
+	border: var(--border-width-hairline) solid var(--border-subtle);
+	border-radius: var(--radius-lg);
 }
 
+/*
+ * The whole row opens the asset: the name link is stretched over the row, so
+ * there is still exactly one link per row for keyboard and screen readers.
+ */
 .item {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--space-4) var(--space-12);
-	align-items: baseline;
-	justify-content: space-between;
-	padding-block: var(--space-4);
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto var(--size-icon-sm);
+	gap: var(--space-16);
+	align-items: center;
+	min-height: var(--space-48);
+	padding: var(--space-8) var(--space-12);
 	border-bottom: var(--border-width-hairline) solid var(--border-subtle);
 }
 
+.item:last-child {
+	border-bottom: 0;
+}
+
+.item:hover {
+	background-color: var(--state-hover-tint);
+}
+
+.item:has(.link:focus-visible) {
+	outline: var(--border-width-focus) solid var(--border-focus);
+	outline-offset: calc(var(--border-width-focus) * -1);
+}
+
 .link {
-	display: inline-flex;
+	display: flex;
 	flex-wrap: wrap;
-	gap: var(--space-8);
+	gap: var(--space-8) var(--space-16);
+	align-items: center;
+	min-width: 0;
+	color: var(--text-strong);
+	text-decoration: none;
 }
 
-.id {
-	font-family: var(--font-family-mono);
+.link::after {
+	position: absolute;
+	inset: 0;
+	content: "";
 }
 
-.status {
-	font-size: var(--font-size-body-sm);
-	color: var(--text-muted);
+.link:focus-visible {
+	outline: none;
+}
+
+.name {
+	min-width: 0;
+	font-weight: 500;
+	overflow-wrap: anywhere;
+}
+
+.item:hover .name {
+	color: var(--text-accent);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.chevron {
+	width: var(--size-icon-sm);
+	height: var(--size-icon-sm);
+	color: var(--text-faint);
+	transform: rotate(-90deg);
+}
+
+.item:hover .chevron {
+	color: var(--text-accent);
 }

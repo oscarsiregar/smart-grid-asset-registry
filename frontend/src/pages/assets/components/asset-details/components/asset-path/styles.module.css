@@ -1,27 +1,25 @@
 .path {
 	display: flex;
 	flex-wrap: wrap;
-	gap: var(--space-4);
+	gap: var(--space-4) var(--space-8);
 	align-items: center;
 	padding: 0;
-	margin: 0;
-	font-family: var(--font-family-mono);
+	margin: 0 0 var(--space-4);
 	font-size: var(--font-size-body-sm);
 	list-style: none;
 }
 
 .step {
 	display: inline-flex;
-	gap: var(--space-4);
+	gap: var(--space-8);
 	align-items: center;
 }
 
 .step + .step::before {
 	color: var(--text-faint);
-	content: "›";
+	content: "/";
 }
 
 .current {
-	font-weight: 600;
-	color: var(--text-strong);
+	color: var(--text-muted);
 }

@@ -7,6 +7,8 @@ import { AssetType, useGetAssetDetailQuery } from "~/modules/assets/assets.js";
 import { AssetsPageMessage } from "../../libs/enums/enums.js";
 import { checkIsAssetNotFound } from "../../libs/helpers/helpers.js";
 import { assetTypeToLabel } from "../../libs/maps.js";
+import { IdTag } from "../id-tag/id-tag.js";
+import { StatusBadge } from "../status-badge/status-badge.js";
 import { AssetAttributes } from "./components/asset-attributes/asset-attributes.js";
 import { AssetPath } from "./components/asset-path/asset-path.js";
 import { ChildGroups } from "./components/child-groups/child-groups.js";
@@ -73,21 +75,37 @@ const AssetDetails: React.FC<Properties> = ({
 
 	return (
 		<article className={styles["details"]}>
-			<AssetPath currentAssetId={asset.assetId} path={path} />
-			<header className={styles["header"]}>
-				<h3 className={styles["title"]}>{asset.assetName}</h3>
+			<header className={styles["intro"]}>
+				<AssetPath currentAssetId={asset.assetId} path={path} />
 				<p className={styles["type"]}>{assetTypeToLabel[asset.assetType]}</p>
+				<h2 className={styles["title"]}>{asset.assetName}</h2>
+				<div className={styles["identity"]}>
+					<IdTag assetId={asset.assetId} />
+					<StatusBadge status={asset.operationalStatus} />
+				</div>
 			</header>
-			<AssetAttributes asset={asset} parent={parent} />
-			{asset.assetType === AssetType.SUBSTATION && (
-				<ChildGroups childAssets={children} />
-			)}
 			{descendantCounts && <DescendantCounts counts={descendantCounts} />}
+			<section className={styles["card"]}>
+				<h3 className={styles["card-title"]}>
+					{AssetsPageMessage.DETAILS_LABEL}
+				</h3>
+				<AssetAttributes asset={asset} parent={parent} />
+			</section>
+			{asset.assetType === AssetType.SUBSTATION && (
+				<section className={styles["card"]}>
+					<h3 className={styles["card-title"]}>
+						{AssetsPageMessage.CHILDREN_LABEL}
+					</h3>
+					<ChildGroups childAssets={children} />
+				</section>
+			)}
 			{asset.assetType === AssetType.SWITCHBOARD && (
-				<ChildList
-					childAssets={children}
-					label={AssetsPageMessage.COUNT_SWITCHBOARD_PANELS}
-				/>
+				<section className={styles["card"]}>
+					<ChildList
+						childAssets={children}
+						label={AssetsPageMessage.COUNT_SWITCHBOARD_PANELS}
+					/>
+				</section>
 			)}
 		</article>
 	);

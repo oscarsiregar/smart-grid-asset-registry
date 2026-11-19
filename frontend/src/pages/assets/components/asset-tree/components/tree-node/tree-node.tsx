@@ -123,13 +123,18 @@ const TreeNode: React.FC<Properties> = ({
 				) : (
 					<span className={styles["label"]}>{labelContent}</span>
 				)}
-				<StatusLabel status={node.operationalStatus} />
-				{isSelected && (
-					<span className={styles["marker"]}>
-						<Icon className={styles["marker-icon"]} iconName={IconName.CHECK} />
-						{AssetsPageMessage.SELECTED_MARKER}
-					</span>
-				)}
+				<span className={styles["meta"]}>
+					<StatusLabel status={node.operationalStatus} />
+					{isSelected && (
+						<span className={styles["marker"]}>
+							<Icon
+								className={styles["marker-icon"]}
+								iconName={IconName.CHECK}
+							/>
+							{AssetsPageMessage.SELECTED_MARKER}
+						</span>
+					)}
+				</span>
 			</div>
 			{isExpanded && (
 				<TreeChildren

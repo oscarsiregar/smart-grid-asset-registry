@@ -6,6 +6,12 @@ html {
 	scrollbar-gutter: stable;
 }
 
+/* The page behind an open modal dialog does not scroll. */
+html:has(dialog[open]) {
+	overflow: hidden;
+	scrollbar-gutter: auto;
+}
+
 body {
 	display: flex;
 	flex-direction: column;

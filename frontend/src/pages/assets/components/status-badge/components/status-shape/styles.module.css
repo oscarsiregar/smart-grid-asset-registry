@@ -1,0 +1,6 @@
+.shape {
+	display: block;
+	flex-shrink: 0;
+	width: var(--space-10);
+	height: var(--space-10);
+}

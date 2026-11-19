@@ -1,0 +1,50 @@
+.badge {
+	display: inline-flex;
+	flex-shrink: 0;
+	gap: var(--space-6);
+	align-items: center;
+	height: var(--size-control-h-sm);
+	padding: 0 var(--space-10);
+	font-size: var(--font-size-label-sm);
+	font-weight: 600;
+	white-space: nowrap;
+	border: var(--border-width-hairline) solid currentcolor;
+	border-radius: var(--radius-pill);
+}
+
+.compact {
+	height: auto;
+	padding: 0;
+	font-size: var(--font-size-meta);
+	font-weight: 500;
+	background-color: transparent;
+	border: 0;
+}
+
+.in-service {
+	color: var(--status-in-service);
+	background-color: var(--bg-success);
+}
+
+.maintenance {
+	color: var(--status-maintenance);
+	background-color: var(--bg-warning);
+}
+
+.out-of-service {
+	color: var(--status-out-of-service);
+	background-color: var(--bg-danger);
+}
+
+.none {
+	color: var(--text-muted);
+	background-color: var(--surface-inset);
+	border-color: var(--border-default);
+}
+
+.compact.in-service,
+.compact.maintenance,
+.compact.out-of-service,
+.compact.none {
+	background-color: transparent;
+}

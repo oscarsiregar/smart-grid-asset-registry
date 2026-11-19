@@ -1,17 +1,19 @@
+/* Stacked in the sidebar: text, type, then the actions. */
 .form {
 	display: flex;
-	flex-wrap: wrap;
+	flex-direction: column;
 	gap: var(--space-8);
-	align-items: flex-start;
 }
 
 .field {
-	flex: 1;
 	min-width: 0;
 }
 
 .actions {
 	display: flex;
 	gap: var(--space-8);
-	padding-top: var(--space-24);
+}
+
+.actions > * {
+	flex: 1;
 }
