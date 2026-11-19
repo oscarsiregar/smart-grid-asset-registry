@@ -3,7 +3,12 @@ import { configureString } from "~/libs/helpers/helpers.js";
 import { baseApi } from "~/libs/modules/api/base-api.js";
 
 import { AssetsApiPath, AssetsApiTag } from "./libs/enums/enums.js";
-import { type AssetDetailDto, type AssetListDto } from "./libs/types/types.js";
+import {
+	type AssetDetailDto,
+	type AssetListDto,
+	type AssetSearchRequestDto,
+	type AssetSearchResultDto,
+} from "./libs/types/types.js";
 
 const assetsApi = baseApi
 	.enhanceEndpoints({ addTagTypes: [AssetsApiTag.ASSET] })
@@ -28,9 +33,22 @@ const assetsApi = baseApi
 						? APIPath.ASSETS
 						: { params: { parentAssetId }, url: APIPath.ASSETS },
 			}),
+
+			searchAssets: builder.query<AssetSearchResultDto, AssetSearchRequestDto>({
+				// The results area renders every failure.
+				extraOptions: { shouldSuppressToast: true },
+				providesTags: [AssetsApiTag.ASSET],
+				// No page or limit: the backend's default page of 50 applies, so the
+				// frontend keeps no copy of it (principle II).
+				query: ({ assetType, q }) => ({
+					params: assetType === null ? { q } : { assetType, q },
+					url: APIPath.ASSETS,
+				}),
+			}),
 		}),
 	});
 
-const { useGetAssetDetailQuery, useGetAssetNodesQuery } = assetsApi;
+const { useGetAssetDetailQuery, useGetAssetNodesQuery, useSearchAssetsQuery } =
+	assetsApi;
 
-export { useGetAssetDetailQuery, useGetAssetNodesQuery };
+export { useGetAssetDetailQuery, useGetAssetNodesQuery, useSearchAssetsQuery };

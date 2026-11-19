@@ -53,7 +53,8 @@ Note: the rate limiter counts non-2xx responses (20 per 15 minutes); scenario I 
    same text, type and results.
 5. Search `-`: "Showing 50 of N assets that match "-"…" with the request to narrow the search.
 6. Search `NO-SUCH-ASSET`: "No asset matches "NO-SUCH-ASSET"" with the hint; no toast.
-7. Submit a blank search: "Enter an asset ID or name to search."; the address does not change.
+7. Submit a blank search: "Enter an asset ID or name to search."; the address does not change. Submit a
+   101-character text: the results area shows the server's "Invalid request: q must be at most 100 characters".
 8. **Clear**: the tree is back, the address has no `q`.
 9. With a search shown, **Import CSV**: the address keeps `q` and adds `panel=import`; close it — the same search.
    Import a file with a new matching asset: the search refreshes and lists it.

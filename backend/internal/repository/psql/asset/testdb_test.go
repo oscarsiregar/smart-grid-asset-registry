@@ -58,3 +58,5 @@ type unsupportedTx struct{}
 
 func (unsupportedTx) Commit() error   { return nil }
 func (unsupportedTx) Rollback() error { return nil }
+
+func pointer[T any](value T) *T { return &value }

@@ -137,8 +137,10 @@ the search on the asset page).
 <totalItems>" from the response, so it never holds its own copy of the limit),
 `providesTags: [AssetsApiTag.ASSET]` (so a committed import refreshes a shown search, FR-017, through 002's
 invalidation), `shouldSuppressToast` (the results area renders failures). DTOs `AssetSearchItemDto` and
-`AssetSearchResultDto`; a Zod schema `assetSearchValidationSchema` (text trimmed, 1–100 characters; type one of
-the five or `null` for all types). The select's "All types" option is a page value (`AssetTypeFilter.ALL` in
+`AssetSearchResultDto`; a Zod schema `assetSearchValidationSchema` (text trimmed and not blank, FR-004; type one
+of the five or `null` for all types). The 100-character limit is **not** repeated in the frontend: the backend
+refuses a longer text with `400 INVALID_REQUEST` and the results area shows its message, so the limit lives in
+one place (principle II). The select's "All types" option is a page value (`AssetTypeFilter.ALL` in
 `pages/assets/libs/enums`) that the form turns into `null`. The page's search form uses `useAppForm` with that schema, the template `Input` restored from
 git history (below), and a page-specific type field (a native `<select>` through `useController`, like the import
 form's mode field). The form's defaults come from the address, so a refresh fills the field.
@@ -149,8 +151,9 @@ form's mode field). The form's defaults come from the address, so a refresh fill
 with a label, an optional leading icon and an error message.
 
 **Rationale**: The conventions require forms through `useAppForm` + Zod and reuse of `libs/components` before
-writing a control (§6, §10); the user asked for the template's component, not a new one. Blank-text handling in
-the schema mirrors the backend's `Validate` (the server stays the authority, principle II).
+writing a control (§6, §10); the user asked for the template's component, not a new one. The schema only refuses a blank
+text, which never reaches the server (FR-004); every other rule, the length limit included, is the backend's
+(principle II).
 
 **Alternatives**: a raw `<input>` in the page (forbidden by §10); a new search input component (duplicates the
 template's).

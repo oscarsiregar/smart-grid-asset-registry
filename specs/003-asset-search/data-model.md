@@ -21,8 +21,9 @@ each with `ChildCount`).
 ### `repository.AssetRepository.FindAncestorIDs` (new)
 
 `FindAncestorIDs(ctx, trx, assetIDs []string) (map[string][]string, error)` — for each given asset, its ancestor
-IDs from the substation down to the parent; a substation maps to an empty slice; unknown IDs are absent; an empty
-input returns an empty map without querying.
+IDs from the substation down to the parent. Every requested ID is a key; one without ancestors (a substation, or
+an ID that is not stored — the caller only passes IDs it has just found) maps to an empty slice. An empty input
+returns an empty map without querying.
 
 ### `entity.SortSearchMatches(nodes []*AssetNode, text string)` (new, pure)
 
@@ -69,7 +70,8 @@ Constants: `usecase.MaxLimit = 100` (template rule 04), `usecase.SearchDefaultLi
 - Query `searchAssets({ q, assetType })` → `GET /api/assets?q=…[&assetType=…]` without `page` or `limit` (the
   backend's default page of 50 applies; the frontend keeps no copy of it); types `AssetSearchItemDto` (`AssetNodeDto` + `ancestorAssetIds:
   string[]`), `AssetSearchResultDto` (`items`, `totalItems`), `AssetSearchRequestDto` (`q`, `assetType | null`).
-- Validation schema `assetSearchValidationSchema`: `q` trimmed, 1–100 characters; `assetType` one of `AssetType`
+- Validation schema `assetSearchValidationSchema`: `q` trimmed and not blank (FR-004) — no length limit, which is
+  the backend's alone (a longer text is refused with `400 INVALID_REQUEST` and its message shown); `assetType` one of `AssetType`
   or `null` (all types). The select's "All types" option is `AssetTypeFilter.ALL` in `pages/assets/libs/enums`,
   mapped to `null` by the form.
 

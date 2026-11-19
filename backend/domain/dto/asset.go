@@ -4,8 +4,14 @@ package dto
 // Lists are complete, not paged (Template Exception 13).
 
 // GetListAssetRequest: an absent or empty ParentAssetID means the top level.
+// A non-blank Q makes it a search (feature 003); AssetType, Page and Limit
+// apply to a search only.
 type GetListAssetRequest struct {
 	ParentAssetID string `query:"parentAssetId"`
+	Q             string `query:"q"`
+	AssetType     string `query:"assetType"`
+	Page          int    `query:"page"`
+	Limit         int    `query:"limit"`
 }
 
 // GetAssetDetailRequest: AssetID arrives percent-encoded; the handler decodes
@@ -61,4 +67,23 @@ type DescendantCountsResponse struct {
 	LVBoards          int `json:"lvBoards"`
 	Switchboards      int `json:"switchboards"`
 	SwitchboardPanels int `json:"switchboardPanels"`
+}
+
+// AssetSearchItemResponse is one search match: the asset node plus its
+// ancestors from the substation down to its parent ([] for a substation,
+// never null). Contract: specs/003-asset-search/contracts/assets-search-api.md.
+type AssetSearchItemResponse struct {
+	AssetID           string   `json:"assetId"`
+	AssetName         string   `json:"assetName"`
+	AssetType         string   `json:"assetType"`
+	OperationalStatus *string  `json:"operationalStatus"`
+	ChildCount        int      `json:"childCount"`
+	AncestorAssetIDs  []string `json:"ancestorAssetIds"`
+}
+
+// AssetSearchResponse: Items is one page, never null; TotalItems counts every
+// match.
+type AssetSearchResponse struct {
+	Items      []AssetSearchItemResponse `json:"items"`
+	TotalItems int                       `json:"totalItems"`
 }
