@@ -34,6 +34,22 @@ displays:
 Imports only ever add assets that satisfy these rules, so every stored asset other than a substation has a
 stored parent of the permitted type.
 
+## Clarifications
+
+### Session 2026-11-19
+
+- Q: When an asset has a very large number of children, should the tree and the details list show them all at
+  once, or in pages? → A: Show all at once, no paging; responsiveness at 50,000 assets is covered by SC-006.
+- Q: When a switchboard is selected, should the details area also list the panels under it? → A: Yes — its
+  panels with asset ID, name, status and their number, each selectable (FR-015).
+- Q: Should each tree node also show the asset's operational status? → A: Only when it is not in service: a
+  node shows a status label for Maintenance, Out of service or No status recorded; in-service nodes show none
+  (FR-002).
+- Q: In what order should substations and the children within each type group be listed? → A: By asset ID,
+  comparing runs of digits as numbers, so SS-2 comes before SS-10 (FR-004).
+- Q: Should the details area show the selected asset's full path from its substation, or only its direct
+  parent? → A: The full path (substation › … › selected asset), each ancestor selectable (FR-011).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Explore the hierarchy and see an asset's details (Priority: P1)
@@ -60,8 +76,10 @@ of its switchboards, select a panel, and check that every attribute shown matche
    number, commissioned date and parent, and the panel is highlighted in the tree.
 4. **Given** an asset with blank optional attributes, **When** it is selected, **Then** each blank attribute is
    shown as explicitly not recorded rather than left empty or shown as zero.
-5. **Given** a non-substation asset is selected, **When** the operator activates its parent in the details area,
-   **Then** the parent becomes the selected asset.
+5. **Given** a switchboard panel is selected, **When** the operator looks at the details area, **Then** it
+   shows the path from the panel's substation through its switchboard to the panel; **When** the operator
+   activates the substation or the switchboard in that path (or the parent), **Then** that asset becomes the
+   selected asset.
 
 ---
 
@@ -163,8 +181,8 @@ unchanged.
 - **Blank address segment** (for example `/assets/`): treated as the overview with no asset selected.
 - **Asset with no children**: shown in the tree without an expand control; a substation with no children shows
   all three groups as empty and all four counts as 0.
-- **Many children**: a substation or switchboard with hundreds of children still lists every child in the tree
-  and in the grouped list, in a stable order.
+- **Many children**: a substation or switchboard with hundreds or thousands of children lists every child at
+  once in the tree and in the details lists, in a stable order; there is no paging or "show more".
 - **Asset whose ancestors are collapsed**: selecting it through its address or through a link in the details
   area expands its ancestors so it is visible and highlighted.
 - **Selected asset is collapsed out of view**: if the operator collapses an ancestor of the selected asset, the
@@ -182,11 +200,15 @@ unchanged.
 
 - **FR-001**: The asset page MUST show the stored hierarchy as a tree whose top level is every stored
   substation.
-- **FR-002**: Each tree node MUST show the asset's ID, name and type in words.
+- **FR-002**: Each tree node MUST show the asset's ID, name and type in words. A node whose asset is not in
+  service MUST also show its status in words — "Maintenance", "Out of service" or "No status recorded"; an
+  in-service node shows no status label.
 - **FR-003**: A node MUST be expandable if and only if the asset has at least one stored child; expanding it
-  MUST show all of its immediate children.
+  MUST show all of its immediate children at once, without paging.
 - **FR-004**: The order of nodes MUST be stable: top-level substations by asset ID; children grouped by type in
-  the order transformers, LV boards, switchboards, and by asset ID within a type; panels by asset ID.
+  the order transformers, LV boards, switchboards, and by asset ID within a type; panels by asset ID. Asset IDs
+  are compared with runs of digits taken as numbers, so `SS-2` comes before `SS-10`. The details lists
+  (FR-012, FR-015) use the same order.
 - **FR-005**: Only the selected asset's ancestors are expanded automatically; all other nodes start collapsed,
   and the operator can expand and collapse any node.
 - **FR-006**: The selected asset MUST be highlighted in the tree in a way that does not rely on colour alone,
@@ -203,7 +225,10 @@ unchanged.
   operational status), never as an empty space or zero.
 - **FR-010**: Numbers MUST be shown as stored, with their unit (kV, kVA); dates MUST be shown as calendar dates
   in an unambiguous format (for example 2010-03-12).
-- **FR-011**: The parent shown in the details MUST be selectable, making it the selected asset.
+- **FR-011**: The details MUST show the selected asset's path from its substation down to the asset itself (for
+  example `SS-001 › SWB-001-1 › PNL-001-1-3`), each step with its asset ID. Every ancestor in the path, like
+  the parent in FR-008, MUST be selectable, making it the selected asset. For a substation the path is the
+  substation alone.
 - **FR-012**: When a substation is selected, the details MUST also list its immediate children in three
   groups — transformers, LV boards, switchboards — each child with asset ID, name and operational status,
   each group with its number of children, and an empty group stated as having none.
@@ -212,14 +237,15 @@ unchanged.
   switchboards. The counts MUST equal what the tree shows when every node under the substation is expanded.
 - **FR-014**: Every child listed in a substation's groups MUST be selectable, making it the selected asset.
 - **FR-015**: When a non-substation asset with children is selected (a switchboard with panels), the details
-  MUST list its immediate children with asset ID, name and operational status, and their number.
+  MUST list its immediate children with asset ID, name and operational status, and their number; each listed
+  child MUST be selectable, making it the selected asset.
 - **FR-016**: With no asset selected, the details area MUST invite the operator to select an asset.
 
 **Addresses and navigation**
 
 - **FR-017**: Each asset MUST have a stable address that contains its asset ID (for example
   `/assets/<asset_id>`), with characters that are special in addresses encoded so every stored ID round-trips.
-- **FR-018**: Selecting an asset (in the tree, through its parent, or through a listed child) MUST change the
+- **FR-018**: Selecting an asset (in the tree, through its path or parent, or through a listed child) MUST change the
   address to that asset's address and add a browser history entry, so back and forward move between selections.
 - **FR-019**: Opening an asset's address directly or refreshing it MUST select that asset, show its details,
   expand its ancestors and highlight it (FR-005, FR-006).
@@ -255,11 +281,12 @@ unchanged.
 - **Asset**: as defined in feature 001 — a piece of grid equipment identified by its asset ID, with type, name,
   operational status, voltage, rating, manufacturer, model, serial number, commissioned date and an optional
   parent. Substations are the roots of the hierarchy.
-- **Asset node**: an asset as it appears in the tree: asset ID, name, type, and whether it has children.
+- **Asset node**: an asset as it appears in the tree: asset ID, name, type, operational status, and whether it
+  has children.
 - **Substation summary**: for one substation, its immediate children grouped by type and the counts of
   transformers, LV boards, switchboards and switchboard panels beneath it.
 - **Ancestor path**: the chain from a substation down to a given asset (at most three assets), used to expand
-  the tree to a selected asset.
+  the tree to a selected asset and shown as the path in the details area.
 
 ## Success Criteria *(mandatory)*
 
@@ -291,7 +318,8 @@ unchanged.
   The import panel keeps its existing address parameter, which is combined with the asset address.
 - Asset IDs are matched exactly, letter case included, consistent with feature 001 treating IDs as exact
   values.
-- Tree ordering is by asset ID, as described in FR-004; other orderings (by name, by status) are not needed.
+- Ordering is by asset ID with numeric digit runs, as described in FR-004; other orderings (by name, by status)
+  are not needed.
 - Only the selected asset is part of the address; which other nodes the operator expanded is not remembered
   across refreshes.
 - Details show the stored attributes only. Information about the import that created an asset, and history of
