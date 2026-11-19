@@ -97,9 +97,10 @@ weaker guarantee).
    (counted over the whole file first).
 2. *Hierarchy pass* only for rows whose fields are valid: parent presence/self/not-found, parent
    type (in-file row or stored asset), cycles found by following parent pointers over the map of
-   unique in-file IDs (every node on a cycle gets `CYCLE_DETECTED`), then `PARENT_REJECTED`
-   propagated to a fixpoint (skipping cycle members), then re-import comparison against stored
-   assets, then serial-number warnings over accepted + stored assets.
+   unique in-file IDs (every node on a cycle gets `CYCLE_DETECTED`), then the re-import
+   comparison against stored assets (unchanged / `ASSET_ID_CONFLICT`), then `PARENT_REJECTED`
+   propagated to a fixpoint (skipping cycle members) so a conflicting row's children are rejected
+   too, then serial-number warnings over accepted + stored assets.
 Accepted assets are emitted parents-first (depth, then asset ID) so a batched insert never violates
 the parent foreign key. Message arguments that list IDs or rows are sorted.
 

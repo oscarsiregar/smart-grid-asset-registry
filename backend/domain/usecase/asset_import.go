@@ -23,7 +23,7 @@ type AssetImportUsecase interface {
 
 const (
 	// SystemActorName is the only value written to *_by_name audit columns
-	// while the product has no users.
+	// while the app has no users.
 	SystemActorName = "system"
 	// MaxFileBytes is the largest accepted CSV file (5 MB).
 	MaxFileBytes = 5 * 1024 * 1024

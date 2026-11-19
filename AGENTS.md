@@ -13,8 +13,8 @@ PostgreSQL, and lets users explore and search the asset hierarchy.
 | Scope | File | Notes |
 |---|---|---|
 | Whole project (highest authority) | [.specify/memory/constitution.md](.specify/memory/constitution.md) | Principles, template exceptions, definition of done |
-| Backend (Go) | [backend/AGENTS.md](backend/AGENTS.md) + [backend/docs/rules/](backend/docs/rules/) | Reference module: `product` |
-| Frontend (React) | [frontend/AGENTS.md](frontend/AGENTS.md) + [frontend/docs/code-conventions.md](frontend/docs/code-conventions.md) | Reference module: `notes` |
+| Backend (Go) | [backend/AGENTS.md](backend/AGENTS.md) + [backend/docs/rules/](backend/docs/rules/) | Reference module: `asset_import` (handler, usecase) with repositories `asset` and `asset_import`; pure rules in `domain/assetimport` |
+| Frontend (React) | [frontend/AGENTS.md](frontend/AGENTS.md) + [frontend/docs/code-conventions.md](frontend/docs/code-conventions.md) | Reference module: `modules/imports` + `pages/assets` |
 | Features | `specs/<NNN-feature>/` (spec, plan, tasks) | Created through Spec Kit |
 
 Precedence: constitution → the part-specific `AGENTS.md` → the feature's spec and plan. Each

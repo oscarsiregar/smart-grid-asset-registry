@@ -10,7 +10,6 @@ export { HTTPCode } from "./http-code.enum.js";
 export { HTTPHeader } from "./http-header.enum.js";
 export { HTTPMethod } from "./http-method.enum.js";
 export { IconName } from "./icon-name.enum.js";
-export { InputType } from "./input-type.enum.js";
 export { KeyboardKey } from "./keyboard-key.enum.js";
 export { PanelName } from "./panel-name.enum.js";
 export { SearchParameter } from "./search-parameter.enum.js";

@@ -14,10 +14,7 @@ import (
 )
 
 var catalog = map[string]string{
-	errorcode.InvalidRequest:           "Invalid request: %s",
-	errorcode.PermissionDenied:         "You do not have permission to access this data",
-	errorcode.ProductNotFound:          "Product not found",
-	errorcode.ProductCodeAlreadyExists: "Product code %s is already in use",
+	errorcode.InvalidRequest: "Invalid request: %s",
 
 	// CSV import, file level. Args: limit; –; line; column list; column list.
 	errorcode.ImportFileTooLarge:     "The file is too large. The maximum size is %s.",

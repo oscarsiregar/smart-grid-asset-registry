@@ -19,7 +19,7 @@ type RouteDependencies struct {
 // RegisterRoutes is the only place routes are registered.
 //
 // Every route is public and lives under /api (constitution, Template
-// Exceptions 1 and 5): the product has no users, so the template's
+// Exceptions 1 and 5): the app has no users, so the template's
 // InternalSecret → Identity → JWTVerifyStrict chain does not apply. If users
 // are ever introduced, restore that chain (backend/docs/rules/07-keamanan.md).
 func RegisterRoutes(deps *RouteDependencies) {

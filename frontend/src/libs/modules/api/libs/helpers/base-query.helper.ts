@@ -21,7 +21,7 @@ type BaseQueryFunctionInternal = BaseQueryFn<
 	BaseQueryExtraOptions | undefined
 >;
 
-// The product has no users (constitution, Template Exception 1): requests
+// The app has no users (constitution, Template Exception 1): requests
 // carry no token and there is no 401/403 handling.
 const fetchQuery = fetchBaseQuery({
 	baseUrl: config.ENV.API.ORIGIN_URL,

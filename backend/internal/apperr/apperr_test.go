@@ -30,8 +30,8 @@ func TestImportFileTooLarge_MatchesErrorHandler(t *testing.T) {
 }
 
 func TestMessage(t *testing.T) {
-	assert.Equal(t, "Product not found", Message(errorcode.ProductNotFound))
-	assert.Equal(t, "Product code P-1 is already in use", Message(errorcode.ProductCodeAlreadyExists, "P-1"))
+	assert.Equal(t, "Invalid request: x", Message(errorcode.InvalidRequest, "x"))
+	assert.Equal(t, "Parent SS-9 is neither stored nor in the file.", Message(errorcode.ParentNotFound, "SS-9"))
 	assert.Equal(t, "UNKNOWN_CODE", Message("UNKNOWN_CODE"), "unknown codes fall back to the code itself")
 }
 
@@ -44,9 +44,13 @@ func TestConstructors_MapToHTTPStatusAndCarryTheCode(t *testing.T) {
 		wantMessage string
 	}{
 		{"bad request", BadRequest(errorcode.InvalidRequest, "x"), http.StatusBadRequest, errorcode.InvalidRequest, "Invalid request: x"},
-		{"forbidden", Forbidden(errorcode.PermissionDenied), http.StatusForbidden, errorcode.PermissionDenied, "You do not have permission to access this data"},
-		{"not found", NotFound(errorcode.ProductNotFound), http.StatusNotFound, errorcode.ProductNotFound, "Product not found"},
-		{"conflict", Conflict(errorcode.ProductCodeAlreadyExists, "P-1"), http.StatusConflict, errorcode.ProductCodeAlreadyExists, "Product code P-1 is already in use"},
+		// The template's Forbidden/NotFound/Conflict stay available; this
+		// feature has no code for them yet, so an unknown code (message =
+		// the code itself) checks the status mapping.
+		{"forbidden", Forbidden("SOME_CODE"), http.StatusForbidden, "SOME_CODE", "SOME_CODE"},
+		{"not found", NotFound("SOME_CODE"), http.StatusNotFound, "SOME_CODE", "SOME_CODE"},
+		{"conflict", Conflict(errorcode.AssetIDConflict, "TX-1", "voltage_kv"), http.StatusConflict, errorcode.AssetIDConflict,
+			"Asset TX-1 is already stored with different values for: voltage_kv. Editing stored assets is not supported."},
 		{"unprocessable", UnprocessableEntity(errorcode.InvalidRequest, "x"), http.StatusUnprocessableEntity, errorcode.InvalidRequest, "Invalid request: x"},
 	}
 	for _, tt := range tests {

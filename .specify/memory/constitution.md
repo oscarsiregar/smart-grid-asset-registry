@@ -1,16 +1,3 @@
-<!--
-Sync Impact Report
-- Version change: 1.0.0 → 1.1.0 (MINOR: Template Exceptions materially expanded)
-- Modified principles: none
-- Added: Template Exceptions 8–12 (no CHECK constraints, English project docs,
-  domain/assetimport package, real-PostgreSQL test packages, in-memory CSV uploads)
-- Removed sections: none
-- Templates: none modified (dependent templates read this file at runtime)
-- Follow-up: specs/001-csv-import plan deviation D2 (omit *_by_name audit columns) is NOT
-  covered by this amendment; the plan must keep the template audit columns or a further
-  amendment must add it.
--->
-
 # Smart Grid Asset Registry Constitution
 
 A web app that imports a CSV of grid assets (substations and their equipment, linked by

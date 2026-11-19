@@ -4,7 +4,6 @@ import { type NavigationItem } from "../types/types.js";
 
 const NAVIGATION_ITEMS: readonly NavigationItem[] = [
 	{ label: "Assets", to: AppRoute.ASSETS },
-	{ label: "Notes", to: AppRoute.NOTES },
 ];
 
 export { NAVIGATION_ITEMS };

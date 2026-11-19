@@ -2,7 +2,10 @@
 
 File ini berlaku untuk manusia **dan** AI agent (Claude Code, Codex, Cursor, dll).
 Ringkasan di sini bersifat **mengikat**; detail & alasan ada di [docs/rules/](docs/rules/).
-Contoh implementasi referensi: modul **`product`** — tiru polanya, jangan menciptakan pola baru.
+Contoh implementasi referensi: modul **`asset_import`** (`internal/handler/asset_import`, `internal/usecase/asset_import`,
+`internal/repository/psql/asset` dan `asset_import`; aturan murni di `domain/assetimport`) — tiru polanya, jangan menciptakan pola baru.
+Modul contoh template `product` sudah dihapus (constitution → *Template Exceptions* no. 7); bila [docs/menambah-fitur.md](docs/menambah-fitur.md)
+menyebut file `product`, padanannya ada di modul `asset_import` (mis. `create_product.go` → `create_asset_import.go`).
 
 > **Khusus proyek ini:** tidak ada autentikasi/otorisasi (pengecualian resmi terhadap template, lihat
 > `.specify/memory/constitution.md` → *Template Exceptions* no. 1). Route bisnis publik di bawah `/api`; tidak ada
@@ -29,7 +32,7 @@ handler  ──►  usecase  ──►  repository / service
 5. Dependency injection **hanya** di `internal/bootstrap/setup.go`. Route **hanya** di `internal/routes/router.go`.
 
 ## Struktur file — [02-penamaan](docs/rules/02-penamaan.md)
-- **1 file = 1 endpoint/use case/method repository.** `create_product.go`, `find_by_id.go`, dst. Setiap file punya `_test.go` pasangannya.
+- **1 file = 1 endpoint/use case/method repository.** `create_asset_import.go`, `find_by_asset_ids.go`, dst. Setiap file punya `_test.go` pasangannya.
 - Tiap package punya `init.go` (struct + constructor `NewXxx`) dan opsional `helpers.go`.
 - Nama package implementasi: `<modul>_usecase`, `<modul>_repository`; handler: `<modul>`. Import alias = nama package.
 - Nama method seragam di semua layer: `GetListXxx`, `GetXxxDetail`, `CreateXxx`, `UpdateXxx`, `DeleteXxx`.

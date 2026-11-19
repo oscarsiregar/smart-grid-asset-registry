@@ -35,14 +35,6 @@ createRoot(document.querySelector("#root") as HTMLElement).render(
 										},
 										path: AppRoute.ASSETS,
 									},
-									{
-										lazy: async () => {
-											const pageModule = await import("~/pages/notes/notes.js");
-
-											return { Component: pageModule.Notes };
-										},
-										path: AppRoute.NOTES,
-									},
 								],
 								element: <AppShell />,
 								hydrateFallbackElement: <Loader />,

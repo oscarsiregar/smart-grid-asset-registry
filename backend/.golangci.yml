@@ -17,7 +17,7 @@ linters:
   settings:
     revive:
       rules:
-        # package names like product_usecase are an intentional convention
+        # package names like asset_import_usecase are an intentional convention
         - name: var-naming
           disabled: true
   exclusions:
