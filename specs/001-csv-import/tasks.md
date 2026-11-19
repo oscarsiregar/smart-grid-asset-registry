@@ -184,7 +184,7 @@ failure stores nothing and leaves no record.
 - [X] T087 [P] [US2] Extend `backend/docs/api/asset-import.md` with `POST /api/imports`, the three completed outcomes, `201`/`500` semantics and the import record
 - [X] T088 [US2] Add `createImport` mutation (`POST APIPath.IMPORTS`, same `FormData`, `shouldSuppressToast`) to `frontend/src/modules/imports/imports-api.ts` + test in `imports-api.test.ts`; export `useCreateImportMutation`
 - [X] T089 [US2] Confirm flow in `frontend/src/pages/assets/components/import-panel/import-panel.tsx` and `components/import-result/import-result.tsx` (+ tests): after a `VALIDATED_ONLY` result, **Save N assets** sends the same `File` and mode with `useCreateImportMutation` (loading "Saving…"); outcome banner texts "Committed — N assets saved" and "Nothing to commit — no new assets" (add to `outcome-banner.tsx` + test); `500` → "Not committed — the import failed and was rolled back"; **Import another file** resets both mutations and the form
-- [ ] T090 [US2] **Checkpoint — real stack**: `docker compose down -v && docker compose up --build`; quickstart API scenario C and I (stop `db` during a confirm, restart, verify no new record or assets; api log shows the failure with file name and mode) and UI step 5; `psql` shows 205 assets, 13 with type `SUBSTATION`; all five check commands exit 0
+- [X] T090 [US2] **Checkpoint — real stack**: `docker compose down -v && docker compose up --build`; quickstart API scenario C and I (stop `db` during a confirm, restart, verify no new record or assets; api log shows the failure with file name and mode) and UI step 5; `psql` shows 205 assets, 13 with type `SUBSTATION`; all five check commands exit 0
 
 ---
 
@@ -205,7 +205,7 @@ a fully valid file is saved completely.
 
 - [X] T093 [US3] Implement the strict branch in `backend/internal/usecase/asset_import/create_asset_import.go` (checked before the `COMMITTED`/`NOTHING_TO_COMMIT` decision, data-model.md commit states) — T091 and T092 pass
 - [X] T094 [US3] Frontend strict outcome: "Not committed — strict mode, N rows rejected" in `frontend/src/pages/assets/components/import-panel/components/outcome-banner/outcome-banner.tsx` (+ test); strict-mode explanation text in `import-form.tsx` enums; `import-result.tsx` keeps listing every rejected row for `STRICT_BLOCKED` (+ test)
-- [ ] T095 [US3] **Checkpoint — real stack**: `docker compose down -v && docker compose up --build`; quickstart API scenario B and UI step 7; `psql` shows 0 assets and one `STRICT_BLOCKED` record; all five check commands exit 0
+- [X] T095 [US3] **Checkpoint — real stack**: `docker compose down -v && docker compose up --build`; quickstart API scenario B and UI step 7; `psql` shows 0 assets and one `STRICT_BLOCKED` record; all five check commands exit 0
 
 ---
 
@@ -228,7 +228,7 @@ different values are rejected with `ASSET_ID_CONFLICT`; repeating an import adds
 - [X] T099 [US4] `backend/domain/assetimport/reimport_rules.go` and wire it into `validate.go` after the hierarchy pass and before `PARENT_REJECTED` propagation, so conflicts propagate to children; unchanged rows are excluded from `Accepted` — T097, T049 and T050 still pass
 - [X] T100 [US4] Re-import cases in `backend/internal/integrationtest/create_asset_import_test.go`: sample twice → second `NOTHING_TO_COMMIT`, counts 222/0/205/17, still 205 assets, two records; stored `TX-001-1` with a changed status → `ASSET_ID_CONFLICT` with the field name; a transformer-only file whose parent is stored `SS-001` → committed; **moved from T085**: an asset with the same ID but different values stored between validate and confirm → the confirm result rejects that row with `ASSET_ID_CONFLICT` (US2 scenario 3, conflicting variant); two concurrent imports of **overlapping** files serialise and the second reports the shared rows as unchanged (FR-024, overlapping variant)
 - [X] T101 [US4] Frontend re-import rendering tests in `frontend/src/pages/assets/components/import-panel/components/import-result/import-result.test.tsx` and `rejected-rows-table.test.tsx`: unchanged count shown, `ASSET_ID_CONFLICT` message listing fields rendered, "Nothing to commit — no new assets" banner after a re-import response
-- [ ] T102 [US4] **Checkpoint — real stack**: `docker compose up --build` on the database from T090 (or re-import the sample first); quickstart API scenarios D and E and UI step 6; `psql` shows still 205 assets and a `NOTHING_TO_COMMIT` record; all five check commands exit 0
+- [X] T102 [US4] **Checkpoint — real stack**: `docker compose up --build` on the database from T090 (or re-import the sample first); quickstart API scenarios D and E and UI step 6; `psql` shows still 205 assets and a `NOTHING_TO_COMMIT` record; all five check commands exit 0
 
 ---
 
@@ -248,7 +248,7 @@ reference-module pointers, and the final Definition of Done run.
 - [X] T111 [P] Security pass per `backend/docs/rules/07-keamanan.md` checklist (minus auth): no SQL string concatenation, no row contents or secrets in logs, `.env` files untracked (`git ls-files | grep -E '(^|/)\.env$'` empty), errors 500 leak no detail
 - [X] T112 Coverage gate: `make cover` in `backend/` reports `internal/usecase` ≥ 80 %; add missing usecase branch tests if not
 - [X] T113 Remove the "Sync Impact Report" HTML comment from `.specify/memory/constitution.md` if it is still present (it is review scaffolding, not governance text)
-- [ ] T114 Final Definition of Done run (constitution): `docker compose down -v && docker compose up --build` starts cleanly; `make check` (with `TEST_DATABASE_URL`) and `make lint` exit 0; `pnpm lint`, `pnpm build`, `pnpm test` exit 0; `docker compose --profile test run --rm backend-test` and `frontend-test` exit 0; full [quickstart.md](quickstart.md) (API A–I incl. H2/H3, UI 1–10, shuffle spot check) passes in the real app; `docs/ARCHITECTURE.md` and `docs/KNOWN_LIMITATIONS.md` reflect the final code; no secrets committed. Record every command with its exit code
+- [X] T114 Final Definition of Done run (constitution): `docker compose down -v && docker compose up --build` starts cleanly; `make check` (with `TEST_DATABASE_URL`) and `make lint` exit 0; `pnpm lint`, `pnpm build`, `pnpm test` exit 0; `docker compose --profile test run --rm backend-test` and `frontend-test` exit 0; full [quickstart.md](quickstart.md) (API A–I incl. H2/H3, UI 1–10, shuffle spot check) passes in the real app; `docs/ARCHITECTURE.md` and `docs/KNOWN_LIMITATIONS.md` reflect the final code; no secrets committed. Record every command with its exit code
 
 ---
 
