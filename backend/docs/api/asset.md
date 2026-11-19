@@ -1,13 +1,14 @@
-# API: asset explorer
+# API: asset explorer and search
 
-Reads the stored asset hierarchy: the top level, the children of one asset, and one asset's details. Source
-of truth for the module's HTTP contract; it matches `specs/002-asset-explorer/contracts/assets-api.md`.
+Reads the stored asset hierarchy: the top level, the children of one asset, one asset's details, and the search
+by asset ID or name. Source of truth for the module's HTTP contract; it matches
+`specs/002-asset-explorer/contracts/assets-api.md` and `specs/003-asset-search/contracts/assets-search-api.md`.
 The module only reads; assets are created by imports ([asset-import.md](asset-import.md)).
 
 - Base path: `/api` (no version prefix, constitution Template Exception 5)
 - Authentication: none (Template Exception 1)
 - Handler: `internal/handler/asset` · Usecase: `internal/usecase/asset` · Repository:
-  `internal/repository/psql/asset` · Ordering: `domain/entity/asset_node.go`
+  `internal/repository/psql/asset` · Ordering: `domain/entity/asset_node.go`, `domain/entity/asset_search.go`
 
 ## Response envelope
 
@@ -28,8 +29,8 @@ details are only logged.
 
 ## Complete lists, fixed order
 
-Lists are **complete, not paged** (Template Exception 13): the explorer shows every child of a node at
-once. There are no `page` / `limit` parameters, and `totalItems` always equals the number of `items`.
+The hierarchy lists are **complete, not paged** (Template Exception 13): the explorer shows every child of a
+node at once. The [search](#search-get-apiassetsq) is the exception: it is paged (Template Exception 14). There are no `page` / `limit` parameters, and `totalItems` always equals the number of `items`.
 `items` is never `null`.
 
 Every list is ordered by the backend; clients show it as received:
@@ -69,6 +70,8 @@ The top level (every substation), or the immediate children of one asset.
 |---|---|---|
 | `parentAssetId` | no | asset whose immediate children to list; absent or empty = top level |
 
+A non-blank `q` turns the request into a [search](#search-get-apiassetsq).
+
 **200** — `"message": "Successfully get list asset"`
 
 ```json
@@ -81,6 +84,62 @@ An empty registry answers `200` with `{ "items": [], "totalItems": 0 }`; a store
 answers `200` with an empty list.
 
 **404** `ASSET_NOT_FOUND` — `parentAssetId` names no stored asset.
+
+## Search: `GET /api/assets?q=…`
+
+Finds assets whose ID or name contains the text, at every level of the hierarchy (feature 003). It is a filter on
+the list read above; without a non-blank `q` the request is the hierarchy read, unchanged.
+
+| Query parameter | Required | Meaning |
+|---|---|---|
+| `q` | yes (for a search) | search text; trimmed; 1–100 characters after trimming; matched as "contains", letter case ignored, every character literal (`%` and `_` match only themselves) |
+| `assetType` | no | `SUBSTATION` \| `TRANSFORMER` \| `LV_BOARD` \| `SWITCHBOARD` \| `SWITCHBOARD_PANEL`; only with `q` |
+| `page` | no | ≥ 1, default 1; only with `q` |
+| `limit` | no | 1–100, default 50; values above 100 are capped at 100; only with `q` |
+
+A blank `q` (absent, empty or only spaces) is not a search.
+
+**200** — `"message": "Successfully get list asset"`
+
+```json
+{
+  "items": [
+    { "assetId": "PNL-001-1-01", "assetName": "Aurora Panel A1", "assetType": "SWITCHBOARD_PANEL",
+      "operationalStatus": "MAINTENANCE", "childCount": 0, "ancestorAssetIds": ["SS-001", "SWB-001-1"] }
+  ],
+  "totalItems": 10
+}
+```
+
+| Field | Notes |
+|---|---|
+| `items` | the requested page of matches, never `null`; each is an [asset node](#asset-node) plus `ancestorAssetIds` |
+| `ancestorAssetIds` | the asset's ancestors from its substation down to its parent; `[]` for a substation |
+| `totalItems` | the number of **all** matches, not only this page |
+
+**Order.** Assets whose ID or name equals `q` (letter case ignored) come first, then the rest; each part in the
+order of the lists above (type, then natural asset ID). A search for a full asset ID therefore lists that asset
+first. A search that matches nothing answers `200` with `{ "items": [], "totalItems": 0 }`; a `page` past the last
+match answers `items: []` with the real `totalItems`.
+
+**Paging (Template Exception 14).** The repository loads every match (`ILIKE` on `asset_id` and `asset_name` with
+`querysafety.ContainsPattern`); the usecase orders them with `entity.SortSearchMatches`, cuts the page, and reads
+the ancestors of that page only (`FindAncestorIDs`, one recursive CTE). The natural ID order is not expressible in
+SQL, which is why the page is cut in Go.
+
+**400** `INVALID_REQUEST` — no search is run:
+
+| Request | Message |
+|---|---|
+| `q` longer than 100 characters | `Invalid request: q must be at most 100 characters` |
+| `q` with `parentAssetId` | `Invalid request: q and parentAssetId cannot be combined` |
+| `assetType` without `q` | `Invalid request: assetType requires q` |
+| `page` or `limit` without `q` | `Invalid request: page and limit apply to a search only` |
+| `assetType` not a known type | `Invalid request: assetType is not a valid asset type` |
+| `page` / `limit` negative | `Invalid request: page and limit must not be negative` |
+| `page` / `limit` not a number | `Invalid request: invalid query parameters` |
+
+The search never answers `404`: an unknown text is an empty result.
 
 ## `GET /api/assets/:assetId`
 
@@ -139,7 +198,7 @@ clients rewrite `/api/assets/..` before it is sent. Such an asset can be listed 
 
 | Status | `data.errorCode` | When |
 |---|---|---|
-| 400 | `INVALID_REQUEST` | bad percent-encoding in `:assetId` |
+| 400 | `INVALID_REQUEST` | bad percent-encoding in `:assetId`; a search parameter rule (see [Search](#search-get-apiassetsq)) |
 | 404 | `ASSET_NOT_FOUND` | unknown `:assetId` or `parentAssetId` |
 | 429 | — | rate limiter (20 non-2xx responses per 15 minutes per client) |
 | 500 | — | database or other technical failure; logged, nothing leaked |
@@ -150,4 +209,7 @@ The details are read without a transaction (assets are only ever added): the ass
 recursive CTE upwards), its children with their child counts, and — for a substation — a recursive CTE
 downwards grouped by type. Every value from the request is a bound `?` parameter. With ~55 000 stored
 assets the integration test measures the top level, a 5 000-child list and a substation's details in
-well under 100 ms each (`internal/integrationtest/asset_explorer_scale_test.go`).
+well under 100 ms each (`internal/integrationtest/asset_explorer_scale_test.go`). The same test times three
+searches against the 1 s budget of feature 003 (SC-005): one asset (`WIDE-4999`) about 70 ms, `PNL` limited to
+switchboard panels about 270 ms, and `-` (every asset matches, so every row is loaded and sorted) about 770 ms.
+The search logs the text's length and the counts, never the text itself.

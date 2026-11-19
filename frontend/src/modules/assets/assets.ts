@@ -1,4 +1,8 @@
-export { useGetAssetDetailQuery, useGetAssetNodesQuery } from "./assets-api.js";
+export {
+	useGetAssetDetailQuery,
+	useGetAssetNodesQuery,
+	useSearchAssetsQuery,
+} from "./assets-api.js";
 export {
 	AssetsApiTag,
 	AssetsErrorCode,
@@ -10,5 +14,9 @@ export {
 	type AssetDto,
 	type AssetListDto,
 	type AssetNodeDto,
+	type AssetSearchItemDto,
+	type AssetSearchRequestDto,
+	type AssetSearchResultDto,
 	type DescendantCountsDto,
 } from "./libs/types/types.js";
+export { assetSearchValidationSchema } from "./libs/validation-schemas/validation-schemas.js";

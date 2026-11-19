@@ -99,3 +99,60 @@ func TestAssetRepository_FindNodes(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestAssetRepository_FindNodes_Search(t *testing.T) {
+	ctx := context.Background()
+	searchSQL := nodeSelectSQL + `WHERE \(a\.asset_id ILIKE \$1 OR a\.asset_name ILIKE \$2\)$`
+	searchWithTypeSQL := nodeSelectSQL +
+		`WHERE \(\(a\.asset_id ILIKE \$1 OR a\.asset_name ILIKE \$2\)\) AND a\.asset_type = \$3$`
+
+	t.Run("matches every level by ID or name, without the top-level condition", func(t *testing.T) {
+		gdb, mock := newMockDB(t)
+		rows := sqlmock.NewRows(nodeColumns).
+			AddRow("PNL-1", "Panel 1", "SWITCHBOARD_PANEL", nil, 0).
+			AddRow("SS-1", "Aurora", "SUBSTATION", "IN_SERVICE", 2)
+		mock.ExpectQuery(searchSQL).WithArgs("%pnl%", "%pnl%").WillReturnRows(rows)
+
+		result, err := NewAssetRepository(gdb).FindNodes(ctx, nil, repository.FindAssetNodesFilter{Search: pointer("pnl")})
+
+		require.NoError(t, err)
+		require.Len(t, result, 2)
+		assert.Equal(t, "PNL-1", result[0].AssetID, "returned unsorted")
+		assert.Equal(t, 2, result[1].ChildCount, "child counts are still selected")
+	})
+
+	t.Run("wildcards and the escape character in the text match literally", func(t *testing.T) {
+		gdb, mock := newMockDB(t)
+		mock.ExpectQuery(searchSQL).WithArgs(`%a\%b\_c\\d%`, `%a\%b\_c\\d%`).
+			WillReturnRows(sqlmock.NewRows(nodeColumns))
+
+		result, err := NewAssetRepository(gdb).FindNodes(ctx, nil, repository.FindAssetNodesFilter{Search: pointer(`a%b_c\d`)})
+
+		require.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Empty(t, result)
+	})
+
+	t.Run("a type limits the matches", func(t *testing.T) {
+		gdb, mock := newMockDB(t)
+		panel := valueobject.AssetTypeSwitchboardPanel
+		mock.ExpectQuery(searchWithTypeSQL).WithArgs("%001%", "%001%", "SWITCHBOARD_PANEL").
+			WillReturnRows(sqlmock.NewRows(nodeColumns))
+
+		_, err := NewAssetRepository(gdb).FindNodes(ctx, nil,
+			repository.FindAssetNodesFilter{Search: pointer("001"), AssetType: &panel})
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("propagates a database error", func(t *testing.T) {
+		gdb, mock := newMockDB(t)
+		dbErr := errors.New("connection refused")
+		mock.ExpectQuery(searchSQL).WillReturnError(dbErr)
+
+		result, err := NewAssetRepository(gdb).FindNodes(ctx, nil, repository.FindAssetNodesFilter{Search: pointer("x")})
+
+		assert.Nil(t, result)
+		assert.ErrorIs(t, err, dbErr)
+	})
+}

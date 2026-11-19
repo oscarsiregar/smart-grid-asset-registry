@@ -1,11 +1,13 @@
 # Architecture
 
-How the Smart Grid Asset Registry is put together, and why. It covers two features:
+How the Smart Grid Asset Registry is put together, and why. It covers three features:
 [specs/001-csv-import](../specs/001-csv-import/spec.md) — import a grid-asset CSV, validate it on the server,
-store the accepted rows — and [specs/002-asset-explorer](../specs/002-asset-explorer/spec.md) — browse the
-stored hierarchy. The decisions behind each part are recorded in each feature's research
-([001](../specs/001-csv-import/research.md) R0–R14, [002](../specs/002-asset-explorer/research.md) R0–R11; cited
-below as R*n* and 002-R*n*); the project rules are in the [constitution](../.specify/memory/constitution.md).
+store the accepted rows —, [specs/002-asset-explorer](../specs/002-asset-explorer/spec.md) — browse the
+stored hierarchy — and [specs/003-asset-search](../specs/003-asset-search/spec.md) — find an asset by ID or name.
+The decisions behind each part are recorded in each feature's research
+([001](../specs/001-csv-import/research.md) R0–R14, [002](../specs/002-asset-explorer/research.md) R0–R11,
+[003](../specs/003-asset-search/research.md) R0–R8; cited below as R*n*, 002-R*n* and 003-R*n*); the project rules
+are in the [constitution](../.specify/memory/constitution.md).
 
 ## 1. System overview
 
@@ -38,10 +40,11 @@ The backend keeps the company template's clean architecture (`backend/AGENTS.md`
 handler/asset_import  ──►  usecase/asset_import  ──►  repository/psql/{asset, asset_import}
  (multipart, DTOs)          (flow, transaction)         (GORM, one file per method)
 handler/asset         ──►  usecase/asset         ──►  repository/psql/asset (read methods)
- (query/path, DTOs)         (reads, ordering, counts)
+ (query/path, DTOs)         (reads, search, ordering,
+                             paging of the search)
         └──────────── all depend only on interfaces in domain/ ────────────┘
                                    │
-            domain/assetimport (pure import rules) · domain/entity (asset ordering)
+            domain/assetimport (pure import rules) · domain/entity (asset and search ordering)
 ```
 
 - **Handler** (`internal/handler/asset_import`): reads the `file` and `mode` multipart parts, calls the usecase,
@@ -170,6 +173,30 @@ each type beneath it (002-R1). No table or migration was added; the existing ind
 - **Scale** (002-R11): with about 55 000 stored assets the integration test measures the top level, a
   5 000-child list and a substation's details in well under 100 ms each.
 
+### The asset search (feature 003)
+
+The search is a filter on the same list read, `GET /api/assets?q=<text>[&assetType=][&page=&limit=]`
+([API reference](../backend/docs/api/asset.md#search-get-apiassetsq), 003-R1); without a non-blank `q` the endpoint
+is the hierarchy read, unchanged. No table, index or migration was added.
+
+- **Input** (003-R1): the handler trims `q` and parses `assetType` with `valueobject.ParseAssetType`. Which
+  parameters go together is `GetListAssetInput.Validate()` in `domain/usecase`: `q` at most 100 characters,
+  `assetType`, `page` and `limit` only with `q`, `q` never with `parentAssetId`. `SetDefault()` gives a search
+  page 1 and limit 50 and caps the limit at 100 (the template's `MaxLimit`).
+- **Matching** (003-R2): `FindNodes` takes a `Search` (and optional `AssetType`) in its filter struct and runs
+  `(asset_id ILIKE ? OR asset_name ILIKE ?) [AND asset_type = ?]` with the pattern from
+  `querysafety.ContainsPattern`, so `%`, `_` and `\` match only themselves. Each asset is one row, so a match by
+  both ID and name is listed once.
+- **Ordering and the page cut** (Template Exception 14, 003-R0, 003-R3): the repository returns every match; the
+  usecase orders them with the pure `entity.SortSearchMatches` — assets whose ID or name equals the text (letter
+  case ignored) first, then the rest, each part in the tree's order — and cuts the requested page in Go. The
+  natural ID order has no SQL equivalent, which is why the search is not paged in SQL like other template lists.
+- **Ancestors** (003-R4): `FindAncestorIDs` reads the ancestors of the page's assets only, in one recursive CTE
+  over `asset_id = ANY(?)`, and the response gives each item `ancestorAssetIds`.
+- **Logging**: the usecase logs the text's length, the total, the page and the count, never the text.
+- **Scale** (003-R8): with about 55 000 stored assets a search for one asset takes about 70 ms, a typed search
+  about 270 ms, and `-` (every asset matches, every row is loaded and sorted) about 770 ms, inside the 1 s budget.
+
 ## 3. Frontend
 
 React 19 + TypeScript, RTK Query, React Hook Form + Zod, CSS Modules, on the company frontend template
@@ -209,6 +236,24 @@ The asset explorer (feature 002) lives in the same page:
   children in three groups and the four counts, for a switchboard its panels. `ASSET_NOT_FOUND` is a
   "not found" state with a way back, not an error and not a toast.
 
+The asset search (feature 003) sits above the tree on the same page:
+
+- **Address as state** (003-R6): a search is `?q=<text>` and optionally `&type=<TYPE>` on `/assets`.
+  `useAssetSearch` reads them with `useSearchParams`; submitting pushes a history entry, **Clear** removes both.
+  While a search is in the address, its results take the tree's place; the details area is unchanged.
+- **Form** (003-R7): `useAppForm` with the `assetSearch` Zod schema, which only refuses a blank text. The text
+  field is the template's `Input`, restored from git history; the type is a labelled `<select>`. The 100-character
+  limit and the 50 results are the backend's: the frontend sends neither `page` nor `limit` and shows the server's
+  message when a text is refused.
+- **Data**: `modules/assets` adds the query `searchAssets({ q, assetType })`, which provides the same `Asset` tag, so
+  a committed import refreshes a shown search and an import that saved nothing changes nothing.
+- **Results and states**: each result is a link with its ID and name, then the type, the status and its location
+  (the ancestor IDs joined with " › ", or "Top level"). Searching, no match, more matches than shown, a refused
+  search and a failure each say so in words; the summary counts the items received, never a frontend constant.
+- **Opening a result** (003-R5): the link goes to `getAssetPath(id)` without the search, so it is exactly 002's deep
+  link — the tree comes back, the ancestors expand and the asset is highlighted — and Back returns to the search.
+  IDs `.` and `..` are plain text, as in the tree.
+
 ## 4. Key trade-offs
 
 | Decision | Chosen | Instead of | Why |
@@ -226,5 +271,11 @@ The asset explorer (feature 002) lives in the same page:
 | Ordering (002-R3) | natural order in a pure Go function | `ORDER BY asset_id`, ICU numeric collation | `SS-2` before `SS-10`; testable without a database, no migration |
 | Hierarchy reads (002-R4) | recursive CTEs for path and counts | loading the subtree into Go, fixed joins | One round trip each; correct at any depth |
 | Tree (002-R8) | hand-written navigation tree | a tree library | Full keyboard and ARIA control, no new dependency |
+| Search paging (003-R0) | load every match, order and page in the usecase (Exception 14) | ICU collation in SQL, `ORDER BY asset_id`, sorting in the browser | Same order as the tree; no migration; no business rule in the frontend |
+| Search API (003-R1) | `q` filter on `GET /api/assets` | `/api/assets/search`, POST body | Extends the template list read; no clash with an asset whose ID is `search` |
+| Matching (003-R2) | `ILIKE` with `ContainsPattern`, no index | `pg_trgm` index, full-text search | One bound statement; milliseconds at 50 000 rows; full text is wrong for IDs |
+| Result order (003-R3) | exact matches first, then the tree's order | relevance by match position or length | A full ID is always first; no relevance model to explain |
+| Ancestors (003-R4) | one recursive CTE for the page | `FindPath` per result, a stored path column | One round trip; no schema change |
+| Opening a result (003-R5) | a link to 002's deep link | selecting in place, a second reveal path | One reveal implementation; Back returns to the search |
 
 Known limits and simplifications are listed in [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).

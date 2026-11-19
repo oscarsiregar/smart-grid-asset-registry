@@ -1,8 +1,8 @@
 # Smart Grid Asset Registry
 
 Imports a grid-asset CSV file (substations, transformers, LV boards, switchboards and their panels), validates
-every row on the server, stores the accepted assets in PostgreSQL, and lets operators browse the stored
-hierarchy.
+every row on the server, stores the accepted assets in PostgreSQL, and lets operators browse and search the
+stored hierarchy.
 
 - **Check a file** without saving anything: every rejected row is listed with every reason (missing or invalid
   fields, unknown or wrongly typed parent, cycles, conflicts with stored assets), plus non-blocking warnings
@@ -18,6 +18,10 @@ hierarchy.
 - **Link to any asset**: every asset has its own address, `/assets/<asset_id>` (the ID percent-encoded), which
   reopens with its ancestors expanded and the asset highlighted; an unknown ID shows "not found". The tree
   refreshes after an import that saved data.
+- **Search by asset ID or name**: any part of either, letter case ignored, optionally limited to one asset type.
+  The results replace the tree and show each asset's type, status and location; an exact ID or name comes first.
+  Selecting a result opens it in the tree, and Back returns to the search. The search is in the address
+  (`/assets?q=<text>&type=<TYPE>`), so it survives a refresh and can be shared.
 
 Stack: Go 1.26 (Fiber, GORM) · PostgreSQL 16 · React 19 + TypeScript (Vite, RTK Query) · Docker Compose.
 
@@ -36,7 +40,7 @@ docker compose up --build
 
 | Service | URL / port | What |
 |---|---|---|
-| `web` | http://localhost:3000 | the app: the asset explorer at `/assets` (an asset at `/assets/<asset_id>`); **Import CSV** opens the import panel |
+| `web` | http://localhost:3000 | the app: the asset explorer at `/assets` (an asset at `/assets/<asset_id>`, a search at `/assets?q=<text>`); **Import CSV** opens the import panel |
 | `api` | http://localhost:8080/api | the API; `GET /api/health` answers when it is ready |
 | `db` | `localhost:55432` | PostgreSQL (`postgres` / `postgres`, database `asset_registry`) |
 
@@ -66,18 +70,19 @@ make lint
 pnpm lint && pnpm build && pnpm test
 ```
 
-End-to-end API and UI scenarios: [specs/001-csv-import/quickstart.md](specs/001-csv-import/quickstart.md) (import)
-and [specs/002-asset-explorer/quickstart.md](specs/002-asset-explorer/quickstart.md) (explorer).
+End-to-end API and UI scenarios: [specs/001-csv-import/quickstart.md](specs/001-csv-import/quickstart.md) (import),
+[specs/002-asset-explorer/quickstart.md](specs/002-asset-explorer/quickstart.md) (explorer) and
+[specs/003-asset-search/quickstart.md](specs/003-asset-search/quickstart.md) (search).
 
 ## Documentation
 
 | Document | Contents |
 |---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System overview, backend layers, the import engine, transaction and lock, the explorer reads and ordering, schema, frontend, trade-offs |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System overview, backend layers, the import engine, transaction and lock, the explorer reads and ordering, the search, schema, frontend, trade-offs |
 | [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) | What is simplified or out of scope |
-| [specs/001-csv-import/](specs/001-csv-import/), [specs/002-asset-explorer/](specs/002-asset-explorer/) | Per feature: spec, plan, research decisions, data model, API and UI contracts, tasks |
+| [specs/001-csv-import/](specs/001-csv-import/), [specs/002-asset-explorer/](specs/002-asset-explorer/), [specs/003-asset-search/](specs/003-asset-search/) | Per feature: spec, plan, research decisions, data model, API and UI contracts, tasks |
 | [backend/docs/api/asset-import.md](backend/docs/api/asset-import.md) | API reference for the two import endpoints |
-| [backend/docs/api/asset.md](backend/docs/api/asset.md) | API reference for the two explorer endpoints |
+| [backend/docs/api/asset.md](backend/docs/api/asset.md) | API reference for the two explorer endpoints and the search |
 | [AGENTS.md](AGENTS.md) | Rules for anyone (human or AI) changing the code, and where the detailed rules live |
 | [.specify/memory/constitution.md](.specify/memory/constitution.md) | Project principles, template exceptions, Definition of Done |
 | [backend/README.md](backend/README.md), [frontend/README.md](frontend/README.md) | Working on each part on its own |

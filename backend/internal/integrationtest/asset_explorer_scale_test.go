@@ -21,6 +21,8 @@ const (
 	// details within 1 s. Measured on the API side (usecase + PostgreSQL).
 	topLevelBudget = 2 * time.Second
 	nodeBudget     = time.Second
+	// Feature 003 SC-005: a search answers within 1 s (research R8).
+	searchBudget = time.Second
 	// One switchboard far wider than any in the sample (complete lists,
 	// Template Exception 13).
 	widePanelCount = 5000
@@ -110,4 +112,34 @@ func TestAssetExplorer_Scale(t *testing.T) {
 		return err
 	})
 	assert.Less(t, elapsed, nodeBudget, "SC-006 selecting an asset")
+
+	// Feature 003: searches over every stored asset (SC-005).
+	stored := countRows(t, db, "asset")
+	var total int
+	elapsed = timed(t, "search for - (every asset)", func() error {
+		output, err := uc.GetListAsset(ctx, usecase.GetListAssetInput{Search: "-"})
+		total = output.TotalItems
+		return err
+	})
+	assert.Less(t, elapsed, searchBudget, "SC-005 broad search")
+	assert.EqualValues(t, stored, total, "every asset matches -")
+
+	var ids []string
+	elapsed = timed(t, "search for WIDE-4999 (one asset)", func() error {
+		output, err := uc.GetListAsset(ctx, usecase.GetListAssetInput{Search: "WIDE-4999"})
+		ids = nodeIDs(output.Assets)
+		return err
+	})
+	assert.Less(t, elapsed, searchBudget, "SC-005 narrow search")
+	assert.Equal(t, []string{"PNL-WIDE-4999"}, ids)
+
+	panelType := valueobject.AssetTypeSwitchboardPanel
+	elapsed = timed(t, "search for PNL of type SWITCHBOARD_PANEL", func() error {
+		output, err := uc.GetListAsset(ctx, usecase.GetListAssetInput{Search: "PNL", AssetType: &panelType})
+		for _, node := range output.Assets {
+			assert.Equal(t, panelType, node.AssetType, node.AssetID)
+		}
+		return err
+	})
+	assert.Less(t, elapsed, searchBudget, "SC-005 typed search")
 }

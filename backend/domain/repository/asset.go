@@ -31,4 +31,8 @@ type AssetRepository interface {
 	// CountDescendantsByType counts the assets on every level below the
 	// asset, by type; a type without descendants is absent; never nil.
 	CountDescendantsByType(ctx context.Context, trx Tx, assetID string) (map[valueobject.AssetType]int, error)
+	// FindAncestorIDs returns, for each given asset, its ancestor IDs from the
+	// substation down to the parent. Every given ID is a key; one without
+	// ancestors maps to an empty slice. An empty list runs no query.
+	FindAncestorIDs(ctx context.Context, trx Tx, assetIDs []string) (map[string][]string, error)
 }

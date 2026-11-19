@@ -33,7 +33,6 @@ itself is described in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Asset explorer
 
-- **No search yet.** Assets are found by browsing the tree or by their address; searching is the next feature.
 - **Complete lists, no paging or virtual scrolling** (Template Exception 13, 002-R11). A node's children are all
   loaded and rendered at once. The API side stays fast at 50 000 assets (a 5 000-child list in about 30 ms),
   but a node with many thousands of children makes a long page in the browser.
@@ -49,6 +48,23 @@ itself is described in [ARCHITECTURE.md](ARCHITECTURE.md).
   plain text rather than a link.
 - **Numbers are shown by value** (FR-010). `NUMERIC` values reach the browser as JSON numbers, so trailing zeros
   typed in the CSV are not kept: `22.50` shows as `22.5 kV`.
+
+## Asset search
+
+- **Only the asset ID and name are searched.** Manufacturer, model, serial number and other attributes are not;
+  the type is a filter, not a search term.
+- **At most 50 results are shown.** A broader search shows the first 50 in order and the total, and asks for more
+  of the ID or name or a type to narrow it; there is no paging in the page (clarification of FR-010). The API
+  itself accepts `page` and `limit`.
+- **Every search loads all its matches before ordering them** (Template Exception 14, 003-R0). The natural ID
+  order is applied in Go, so a search matching most of the registry reads and sorts every row: about 770 ms for
+  `-` at 55 000 assets, inside the 1 s budget but with little room. Beyond this scale the path is a `pg_trgm`
+  index for matching and an ordering expressible in SQL, so the page can be cut by the database.
+- **"Exact" can differ from "matches" for exotic characters** (003-R2). Matching uses PostgreSQL's case folding
+  (`ILIKE`); the "exact match first" decision uses Go's `strings.EqualFold`. They agree for the IDs and names
+  seen in practice, but for some non-ASCII characters an asset could match without being ranked as exact, or the
+  other way round.
+- **Contains, not fuzzy.** A typo finds nothing; there are no suggestions or partial-word scoring.
 
 ## Size and concurrency
 

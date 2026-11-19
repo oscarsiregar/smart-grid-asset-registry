@@ -1,8 +1,9 @@
 # Smart Grid Asset Registry — frontend
 
 React + TypeScript single-page app for importing grid-asset CSV files (choose a file and a mode, see the server's
-validation result, then save it) and exploring the stored asset hierarchy (an expandable tree beside the selected
-asset's details, every asset at its own address `/assets/<asset_id>`). Built on the company frontend template (store,
+validation result, then save it), exploring the stored asset hierarchy (an expandable tree beside the selected
+asset's details, every asset at its own address `/assets/<asset_id>`) and searching it by asset ID or name
+(`/assets?q=<text>&type=<TYPE>`). Built on the company frontend template (store,
 API layer, error handling, notifications, forms, routing) with strict conventions.
 
 - Rules: [docs/code-conventions.md](docs/code-conventions.md)
@@ -13,7 +14,10 @@ API layer, error handling, notifications, forms, routing) with strict convention
 The reference features are the CSV import — `src/modules/imports` (endpoints, DTOs, schema) and the import panel
 in `src/pages/assets`, opened with `?panel=import` — and the asset explorer: `src/modules/assets` (queries, DTOs,
 the `Asset` cache tag a committed import invalidates) and `src/pages/assets` (tree, details, keyboard and
-expansion hooks; the selected asset is the `:assetId` path segment). There is no sign-in: the app has no users
+expansion hooks; the selected asset is the `:assetId` path segment). The search adds the `searchAssets` query to
+`src/modules/assets` and the search form and results to `src/pages/assets/components/asset-search`; its state is the
+`?q=` and `?type=` search parameters (`useAssetSearch`). The text field is the template's `Input` component
+(`src/libs/components/input`), restored from git history for the search. There is no sign-in: the app has no users
 (constitution, Template Exception 1).
 
 ## Prerequisites
@@ -80,13 +84,16 @@ Everything prefixed `VITE_` ships to the browser; never put a secret there.
 | POST   | `/api/imports/validate` | `file`, `mode` (`PARTIAL`/`STRICT`) | `200`, import result, nothing stored |
 | POST   | `/api/imports`          | `file`, `mode`                      | `201`, import result with the record |
 | GET    | `/api/assets`           | query `parentAssetId` (optional)    | `200`, complete ordered node list    |
+| GET    | `/api/assets`           | query `q`, `assetType` (optional)   | `200`, first 50 matches + total      |
 | GET    | `/api/assets/:assetId`  | — (ID percent-encoded)              | `200`, asset, path, children, counts |
 
 Responses use the go-common envelope `{ code, status, message, data }`; `baseQuery` unwraps `data`. Errors carry
 their application code in `data.errorCode` (for example `IMPORT_MISSING_COLUMNS`). The full contract is in
 [../specs/001-csv-import/contracts/imports-api.md](../specs/001-csv-import/contracts/imports-api.md) and
-[../specs/002-asset-explorer/contracts/assets-api.md](../specs/002-asset-explorer/contracts/assets-api.md);
-an unknown asset is `404` with `ASSET_NOT_FOUND`, shown as a "not found" state rather than an error.
+[../specs/002-asset-explorer/contracts/assets-api.md](../specs/002-asset-explorer/contracts/assets-api.md) and
+[../specs/003-asset-search/contracts/assets-search-api.md](../specs/003-asset-search/contracts/assets-search-api.md);
+an unknown asset is `404` with `ASSET_NOT_FOUND`, shown as a "not found" state rather than an error, and a refused
+search (`400 INVALID_REQUEST`, for example a text over 100 characters) shows the server's message.
 
 ## Docker
 

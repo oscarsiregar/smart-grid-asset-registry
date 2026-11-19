@@ -333,6 +333,13 @@ const ROUTED_RESPONSES = new Map<string, unknown>([
 	[`${API}?parentAssetId=..`, createList([DOTS_CHILD])],
 	[`${API}?parentAssetId=SS-001`, createList([SWITCHBOARD])],
 	[`${API}?parentAssetId=SWB-001-1`, createList([PANEL_A, PANEL_B])],
+	[
+		`${API}?q=PNL-001-1-01`,
+		{
+			items: [{ ...PANEL_A, ancestorAssetIds: ["SS-001", "SWB-001-1"] }],
+			totalItems: 1,
+		},
+	],
 	[API, createList([SUBSTATION, DOTS])],
 ]);
 
@@ -565,5 +572,172 @@ describe("Assets page: import panel on the explorer", () => {
 			screen.queryByText("No assets have been imported yet."),
 		).not.toBeInTheDocument();
 		expect(await findNode("SS-001")).toBeInTheDocument();
+	});
+});
+
+// ---- The search on the explorer (feature 003, user story 1) ----------------
+
+describe("Assets page: search", () => {
+	it("shows the results in place of the tree, the details as without a search", async () => {
+		stubRoutedApi();
+		renderAssets("/assets?q=PNL-001-1-01");
+
+		expect(
+			await screen.findByRole("region", { name: "Search results" }),
+		).toBeInTheDocument();
+		expect(
+			await screen.findByRole("link", { name: /PNL-001-1-01/ }),
+		).toBeInTheDocument();
+		expect(screen.queryByRole("tree")).not.toBeInTheDocument();
+		expect(
+			screen.getByText("Select an asset in the tree to see its details."),
+		).toBeInTheDocument();
+	});
+
+	it("opens a result through feature 002: the address, the reveal and the highlight", async () => {
+		stubRoutedApi();
+		renderAssets("/assets?q=PNL-001-1-01");
+
+		fireEvent.click(await screen.findByRole("link", { name: /PNL-001-1-01/ }));
+
+		expect(screen.getByTestId("pathname")).toHaveTextContent(
+			"/assets/PNL-001-1-01",
+		);
+		expect(screen.getByTestId("search")).toBeEmptyDOMElement();
+		await findSelectedNode("PNL-001-1-01");
+		expect(await findNode("SS-001")).toHaveAttribute("aria-expanded", "true");
+		expect(await findNode("SWB-001-1")).toHaveAttribute(
+			"aria-expanded",
+			"true",
+		);
+	});
+
+	it("returns to the search and its results with Back", async () => {
+		stubRoutedApi();
+		renderAssets("/assets?q=PNL-001-1-01");
+		fireEvent.click(await screen.findByRole("link", { name: /PNL-001-1-01/ }));
+		await findSelectedNode("PNL-001-1-01");
+
+		fireEvent.click(screen.getByRole("button", { name: "History back" }));
+
+		expect(screen.getByTestId("search")).toHaveTextContent("?q=PNL-001-1-01");
+		expect(
+			await screen.findByRole("region", { name: "Search results" }),
+		).toBeInTheDocument();
+		expect(screen.getByRole("textbox", { name: "Search assets" })).toHaveValue(
+			"PNL-001-1-01",
+		);
+	});
+
+	it("writes a submitted search to the address", async () => {
+		stubRoutedApi();
+		renderAssets("/assets");
+		await findNode("SS-001");
+
+		fireEvent.change(screen.getByRole("textbox", { name: "Search assets" }), {
+			target: { value: "PNL-001-1-01" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Search" }));
+
+		expect(
+			await screen.findByRole("region", { name: "Search results" }),
+		).toBeInTheDocument();
+		expect(screen.getByTestId("search")).toHaveTextContent("?q=PNL-001-1-01");
+	});
+
+	it("brings back the tree and removes the search with Clear", async () => {
+		stubRoutedApi();
+		renderAssets("/assets?q=PNL-001-1-01");
+		await screen.findByRole("region", { name: "Search results" });
+
+		fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+
+		expect(await screen.findByRole("tree")).toBeInTheDocument();
+		expect(screen.getByTestId("search")).toBeEmptyDOMElement();
+	});
+
+	it("offers no search on an empty registry", async () => {
+		renderAssets("/assets");
+
+		expect(
+			await screen.findByText("No assets have been imported yet."),
+		).toBeInTheDocument();
+		expect(screen.queryByRole("search")).not.toBeInTheDocument();
+	});
+});
+
+// ---- A search's states on the page (feature 003, user story 3) ------------
+
+type SearchAnswer = "failed" | "pending";
+
+// The routed API, except that every search fails or never answers.
+const stubSearchAnswer = (answer: SearchAnswer): void => {
+	const routed = stubRoutedApi();
+	vi.stubGlobal(
+		"fetch",
+		vi.fn((request: Request): Promise<Response> => {
+			if (!request.url.startsWith(`${API}?q=`)) {
+				return routed(request);
+			}
+
+			return answer === "failed"
+				? respondWith(HTTPCode.INTERNAL_SERVER_ERROR, null)
+				: new Promise<Response>(() => {});
+		}),
+	);
+};
+
+describe("Assets page: search states", () => {
+	it("keeps the details area working when the search fails; Clear brings the tree back", async () => {
+		stubSearchAnswer("failed");
+		renderAssets("/assets/SS-001?q=x");
+
+		expect(
+			await screen.findByText("The search could not be completed."),
+		).toBeInTheDocument();
+		expect(
+			await screen.findByRole("heading", { name: SUBSTATION.assetName }),
+		).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+
+		expect(await screen.findByRole("tree")).toBeInTheDocument();
+		expect(screen.getByTestId("pathname")).toHaveTextContent("/assets/SS-001");
+		expect(screen.getByTestId("search")).toBeEmptyDOMElement();
+	});
+
+	it("keeps the search when the import panel opens and closes", async () => {
+		stubRoutedApi();
+		renderAssets("/assets?q=PNL-001-1-01");
+		await screen.findByRole("link", { name: /PNL-001-1-01/ });
+
+		fireEvent.click(screen.getByRole("button", { name: "Import CSV" }));
+
+		expect(getDialog()).toHaveAttribute("open");
+		const opened = new URLSearchParams(
+			screen.getByTestId("search").textContent,
+		);
+		expect(opened.get("q")).toBe("PNL-001-1-01");
+		expect(opened.get("panel")).toBe("import");
+
+		fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+		expect(screen.getByTestId("search")).toHaveTextContent("?q=PNL-001-1-01");
+		expect(
+			screen.getByRole("region", { name: "Search results" }),
+		).toBeInTheDocument();
+	});
+
+	it("lets the field be edited and the import panel open while a search runs", async () => {
+		stubSearchAnswer("pending");
+		renderAssets("/assets?q=PNL");
+		expect(await screen.findByText("Searching…")).toBeInTheDocument();
+
+		const field = screen.getByRole("textbox", { name: "Search assets" });
+		fireEvent.change(field, { target: { value: "PNL-001" } });
+		expect(field).toHaveValue("PNL-001");
+
+		fireEvent.click(screen.getByRole("button", { name: "Import CSV" }));
+		expect(getDialog()).toHaveAttribute("open");
 	});
 });

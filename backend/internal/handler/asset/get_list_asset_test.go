@@ -104,3 +104,143 @@ func TestAssetHandler_GetListAsset(t *testing.T) {
 		assert.NotContains(t, body.Message, "connection refused")
 	})
 }
+
+func withSearch(text string, page, limit int) any {
+	return mock.MatchedBy(func(in usecase.GetListAssetInput) bool {
+		return in.Search == text && in.Page == page && in.Limit == limit && in.ParentAssetID == nil
+	})
+}
+
+func TestAssetHandler_GetListAsset_Search(t *testing.T) {
+	t.Run("trims and decodes the text and answers one page of matches", func(t *testing.T) {
+		uc := mocksusecase.NewAssetUsecase(t)
+		uc.EXPECT().GetListAsset(mock.Anything, withSearch("PNL/1", 0, 0)).Return(usecase.GetListAssetOutput{
+			Assets: []*entity.AssetNode{
+				{AssetID: "PNL/1-A", AssetName: "Panel", AssetType: valueobject.AssetTypeSwitchboardPanel,
+					OperationalStatus: pointer(valueobject.OperationalStatusMaintenance)},
+				{AssetID: "SS-PNL/1", AssetName: "Substation", AssetType: valueobject.AssetTypeSubstation, ChildCount: 3},
+			},
+			TotalItems:  12,
+			AncestorIDs: map[string][]string{"PNL/1-A": {"SS-001", "SWB-001-1"}, "SS-PNL/1": {}},
+		}, nil)
+
+		resp := doGet(t, newTestApp(NewAssetHandler(uc)), "/api/assets?q=%20PNL%2F1%20")
+
+		require.Equal(t, fiber.StatusOK, resp.StatusCode)
+		body := decodeEnvelope(t, resp.Body)
+		assert.Equal(t, "Successfully get list asset", body.Message)
+		assert.JSONEq(t, `{
+			"items": [
+				{"assetId":"PNL/1-A","assetName":"Panel","assetType":"SWITCHBOARD_PANEL","operationalStatus":"MAINTENANCE",
+				 "childCount":0,"ancestorAssetIds":["SS-001","SWB-001-1"]},
+				{"assetId":"SS-PNL/1","assetName":"Substation","assetType":"SUBSTATION","operationalStatus":null,
+				 "childCount":3,"ancestorAssetIds":[]}
+			],
+			"totalItems": 12
+		}`, string(body.Data))
+	})
+
+	t.Run("an asset missing from the ancestors map gets [] not null", func(t *testing.T) {
+		uc := mocksusecase.NewAssetUsecase(t)
+		uc.EXPECT().GetListAsset(mock.Anything, withSearch("SS", 0, 0)).Return(usecase.GetListAssetOutput{
+			Assets:     []*entity.AssetNode{{AssetID: "SS-001", AssetName: "Aurora", AssetType: valueobject.AssetTypeSubstation}},
+			TotalItems: 1,
+		}, nil)
+
+		resp := doGet(t, newTestApp(NewAssetHandler(uc)), "/api/assets?q=SS")
+
+		require.Equal(t, fiber.StatusOK, resp.StatusCode)
+		assert.Contains(t, string(decodeEnvelope(t, resp.Body).Data), `"ancestorAssetIds":[]`)
+	})
+
+	t.Run("no matches answers items [] and totalItems 0", func(t *testing.T) {
+		uc := mocksusecase.NewAssetUsecase(t)
+		uc.EXPECT().GetListAsset(mock.Anything, withSearch("NOPE", 0, 0)).Return(usecase.GetListAssetOutput{}, nil)
+
+		resp := doGet(t, newTestApp(NewAssetHandler(uc)), "/api/assets?q=NOPE")
+
+		require.Equal(t, fiber.StatusOK, resp.StatusCode)
+		assert.JSONEq(t, `{"items":[],"totalItems":0}`, string(decodeEnvelope(t, resp.Body).Data))
+	})
+
+	t.Run("page and limit are forwarded", func(t *testing.T) {
+		uc := mocksusecase.NewAssetUsecase(t)
+		uc.EXPECT().GetListAsset(mock.Anything, withSearch("-", 2, 25)).Return(usecase.GetListAssetOutput{}, nil)
+
+		resp := doGet(t, newTestApp(NewAssetHandler(uc)), "/api/assets?q=-&page=2&limit=25")
+
+		assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+	})
+
+	for _, target := range []string{"/api/assets?q=", "/api/assets?q=%20%20"} {
+		t.Run("a blank text is the hierarchy: "+target, func(t *testing.T) {
+			uc := mocksusecase.NewAssetUsecase(t)
+			uc.EXPECT().GetListAsset(mock.Anything, withParent(nil)).Return(usecase.GetListAssetOutput{}, nil)
+
+			resp := doGet(t, newTestApp(NewAssetHandler(uc)), target)
+
+			require.Equal(t, fiber.StatusOK, resp.StatusCode)
+			assert.NotContains(t, string(decodeEnvelope(t, resp.Body).Data), "ancestorAssetIds")
+		})
+	}
+
+	t.Run("page and limit without a text reach the usecase, which refuses them", func(t *testing.T) {
+		uc := mocksusecase.NewAssetUsecase(t)
+		uc.EXPECT().GetListAsset(mock.Anything, mock.MatchedBy(func(in usecase.GetListAssetInput) bool {
+			return in.Search == "" && in.Page == 2
+		})).Return(usecase.GetListAssetOutput{},
+			apperr.BadRequest(errorcode.InvalidRequest, "page and limit apply to a search only"))
+
+		resp := doGet(t, newTestApp(NewAssetHandler(uc)), "/api/assets?page=2")
+
+		require.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+		body := decodeEnvelope(t, resp.Body)
+		assert.Equal(t, "Invalid request: page and limit apply to a search only", body.Message)
+		assert.JSONEq(t, `{"errorCode":"INVALID_REQUEST"}`, string(body.Data))
+	})
+
+	t.Run("a page that is not a number is 400 INVALID_REQUEST", func(t *testing.T) {
+		uc := mocksusecase.NewAssetUsecase(t)
+
+		resp := doGet(t, newTestApp(NewAssetHandler(uc)), "/api/assets?q=x&page=two")
+
+		require.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+		assert.JSONEq(t, `{"errorCode":"INVALID_REQUEST"}`, string(decodeEnvelope(t, resp.Body).Data))
+	})
+}
+
+func TestAssetHandler_GetListAsset_SearchType(t *testing.T) {
+	t.Run("a known type is passed to the usecase", func(t *testing.T) {
+		uc := mocksusecase.NewAssetUsecase(t)
+		uc.EXPECT().GetListAsset(mock.Anything, mock.MatchedBy(func(in usecase.GetListAssetInput) bool {
+			return in.Search == "001" && in.AssetType != nil && *in.AssetType == valueobject.AssetTypeSwitchboardPanel
+		})).Return(usecase.GetListAssetOutput{}, nil)
+
+		resp := doGet(t, newTestApp(NewAssetHandler(uc)), "/api/assets?q=001&assetType=SWITCHBOARD_PANEL")
+
+		assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+	})
+
+	t.Run("an unknown type is 400 INVALID_REQUEST and the usecase is not called", func(t *testing.T) {
+		uc := mocksusecase.NewAssetUsecase(t)
+
+		resp := doGet(t, newTestApp(NewAssetHandler(uc)), "/api/assets?q=x&assetType=FOO")
+
+		require.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+		body := decodeEnvelope(t, resp.Body)
+		assert.Equal(t, "Invalid request: assetType is not a valid asset type", body.Message)
+		assert.JSONEq(t, `{"errorCode":"INVALID_REQUEST"}`, string(body.Data))
+	})
+
+	t.Run("a type without a text reaches the usecase, which refuses it", func(t *testing.T) {
+		uc := mocksusecase.NewAssetUsecase(t)
+		uc.EXPECT().GetListAsset(mock.Anything, mock.MatchedBy(func(in usecase.GetListAssetInput) bool {
+			return in.Search == "" && in.AssetType != nil && *in.AssetType == valueobject.AssetTypeTransformer
+		})).Return(usecase.GetListAssetOutput{}, apperr.BadRequest(errorcode.InvalidRequest, "assetType requires q"))
+
+		resp := doGet(t, newTestApp(NewAssetHandler(uc)), "/api/assets?assetType=TRANSFORMER")
+
+		require.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+		assert.Equal(t, "Invalid request: assetType requires q", decodeEnvelope(t, resp.Body).Message)
+	})
+}
