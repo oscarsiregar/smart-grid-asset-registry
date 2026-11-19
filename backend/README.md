@@ -47,14 +47,14 @@ make cover   # internal/usecase coverage (gate >= 80 %)
 ```
 
 The integration tests in `internal/integrationtest/` run against a real PostgreSQL database and are **skipped**
-without `TEST_DATABASE_URL` (Template Exception 11). With the compose stack running, the `asset_registry_test`
-database already exists:
+without `TEST_DATABASE_URL` (Template Exception 11). They need their own database,
+`asset_registry_test` (create it once with `CREATE DATABASE asset_registry_test;`):
 
 ```sh
 TEST_DATABASE_URL='postgres://postgres:postgres@localhost:55432/asset_registry_test?sslmode=disable' make check
 ```
 
-Or run the same check in a container from the repository root: `docker compose --profile test run --rm backend-test`.
+Or run the unit tests in a container from the repository root: `docker compose --profile test run --rm backend-test`.
 
 ## Commands
 

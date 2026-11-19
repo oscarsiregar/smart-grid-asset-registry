@@ -27,7 +27,7 @@ Stack: Go 1.26 (Fiber, GORM) · PostgreSQL 16 · React 19 + TypeScript (Vite, RT
 
 ## Prerequisites
 
-- Docker with Compose v2. That is enough to run the app and every check.
+- Docker with Compose v2. That is enough to run the app and the tests.
 - Only for running checks outside containers: Go 1.26, golangci-lint v2.13, Node.js 24 and pnpm 11.
 
 No private packages, credentials or `.env` files are needed to run the stack.
@@ -52,17 +52,17 @@ If another local stack already uses one of these ports, override it for one run 
 
 ## Test
 
-In containers, with the stack's database running:
+In containers:
 
 ```sh
-docker compose --profile test run --rm backend-test    # make check, incl. integration tests on real PostgreSQL
+docker compose --profile test run --rm backend-test    # go test ./... (unit tests)
 docker compose --profile test run --rm frontend-test   # pnpm test
 ```
 
-Or locally:
+Or locally, including the integration tests on real PostgreSQL:
 
 ```sh
-# backend/ (integration tests are skipped without TEST_DATABASE_URL)
+# backend/ (integration tests are skipped without TEST_DATABASE_URL; they need a database asset_registry_test)
 TEST_DATABASE_URL='postgres://postgres:postgres@localhost:55432/asset_registry_test?sslmode=disable' make check
 make lint
 

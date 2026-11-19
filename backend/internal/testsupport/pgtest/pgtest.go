@@ -1,7 +1,7 @@
 // Package pgtest gives integration tests a real PostgreSQL database
 // (constitution, Template Exception 11). Tests that call Open are skipped
-// unless TEST_DATABASE_URL points at a disposable database, for example the
-// compose "asset_registry_test" database.
+// unless TEST_DATABASE_URL points at a disposable database, for example
+// "asset_registry_test".
 package pgtest
 
 import (
