@@ -35,6 +35,15 @@ createRoot(document.querySelector("#root") as HTMLElement).render(
 										},
 										path: AppRoute.ASSETS,
 									},
+									{
+										lazy: async () => {
+											const pageModule =
+												await import("~/pages/assets/assets.js");
+
+											return { Component: pageModule.Assets };
+										},
+										path: AppRoute.ASSETS_$ASSET_ID,
+									},
 								],
 								element: <AppShell />,
 								hydrateFallbackElement: <Loader />,

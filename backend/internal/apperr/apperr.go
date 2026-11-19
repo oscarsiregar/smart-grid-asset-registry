@@ -45,6 +45,9 @@ var catalog = map[string]string{
 
 	// CSV import, warnings. Args: serial number, other asset IDs.
 	errorcode.DuplicateSerialNumber: "Serial number %s is also used by %s.",
+
+	// Asset explorer. Arg: the asset ID as requested.
+	errorcode.AssetNotFound: "No asset with ID %s exists.",
 }
 
 // Message renders the English message for code with args. Unknown codes fall

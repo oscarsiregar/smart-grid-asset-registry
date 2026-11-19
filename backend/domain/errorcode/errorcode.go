@@ -45,6 +45,12 @@ const (
 	DuplicateSerialNumber = "DUPLICATE_SERIAL_NUMBER"
 )
 
+// Asset explorer (feature 002). The asset ID in a request or a parentAssetId
+// filter names no stored asset (exact match, letter case included).
+const (
+	AssetNotFound = "ASSET_NOT_FOUND"
+)
+
 // All lists every code above. Add new codes here too.
 var All = []string{
 	InvalidRequest,
@@ -75,4 +81,6 @@ var All = []string{
 	AssetIDConflict,
 
 	DuplicateSerialNumber,
+
+	AssetNotFound,
 }

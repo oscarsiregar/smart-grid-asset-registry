@@ -71,6 +71,66 @@ func (_c *AssetRepository_CreateMany_Call) RunAndReturn(run func(context.Context
 	return _c
 }
 
+// FindByAssetID provides a mock function with given fields: ctx, trx, assetID
+func (_m *AssetRepository) FindByAssetID(ctx context.Context, trx repository.Tx, assetID string) (*entity.Asset, error) {
+	ret := _m.Called(ctx, trx, assetID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByAssetID")
+	}
+
+	var r0 *entity.Asset
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, repository.Tx, string) (*entity.Asset, error)); ok {
+		return rf(ctx, trx, assetID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, repository.Tx, string) *entity.Asset); ok {
+		r0 = rf(ctx, trx, assetID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.Asset)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, repository.Tx, string) error); ok {
+		r1 = rf(ctx, trx, assetID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// AssetRepository_FindByAssetID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByAssetID'
+type AssetRepository_FindByAssetID_Call struct {
+	*mock.Call
+}
+
+// FindByAssetID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - trx repository.Tx
+//   - assetID string
+func (_e *AssetRepository_Expecter) FindByAssetID(ctx interface{}, trx interface{}, assetID interface{}) *AssetRepository_FindByAssetID_Call {
+	return &AssetRepository_FindByAssetID_Call{Call: _e.mock.On("FindByAssetID", ctx, trx, assetID)}
+}
+
+func (_c *AssetRepository_FindByAssetID_Call) Run(run func(ctx context.Context, trx repository.Tx, assetID string)) *AssetRepository_FindByAssetID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(repository.Tx), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *AssetRepository_FindByAssetID_Call) Return(_a0 *entity.Asset, _a1 error) *AssetRepository_FindByAssetID_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *AssetRepository_FindByAssetID_Call) RunAndReturn(run func(context.Context, repository.Tx, string) (*entity.Asset, error)) *AssetRepository_FindByAssetID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FindByAssetIDs provides a mock function with given fields: ctx, trx, assetIDs
 func (_m *AssetRepository) FindByAssetIDs(ctx context.Context, trx repository.Tx, assetIDs []string) ([]*entity.Asset, error) {
 	ret := _m.Called(ctx, trx, assetIDs)
@@ -187,6 +247,126 @@ func (_c *AssetRepository_FindBySerialNumbers_Call) Return(_a0 []*entity.Asset, 
 }
 
 func (_c *AssetRepository_FindBySerialNumbers_Call) RunAndReturn(run func(context.Context, repository.Tx, []string) ([]*entity.Asset, error)) *AssetRepository_FindBySerialNumbers_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindNodes provides a mock function with given fields: ctx, trx, filter
+func (_m *AssetRepository) FindNodes(ctx context.Context, trx repository.Tx, filter repository.FindAssetNodesFilter) ([]*entity.AssetNode, error) {
+	ret := _m.Called(ctx, trx, filter)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindNodes")
+	}
+
+	var r0 []*entity.AssetNode
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, repository.Tx, repository.FindAssetNodesFilter) ([]*entity.AssetNode, error)); ok {
+		return rf(ctx, trx, filter)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, repository.Tx, repository.FindAssetNodesFilter) []*entity.AssetNode); ok {
+		r0 = rf(ctx, trx, filter)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*entity.AssetNode)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, repository.Tx, repository.FindAssetNodesFilter) error); ok {
+		r1 = rf(ctx, trx, filter)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// AssetRepository_FindNodes_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindNodes'
+type AssetRepository_FindNodes_Call struct {
+	*mock.Call
+}
+
+// FindNodes is a helper method to define mock.On call
+//   - ctx context.Context
+//   - trx repository.Tx
+//   - filter repository.FindAssetNodesFilter
+func (_e *AssetRepository_Expecter) FindNodes(ctx interface{}, trx interface{}, filter interface{}) *AssetRepository_FindNodes_Call {
+	return &AssetRepository_FindNodes_Call{Call: _e.mock.On("FindNodes", ctx, trx, filter)}
+}
+
+func (_c *AssetRepository_FindNodes_Call) Run(run func(ctx context.Context, trx repository.Tx, filter repository.FindAssetNodesFilter)) *AssetRepository_FindNodes_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(repository.Tx), args[2].(repository.FindAssetNodesFilter))
+	})
+	return _c
+}
+
+func (_c *AssetRepository_FindNodes_Call) Return(_a0 []*entity.AssetNode, _a1 error) *AssetRepository_FindNodes_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *AssetRepository_FindNodes_Call) RunAndReturn(run func(context.Context, repository.Tx, repository.FindAssetNodesFilter) ([]*entity.AssetNode, error)) *AssetRepository_FindNodes_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindPath provides a mock function with given fields: ctx, trx, assetID
+func (_m *AssetRepository) FindPath(ctx context.Context, trx repository.Tx, assetID string) ([]*entity.AssetNode, error) {
+	ret := _m.Called(ctx, trx, assetID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindPath")
+	}
+
+	var r0 []*entity.AssetNode
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, repository.Tx, string) ([]*entity.AssetNode, error)); ok {
+		return rf(ctx, trx, assetID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, repository.Tx, string) []*entity.AssetNode); ok {
+		r0 = rf(ctx, trx, assetID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*entity.AssetNode)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, repository.Tx, string) error); ok {
+		r1 = rf(ctx, trx, assetID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// AssetRepository_FindPath_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindPath'
+type AssetRepository_FindPath_Call struct {
+	*mock.Call
+}
+
+// FindPath is a helper method to define mock.On call
+//   - ctx context.Context
+//   - trx repository.Tx
+//   - assetID string
+func (_e *AssetRepository_Expecter) FindPath(ctx interface{}, trx interface{}, assetID interface{}) *AssetRepository_FindPath_Call {
+	return &AssetRepository_FindPath_Call{Call: _e.mock.On("FindPath", ctx, trx, assetID)}
+}
+
+func (_c *AssetRepository_FindPath_Call) Run(run func(ctx context.Context, trx repository.Tx, assetID string)) *AssetRepository_FindPath_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(repository.Tx), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *AssetRepository_FindPath_Call) Return(_a0 []*entity.AssetNode, _a1 error) *AssetRepository_FindPath_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *AssetRepository_FindPath_Call) RunAndReturn(run func(context.Context, repository.Tx, string) ([]*entity.AssetNode, error)) *AssetRepository_FindPath_Call {
 	_c.Call.Return(run)
 	return _c
 }

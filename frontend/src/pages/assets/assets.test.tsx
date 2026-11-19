@@ -43,7 +43,7 @@ describe("Assets page", () => {
 		renderAssets(AppRoute.ASSETS);
 
 		expect(
-			screen.getByText("No assets yet. Import a CSV file to get started."),
+			screen.getByText("No assets have been imported yet."),
 		).toBeInTheDocument();
 		expect(getDialog()).not.toHaveAttribute("open");
 	});

@@ -5,11 +5,13 @@ package bootstrap
 
 import (
 	"smart-grid-asset-registry/internal/config"
+	asset "smart-grid-asset-registry/internal/handler/asset"
 	asset_import "smart-grid-asset-registry/internal/handler/asset_import"
 	asset_repository "smart-grid-asset-registry/internal/repository/psql/asset"
 	asset_import_repository "smart-grid-asset-registry/internal/repository/psql/asset_import"
 	"smart-grid-asset-registry/internal/repository/psql/gormtx"
 	"smart-grid-asset-registry/internal/routes"
+	asset_usecase "smart-grid-asset-registry/internal/usecase/asset"
 	asset_import_usecase "smart-grid-asset-registry/internal/usecase/asset_import"
 
 	"github.com/gofiber/fiber/v2"
@@ -28,14 +30,17 @@ func SetupDependencies(app *fiber.App, db *gorm.DB, cfg *config.Config, log *log
 
 	// --- usecases ---
 	assetImportUsecase := asset_import_usecase.NewAssetImportUsecase(txManager, assetRepository, assetImportRepository, log)
+	assetUsecase := asset_usecase.NewAssetUsecase(assetRepository, log)
 
 	// --- handlers ---
 	assetImportHandler := asset_import.NewAssetImportHandler(assetImportUsecase)
+	assetHandler := asset.NewAssetHandler(assetUsecase)
 
 	return &routes.RouteDependencies{
 		App:                app,
 		DB:                 db,
 		Cfg:                cfg,
 		AssetImportHandler: assetImportHandler,
+		AssetHandler:       assetHandler,
 	}
 }

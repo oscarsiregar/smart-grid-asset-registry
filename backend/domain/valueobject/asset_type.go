@@ -72,6 +72,28 @@ func (s AssetType) IsValid() error {
 	}
 }
 
+// rankUnknown places a type this service does not know after every known one.
+const rankUnknown = 5
+
+// Rank is the type's position in every asset list: substations, then
+// transformers, LV boards, switchboards and switchboard panels (spec FR-004).
+func (s AssetType) Rank() int {
+	switch s {
+	case AssetTypeSubstation:
+		return 0
+	case AssetTypeTransformer:
+		return 1
+	case AssetTypeLVBoard:
+		return 2
+	case AssetTypeSwitchboard:
+		return 3
+	case AssetTypeSwitchboardPanel:
+		return 4
+	default:
+		return rankUnknown
+	}
+}
+
 // PermittedParent returns the only asset type allowed as this type's parent
 // (spec FR-014). SUBSTATION is a root and has none (ok = false).
 func (s AssetType) PermittedParent() (parent AssetType, ok bool) {

@@ -33,6 +33,15 @@ func TestMessage(t *testing.T) {
 	assert.Equal(t, "Invalid request: x", Message(errorcode.InvalidRequest, "x"))
 	assert.Equal(t, "Parent SS-9 is neither stored nor in the file.", Message(errorcode.ParentNotFound, "SS-9"))
 	assert.Equal(t, "UNKNOWN_CODE", Message("UNKNOWN_CODE"), "unknown codes fall back to the code itself")
+	assert.Equal(t, "No asset with ID SS-9 exists.", Message(errorcode.AssetNotFound, "SS-9"))
+}
+
+func TestNotFound_AssetNotFound(t *testing.T) {
+	var appErr *apperror.AppError
+	require.True(t, errors.As(NotFound(errorcode.AssetNotFound, "SS-9"), &appErr))
+	assert.Equal(t, http.StatusNotFound, appErr.Code)
+	assert.Equal(t, "ASSET_NOT_FOUND", appErr.ErrorCode)
+	assert.Equal(t, "No asset with ID SS-9 exists.", appErr.Message)
 }
 
 func TestConstructors_MapToHTTPStatusAndCarryTheCode(t *testing.T) {

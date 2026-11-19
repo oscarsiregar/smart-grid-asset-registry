@@ -18,4 +18,13 @@ type AssetRepository interface {
 	// CreateMany inserts assets in batches, in the given order; callers pass
 	// parents before children so the parent foreign key holds.
 	CreateMany(ctx context.Context, trx Tx, assets []*entity.Asset) error
+	// FindByAssetID returns the asset with exactly this asset_id, or nil, nil
+	// when none is stored.
+	FindByAssetID(ctx context.Context, trx Tx, assetID string) (*entity.Asset, error)
+	// FindNodes returns the assets matching filter as nodes with their child
+	// counts, unsorted (the usecase orders them); never nil.
+	FindNodes(ctx context.Context, trx Tx, filter FindAssetNodesFilter) ([]*entity.AssetNode, error)
+	// FindPath returns the asset and its ancestors as nodes, substation first
+	// and the asset last; empty, non-nil when the asset is not stored.
+	FindPath(ctx context.Context, trx Tx, assetID string) ([]*entity.AssetNode, error)
 }

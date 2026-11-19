@@ -2,6 +2,7 @@ package routes
 
 import (
 	"smart-grid-asset-registry/internal/config"
+	asset "smart-grid-asset-registry/internal/handler/asset"
 	asset_import "smart-grid-asset-registry/internal/handler/asset_import"
 	"smart-grid-asset-registry/pkg/gocommon/pkg/utils"
 
@@ -14,6 +15,7 @@ type RouteDependencies struct {
 	DB                 *gorm.DB
 	Cfg                *config.Config
 	AssetImportHandler asset_import.AssetImportHandler
+	AssetHandler       asset.AssetHandler
 }
 
 // RegisterRoutes is the only place routes are registered.

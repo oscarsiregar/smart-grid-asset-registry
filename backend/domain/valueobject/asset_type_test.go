@@ -75,6 +75,26 @@ func TestAssetType_Value(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// Rank is the type order of every list (spec FR-004, research R3).
+func TestAssetType_Rank(t *testing.T) {
+	tests := []struct {
+		assetType AssetType
+		want      int
+	}{
+		{AssetTypeSubstation, 0},
+		{AssetTypeTransformer, 1},
+		{AssetTypeLVBoard, 2},
+		{AssetTypeSwitchboard, 3},
+		{AssetTypeSwitchboardPanel, 4},
+		{AssetType("GENERATOR"), 5},
+	}
+	for _, tt := range tests {
+		t.Run(tt.assetType.String(), func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.assetType.Rank())
+		})
+	}
+}
+
 func TestAssetType_PermittedParent(t *testing.T) {
 	tests := []struct {
 		assetType  AssetType
