@@ -41,11 +41,66 @@ const VALIDATED: ImportResultDto = {
 	warnings: [],
 };
 
-const respondWith = (status: number, body: unknown): void => {
-	vi.stubGlobal(
-		"fetch",
-		vi.fn(() => Promise.resolve(Response.json(body, { status }))),
-	);
+const COMMITTED: ImportResultDto = {
+	...VALIDATED,
+	import: { createdAt: "2026-11-19T10:15:00Z", id: "6f1c2c1e" },
+	isCommitted: true,
+	outcome: ImportOutcome.COMMITTED,
+};
+
+const NOTHING_TO_COMMIT: ImportResultDto = {
+	...VALIDATED,
+	counts: { ...VALIDATED.counts, imported: 0, unchanged: 205 },
+	import: { createdAt: "2026-11-19T10:15:00Z", id: "6f1c2c1e" },
+	outcome: ImportOutcome.NOTHING_TO_COMMIT,
+};
+
+type ServerAnswer = { body: unknown; status: number };
+
+const createSuccess = (
+	status: number,
+	data: ImportResultDto,
+): ServerAnswer => ({
+	body: { code: status, data, message: "ok", status: "success" },
+	status,
+});
+
+const createFailure = (
+	status: number,
+	message: string,
+	errorCode?: string,
+): ServerAnswer => ({
+	body: {
+		code: status,
+		data: errorCode === undefined ? null : { errorCode },
+		message,
+		status: "error",
+	},
+	status,
+});
+
+const INTERNAL_ERROR = createFailure(
+	HTTPCode.INTERNAL_SERVER_ERROR,
+	"Internal Server Error",
+);
+
+/** Answers /imports/validate and /imports separately. */
+const serve = (answers: {
+	create?: ServerAnswer;
+	validate: ServerAnswer;
+}): ReturnType<typeof vi.fn> => {
+	const fetchMock = vi.fn((request: Request) => {
+		const answer = request.url.endsWith("/validate")
+			? answers.validate
+			: answers.create;
+
+		return answer
+			? Promise.resolve(Response.json(answer.body, { status: answer.status }))
+			: Promise.reject(new TypeError("Failed to fetch"));
+	});
+	vi.stubGlobal("fetch", fetchMock);
+
+	return fetchMock;
 };
 
 const renderPanel = (): void => {
@@ -58,19 +113,17 @@ const renderPanel = (): void => {
 
 const submitFile = (): void => {
 	fireEvent.change(screen.getByLabelText("CSV file"), {
-		target: { files: [new File(["asset_id\n"], "grid_assets.csv")] },
+		target: { files: [new File(["asset_id"], "grid_assets.csv")] },
 	});
 	fireEvent.click(screen.getByRole("button", { name: "Check file" }));
 };
 
-describe("ImportPanel", () => {
+const NOT_CHECKED_MESSAGE =
+	"Not checked — the file could not be checked. Nothing was saved.";
+
+describe("ImportPanel — checking a file (US1)", () => {
 	it("shows the validation result: outcome, counts and rejected rows", async () => {
-		respondWith(HTTPCode.OK, {
-			code: HTTPCode.OK,
-			data: VALIDATED,
-			message: "Successfully validate asset import",
-			status: "success",
-		});
+		serve({ validate: createSuccess(HTTPCode.OK, VALIDATED) });
 		renderPanel();
 
 		submitFile();
@@ -85,11 +138,12 @@ describe("ImportPanel", () => {
 	});
 
 	it("shows a file-level problem as an alert with the server message and no table", async () => {
-		respondWith(HTTPCode.UNPROCESSED_ENTITY, {
-			code: HTTPCode.UNPROCESSED_ENTITY,
-			data: { errorCode: "IMPORT_MISSING_COLUMNS" },
-			message: "The file is missing required columns: asset_name.",
-			status: "error",
+		serve({
+			validate: createFailure(
+				HTTPCode.UNPROCESSED_ENTITY,
+				"The file is missing required columns: asset_name.",
+				"IMPORT_MISSING_COLUMNS",
+			),
 		});
 		renderPanel();
 
@@ -103,21 +157,12 @@ describe("ImportPanel", () => {
 	});
 
 	it("says that nothing was saved when the server fails", async () => {
-		respondWith(HTTPCode.INTERNAL_SERVER_ERROR, {
-			code: HTTPCode.INTERNAL_SERVER_ERROR,
-			data: null,
-			message: "Internal Server Error",
-			status: "error",
-		});
+		serve({ validate: INTERNAL_ERROR });
 		renderPanel();
 
 		submitFile();
 
-		expect(
-			await screen.findByText(
-				"Not checked — the file could not be checked. Nothing was saved.",
-			),
-		).toBeInTheDocument();
+		expect(await screen.findByText(NOT_CHECKED_MESSAGE)).toBeInTheDocument();
 	});
 
 	it("says that nothing was saved when the network fails", async () => {
@@ -129,20 +174,11 @@ describe("ImportPanel", () => {
 
 		submitFile();
 
-		expect(
-			await screen.findByText(
-				"Not checked — the file could not be checked. Nothing was saved.",
-			),
-		).toBeInTheDocument();
+		expect(await screen.findByText(NOT_CHECKED_MESSAGE)).toBeInTheDocument();
 	});
 
 	it("returns to an empty form with Choose another file", async () => {
-		respondWith(HTTPCode.OK, {
-			code: HTTPCode.OK,
-			data: VALIDATED,
-			message: "Successfully validate asset import",
-			status: "success",
-		});
+		serve({ validate: createSuccess(HTTPCode.OK, VALIDATED) });
 		renderPanel();
 		submitFile();
 		await screen.findByText("Validated only — nothing saved");
@@ -156,6 +192,94 @@ describe("ImportPanel", () => {
 		});
 		expect(
 			screen.queryByText("Validated only — nothing saved"),
+		).not.toBeInTheDocument();
+	});
+});
+
+describe("ImportPanel — saving a file (US2)", () => {
+	it("saves the same file and shows that data was committed", async () => {
+		const fetchMock = serve({
+			create: createSuccess(HTTPCode.CREATED, COMMITTED),
+			validate: createSuccess(HTTPCode.OK, VALIDATED),
+		});
+		renderPanel();
+		submitFile();
+		await screen.findByText("Validated only — nothing saved");
+
+		fireEvent.click(screen.getByRole("button", { name: "Save 205 assets" }));
+
+		expect(
+			await screen.findByText("Committed — 205 assets saved"),
+		).toBeInTheDocument();
+		const urls = fetchMock.mock.calls.map(
+			([request]) => (request as Request).url,
+		);
+		expect(urls).toEqual([
+			"http://localhost/api/imports/validate",
+			"http://localhost/api/imports",
+		]);
+		expect(
+			screen.queryByRole("button", { name: /Save/ }),
+		).not.toBeInTheDocument();
+	});
+
+	it("shows Nothing to commit when no new assets were saved", async () => {
+		serve({
+			create: createSuccess(HTTPCode.CREATED, NOTHING_TO_COMMIT),
+			validate: createSuccess(HTTPCode.OK, VALIDATED),
+		});
+		renderPanel();
+		submitFile();
+		await screen.findByText("Validated only — nothing saved");
+
+		fireEvent.click(screen.getByRole("button", { name: "Save 205 assets" }));
+
+		expect(
+			await screen.findByText("Nothing to commit — no new assets"),
+		).toBeInTheDocument();
+	});
+
+	it("says the import was rolled back when saving fails, and keeps the result", async () => {
+		serve({
+			create: INTERNAL_ERROR,
+			validate: createSuccess(HTTPCode.OK, VALIDATED),
+		});
+		renderPanel();
+		submitFile();
+		await screen.findByText("Validated only — nothing saved");
+
+		fireEvent.click(screen.getByRole("button", { name: "Save 205 assets" }));
+
+		expect(
+			await screen.findByText(
+				"Not committed — the import failed and was rolled back",
+			),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Save 205 assets" }),
+		).toBeEnabled();
+	});
+
+	it("starts again with Import another file", async () => {
+		serve({
+			create: createSuccess(HTTPCode.CREATED, COMMITTED),
+			validate: createSuccess(HTTPCode.OK, VALIDATED),
+		});
+		renderPanel();
+		submitFile();
+		await screen.findByText("Validated only — nothing saved");
+		fireEvent.click(screen.getByRole("button", { name: "Save 205 assets" }));
+		await screen.findByText("Committed — 205 assets saved");
+
+		fireEvent.click(
+			screen.getByRole("button", { name: "Import another file" }),
+		);
+
+		await waitFor(() => {
+			expect(screen.getByRole("button", { name: "Check file" })).toBeDisabled();
+		});
+		expect(
+			screen.queryByText("Committed — 205 assets saved"),
 		).not.toBeInTheDocument();
 	});
 });

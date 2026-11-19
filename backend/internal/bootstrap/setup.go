@@ -7,6 +7,7 @@ import (
 	"smart-grid-asset-registry/internal/config"
 	asset_import "smart-grid-asset-registry/internal/handler/asset_import"
 	asset_repository "smart-grid-asset-registry/internal/repository/psql/asset"
+	asset_import_repository "smart-grid-asset-registry/internal/repository/psql/asset_import"
 	"smart-grid-asset-registry/internal/repository/psql/gormtx"
 	"smart-grid-asset-registry/internal/routes"
 	asset_import_usecase "smart-grid-asset-registry/internal/usecase/asset_import"
@@ -21,14 +22,12 @@ func SetupDependencies(app *fiber.App, db *gorm.DB, cfg *config.Config, log *log
 
 	// --- repositories ---
 	assetRepository := asset_repository.NewAssetRepository(db)
+	assetImportRepository := asset_import_repository.NewAssetImportRepository(db)
 
 	txManager := gormtx.NewTransactionManager(db)
 
 	// --- usecases ---
-	// The asset-import repository (import records and the import lock) is
-	// wired by task T084 together with POST /api/imports; until then only
-	// ValidateAssetImport is reachable, and it never uses it.
-	assetImportUsecase := asset_import_usecase.NewAssetImportUsecase(txManager, assetRepository, nil, log)
+	assetImportUsecase := asset_import_usecase.NewAssetImportUsecase(txManager, assetRepository, assetImportRepository, log)
 
 	// --- handlers ---
 	assetImportHandler := asset_import.NewAssetImportHandler(assetImportUsecase)

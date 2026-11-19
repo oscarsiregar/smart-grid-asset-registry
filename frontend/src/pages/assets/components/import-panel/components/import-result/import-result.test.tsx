@@ -52,7 +52,13 @@ const getCount = (label: string): null | string => {
 
 describe("ImportResult", () => {
 	it("states that nothing was saved and shows the counts with 'to import'", () => {
-		render(<ImportResult onReset={vi.fn()} result={VALIDATED} />);
+		render(
+			<ImportResult
+				onReset={vi.fn()}
+				resetLabel="Choose another file"
+				result={VALIDATED}
+			/>,
+		);
 
 		expect(screen.getByRole("status")).toHaveTextContent(
 			"Validated only — nothing saved",
@@ -65,7 +71,13 @@ describe("ImportResult", () => {
 	});
 
 	it("lists the rejected rows and warnings", () => {
-		render(<ImportResult onReset={vi.fn()} result={VALIDATED} />);
+		render(
+			<ImportResult
+				onReset={vi.fn()}
+				resetLabel="Choose another file"
+				result={VALIDATED}
+			/>,
+		);
 
 		expect(
 			screen.getByRole("table", { name: "Rejected rows (1)" }),
@@ -80,6 +92,7 @@ describe("ImportResult", () => {
 		render(
 			<ImportResult
 				onReset={vi.fn()}
+				resetLabel="Import another file"
 				result={{
 					...VALIDATED,
 					isCommitted: true,
@@ -94,12 +107,78 @@ describe("ImportResult", () => {
 
 	it("offers to choose another file", () => {
 		const handleReset = vi.fn();
-		render(<ImportResult onReset={handleReset} result={VALIDATED} />);
+		render(
+			<ImportResult
+				onReset={handleReset}
+				resetLabel="Choose another file"
+				result={VALIDATED}
+			/>,
+		);
 
 		fireEvent.click(
 			screen.getByRole("button", { name: "Choose another file" }),
 		);
 
 		expect(handleReset).toHaveBeenCalledOnce();
+	});
+
+	it("offers Save with the number of new assets when confirming is possible", () => {
+		const handleConfirm = vi.fn();
+		render(
+			<ImportResult
+				onConfirm={handleConfirm}
+				onReset={vi.fn()}
+				resetLabel="Choose another file"
+				result={VALIDATED}
+			/>,
+		);
+
+		fireEvent.click(screen.getByRole("button", { name: "Save 205 assets" }));
+
+		expect(handleConfirm).toHaveBeenCalledOnce();
+	});
+
+	it("shows that the import is being saved and blocks both actions", () => {
+		render(
+			<ImportResult
+				isSaving
+				onConfirm={vi.fn()}
+				onReset={vi.fn()}
+				resetLabel="Choose another file"
+				result={VALIDATED}
+			/>,
+		);
+
+		expect(screen.getByText("Saving…")).toHaveAttribute("role", "status");
+		expect(
+			screen.getByRole("button", { name: /Save 205 assets/ }),
+		).toBeDisabled();
+		expect(
+			screen.getByRole("button", { name: "Choose another file" }),
+		).toBeDisabled();
+	});
+
+	it("offers no Save without onConfirm", () => {
+		render(
+			<ImportResult
+				onReset={vi.fn()}
+				resetLabel="Import another file"
+				result={{
+					...VALIDATED,
+					isCommitted: true,
+					outcome: ImportOutcome.COMMITTED,
+				}}
+			/>,
+		);
+
+		expect(screen.getByRole("status")).toHaveTextContent(
+			"Committed — 205 assets saved",
+		);
+		expect(
+			screen.queryByRole("button", { name: /Save/ }),
+		).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Import another file" }),
+		).toBeEnabled();
 	});
 });

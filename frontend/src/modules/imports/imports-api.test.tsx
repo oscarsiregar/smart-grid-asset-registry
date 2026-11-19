@@ -6,7 +6,10 @@ import { HTTPCode } from "~/libs/enums/enums.js";
 import { config } from "~/libs/modules/config/config.js";
 import { createStore } from "~/libs/modules/store/store.module.js";
 
-import { useValidateImportMutation } from "./imports-api.js";
+import {
+	useCreateImportMutation,
+	useValidateImportMutation,
+} from "./imports-api.js";
 import { ImportMode, ImportOutcome, type ImportResultDto } from "./imports.js";
 
 const RESULT: ImportResultDto = {
@@ -95,5 +98,49 @@ describe("validateImport", () => {
 			message: "The file contains no data rows.",
 			status: HTTPCode.UNPROCESSED_ENTITY,
 		});
+	});
+});
+
+describe("createImport", () => {
+	it("posts to /imports and returns the unwrapped result", async () => {
+		const committed: ImportResultDto = {
+			...RESULT,
+			import: { createdAt: "2026-11-19T10:15:00Z", id: "6f1c2c1e" },
+			isCommitted: true,
+			outcome: ImportOutcome.COMMITTED,
+		};
+		const fetchMock = vi.fn(() =>
+			Promise.resolve(
+				Response.json(
+					{
+						code: HTTPCode.CREATED,
+						data: committed,
+						message: "Successfully create asset import",
+						status: "success",
+					},
+					{ status: HTTPCode.CREATED },
+				),
+			),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+		const store = createStore(config);
+		const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+			<Provider store={store}>{children}</Provider>
+		);
+		const { result } = renderHook(() => useCreateImportMutation(), { wrapper });
+
+		let response: unknown;
+		await act(async () => {
+			const [createImport] = result.current;
+			response = await createImport({
+				file: new File(["asset_id"], "grid.csv"),
+				mode: ImportMode.PARTIAL,
+			}).unwrap();
+		});
+
+		expect(response).toEqual(committed);
+		const [[request]] = fetchMock.mock.calls as unknown as [[Request]];
+		expect(request.method).toBe("POST");
+		expect(request.url).toBe("http://localhost/api/imports");
 	});
 });

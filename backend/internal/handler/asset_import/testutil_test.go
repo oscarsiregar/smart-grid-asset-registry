@@ -27,6 +27,7 @@ func newTestLogger() *logrus.Logger {
 func newTestApp(h AssetImportHandler) *fiber.App {
 	app := fiber.New(fiber.Config{ErrorHandler: utils.NewErrorHandler(newTestLogger())})
 	app.Post("/api/imports/validate", h.ValidateAssetImport)
+	app.Post("/api/imports", h.CreateAssetImport)
 	return app
 }
 

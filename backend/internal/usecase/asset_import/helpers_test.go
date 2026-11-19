@@ -55,6 +55,11 @@ func newDeps(t *testing.T) deps {
 	}
 }
 
+// withinTx wires txManager.WithinTx to run the callback against d.trx.
+func (d deps) withinTx() {
+	mocksrepo.StubWithinTx(d.txManager, d.trx)
+}
+
 func (d deps) usecase() assetImportUsecase {
 	ids := []uuid.UUID{
 		uuid.MustParse("00000000-0000-0000-0000-000000000001"),

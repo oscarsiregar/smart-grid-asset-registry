@@ -9,6 +9,7 @@ import (
 // AssetImportHandler lists every endpoint of the module; routes.go wires them.
 type AssetImportHandler interface {
 	ValidateAssetImport(ctx *fiber.Ctx) error
+	CreateAssetImport(ctx *fiber.Ctx) error
 }
 
 type assetImportHandler struct {

@@ -50,6 +50,30 @@ Checks the file against the current store. Stores nothing, takes no lock, leaves
 curl -s -F file=@backend/domain/assetimport/testdata/grid_assets.csv localhost:8080/api/imports/validate
 ```
 
+## `POST /api/imports`
+
+Re-validates the file against the store **at this moment** and applies it in one transaction,
+serialised with every other import by a PostgreSQL advisory lock: lock → read the stored assets the
+file mentions → validate → store the import record → insert the accepted assets (parents first).
+
+**201** for every completed attempt — each one stores an import record (time, file name, mode,
+counts, outcome) — with `data` an [ImportResult](#importresult) whose `import` is `{ id, createdAt }`:
+
+| `outcome` | What was stored | `isCommitted` |
+|---|---|---|
+| `COMMITTED` | the record and every new valid row | `true` |
+| `NOTHING_TO_COMMIT` | the record only (no new valid rows) | `false` |
+| `STRICT_BLOCKED` | the record only (`mode` `STRICT` and at least one row rejected) | `false` |
+
+**500** — an unexpected failure rolls the transaction back: no assets and no import record are
+stored. The failure is logged with the file name and mode.
+
+Rejected-row and warning details are returned but never stored.
+
+```sh
+curl -s -F file=@backend/domain/assetimport/testdata/grid_assets.csv -F mode=PARTIAL localhost:8080/api/imports
+```
+
 ## Errors
 
 | HTTP | `data.errorCode` | When |
@@ -61,9 +85,10 @@ curl -s -F file=@backend/domain/assetimport/testdata/grid_assets.csv localhost:8
 | 422 | `IMPORT_FILE_NOT_CSV` | not UTF-8, or a CSV syntax error such as a broken quote; the message names the line |
 | 422 | `IMPORT_MISSING_COLUMNS` | header lacks required columns (named in the message) |
 | 422 | `IMPORT_DUPLICATE_COLUMNS` | header repeats a column name |
-| 500 | — | unexpected failure |
+| 500 | — | unexpected failure (for `POST /api/imports`: rolled back, nothing stored) |
 
-A file-level error never includes row results.
+These apply to both endpoints. A file-level error never includes row results and, for
+`POST /api/imports`, leaves no import record.
 
 ## ImportResult
 

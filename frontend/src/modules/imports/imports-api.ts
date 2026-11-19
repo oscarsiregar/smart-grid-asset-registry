@@ -10,6 +10,16 @@ import {
 
 const importsApi = baseApi.injectEndpoints({
 	endpoints: (builder) => ({
+		createImport: builder.mutation<ImportResultDto, ImportRequestDto>({
+			// The panel renders failures itself.
+			extraOptions: { shouldSuppressToast: true },
+			query: (payload) => ({
+				body: createImportFormData(payload),
+				method: HTTPMethod.POST,
+				url: APIPath.IMPORTS,
+			}),
+		}),
+
 		validateImport: builder.mutation<ImportResultDto, ImportRequestDto>({
 			// The panel renders file-level errors itself.
 			extraOptions: { shouldSuppressToast: true },
@@ -22,6 +32,6 @@ const importsApi = baseApi.injectEndpoints({
 	}),
 });
 
-const { useValidateImportMutation } = importsApi;
+const { useCreateImportMutation, useValidateImportMutation } = importsApi;
 
-export { useValidateImportMutation };
+export { useCreateImportMutation, useValidateImportMutation };

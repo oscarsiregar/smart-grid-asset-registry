@@ -31,4 +31,5 @@ func RegisterRoutes(deps *RouteDependencies) {
 	// Static routes are registered before any parameterised route.
 	importGroup := api.Group("/imports")
 	importGroup.Post("/validate", deps.AssetImportHandler.ValidateAssetImport)
+	importGroup.Post("/", deps.AssetImportHandler.CreateAssetImport)
 }
