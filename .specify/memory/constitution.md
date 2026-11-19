@@ -1,3 +1,13 @@
+<!--
+Sync Impact Report
+- Version change: 1.2.0 → 1.3.0 (MINOR: Template Exceptions expanded)
+- Modified principles: none
+- Added: Template Exception 14 (search ordering and paging in the usecase)
+- Removed sections: none
+- Templates: none modified (dependent templates read this file at runtime)
+- Follow-up: none
+-->
+
 # Smart Grid Asset Registry Constitution
 
 A web app that imports a CSV of grid assets (substations and their equipment, linked by
@@ -69,6 +79,10 @@ be conveyed by colour alone; panels MUST trap focus and close on Escape.
 13. **Complete hierarchy lists**: the asset hierarchy reads (top-level substations, the
     children of one asset) return every row, without page/limit, because the explorer shows
     all children at once. Other list endpoints keep the template's paging.
+14. **Search ordering and paging in the usecase**: the asset search loads every match, orders
+    it with the domain's natural asset order (exact matches first) and takes the requested
+    page in the usecase, because that order cannot be expressed in SQL. The API keeps the
+    template's page/limit/totalItems contract. Other paged lists page in SQL.
 
 ## Definition of Done
 
@@ -85,4 +99,4 @@ file with a semantic version bump (MAJOR: principle removed or redefined; MINOR:
 or section added or materially expanded; PATCH: wording clarifications). Plans and reviews
 MUST check compliance with these principles and the Definition of Done.
 
-**Version**: 1.2.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-19
+**Version**: 1.3.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-19
