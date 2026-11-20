@@ -42,7 +42,7 @@ docker compose up --build
 |---|---|---|
 | `web` | http://localhost:3000 | the app: the asset explorer at `/assets` (an asset at `/assets/<asset_id>`, a search at `/assets?q=<text>`); **Import CSV** opens the import panel |
 | `api` | http://localhost:8080/api | the API; `GET /api/health` answers when it is ready |
-| `db` | `localhost:55432` | PostgreSQL (`postgres` / `postgres`, database `asset_registry`) |
+| `db` | `localhost:5432` | PostgreSQL (`postgres` / `postgres`, database `asset_registry`) |
 
 Migrations run when the API starts. To start from an empty database: `docker compose down -v`, then up again. A
 sample file is in `backend/domain/assetimport/testdata/grid_assets.csv` (222 rows: 205 accepted, 17 rejected).
@@ -63,7 +63,7 @@ Or locally, including the integration tests on real PostgreSQL:
 
 ```sh
 # backend/ (integration tests are skipped without TEST_DATABASE_URL; they need a database asset_registry_test)
-TEST_DATABASE_URL='postgres://postgres:postgres@localhost:55432/asset_registry_test?sslmode=disable' make check
+TEST_DATABASE_URL='postgres://postgres:postgres@localhost:5432/asset_registry_test?sslmode=disable' make check
 make lint
 
 # frontend/

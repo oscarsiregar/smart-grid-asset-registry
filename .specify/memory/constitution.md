@@ -43,7 +43,7 @@ be conveyed by colour alone; panels MUST trap focus and close on Escape.
    permission checks.
 2. **Frontend tests**: Vitest + React Testing Library are added (the template has no test
    runner).
-3. **Local stack**: a root `docker-compose.yml` runs `db` (PostgreSQL 16, port 55432),
+3. **Local stack**: a root `docker-compose.yml` runs `db` (PostgreSQL 16, port 5432),
    `api` (port 8080) and `web` (nginx, port 3000, forwarding `/api`); database migrations
    run automatically on start.
 4. **Local shared library**: the template's private go-common library is re-implemented
@@ -89,4 +89,4 @@ file with a semantic version bump (MAJOR: principle removed or redefined; MINOR:
 or section added or materially expanded; PATCH: wording clarifications). Plans and reviews
 MUST check compliance with these principles and the Definition of Done.
 
-**Version**: 1.3.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-19
+**Version**: 1.3.1 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-20

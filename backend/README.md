@@ -13,7 +13,7 @@ contracts in `domain/`.
 
 - Go 1.26
 - PostgreSQL 16 — the easiest is the compose `db` service: `docker compose up -d db` from the repository root
-  (host port `55432`)
+  (host port `5432`)
 - Optional: `golangci-lint` v2.13 for `make lint`, `mockery` v2.53 for `make mocks`
 
 No private modules and no credentials are needed: the template's private `go-common` library is re-implemented
@@ -51,7 +51,7 @@ without `TEST_DATABASE_URL` (Template Exception 11). They need their own databas
 `asset_registry_test` (create it once with `CREATE DATABASE asset_registry_test;`):
 
 ```sh
-TEST_DATABASE_URL='postgres://postgres:postgres@localhost:55432/asset_registry_test?sslmode=disable' make check
+TEST_DATABASE_URL='postgres://postgres:postgres@localhost:5432/asset_registry_test?sslmode=disable' make check
 ```
 
 Or run the unit tests in a container from the repository root: `docker compose --profile test run --rm backend-test`.

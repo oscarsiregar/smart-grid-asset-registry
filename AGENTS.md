@@ -33,7 +33,7 @@ specs/      one folder per feature: spec.md, plan.md, tasks.md
 
 1. No authentication: routes are public, no permission checks.
 2. The frontend has automated tests (Vitest + React Testing Library).
-3. A root `docker-compose.yml` runs `db` (55432), `api` (8080) and `web` (3000); migrations run on start.
+3. A root `docker-compose.yml` runs `db` (5432), `api` (8080) and `web` (3000); migrations run on start.
 4. The private `go-common` library is re-implemented in `backend/` with the same names and signatures;
    its only addition is `data.errorCode` on error responses that carry an application error code.
 5. No API version prefix: routes live under `/api` (for example `/api/imports`).

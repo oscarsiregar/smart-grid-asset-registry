@@ -29,7 +29,7 @@ component / hook / helper / type / enum, each with its test next to it (`backend
 
 Web app: `backend/` (Go module `smart-grid-asset-registry`) and `frontend/src/`. Backend checks: `make check`,
 `make lint` from `backend/` (or `docker compose --profile test run --rm backend-test`); integration tests need
-`TEST_DATABASE_URL=postgres://postgres:postgres@localhost:55432/asset_registry_test?sslmode=disable`. Frontend
+`TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/asset_registry_test?sslmode=disable`. Frontend
 checks: `pnpm lint`, `pnpm build`, `pnpm test` from `frontend/`.
 
 ---

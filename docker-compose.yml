@@ -1,5 +1,5 @@
 # Runs the app: docker compose up --build
-#   db (55432), api (8080), web (3000)
+#   db (5432), api (8080), web (3000)
 # Runs the tests: docker compose --profile test run --rm backend-test (or frontend-test)
 # Override a host port with DB_HOST_PORT, API_HOST_PORT or WEB_HOST_PORT if it is taken.
 # The credentials are fixed local-development values, not secrets.
@@ -14,7 +14,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: asset_registry
     ports:
-      - "${DB_HOST_PORT:-55432}:5432"
+      - "${DB_HOST_PORT:-5432}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:

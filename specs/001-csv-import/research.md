@@ -282,7 +282,7 @@ The brief's "220 valid assets" does not match 205; "13 substations" does. Record
 ## R13. Local stack and tests in containers
 
 **Decision**: Root `docker-compose.yml`:
-- `db`: `postgres:16-alpine`, host port `55432`, named volume, health check, an init script that
+- `db`: `postgres:16-alpine`, host port `5432`, named volume, health check, an init script that
   also creates the `asset_registry_test` database.
 - `api`: built from `backend/Dockerfile` (private-module lines removed), `APP_PORT=8080`, depends on
   healthy `db`, runs migrations on start.

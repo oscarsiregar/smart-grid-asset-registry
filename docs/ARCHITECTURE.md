@@ -12,7 +12,7 @@ are in the [constitution](../.specify/memory/constitution.md).
 ## 1. System overview
 
 ```
-browser ──► web (nginx, :3000) ──/api──► api (Go/Fiber, :8080) ──► db (PostgreSQL 16, :55432)
+browser ──► web (nginx, :3000) ──/api──► api (Go/Fiber, :8080) ──► db (PostgreSQL 16, :5432)
              serves the SPA                validates + stores          asset_registry
                                                                        asset_registry_test (tests)
 ```
@@ -21,7 +21,7 @@ browser ──► web (nginx, :3000) ──/api──► api (Go/Fiber, :8080) �
 
 | Service | What it is | Notes |
 |---|---|---|
-| `db` | PostgreSQL 16 | Host port 55432. Integration tests use a separate database, `asset_registry_test`, created by hand. |
+| `db` | PostgreSQL 16 | Host port 5432. Integration tests use a separate database, `asset_registry_test`, created by hand. |
 | `api` | The Go backend | Applies the embedded migrations on start, then serves `/api`. Healthy when `/api/health` answers. |
 | `web` | nginx with the built React app | Proxies `/api` to `api:8080`; every other path falls back to `index.html`. |
 

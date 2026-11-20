@@ -15,7 +15,7 @@
 docker compose up --build
 ```
 
-Expected: `db` healthy on `localhost:55432`, `api` logs that migrations applied and the server
+Expected: `db` healthy on `localhost:5432`, `api` logs that migrations applied and the server
 listens on `8080`, `web` serves `http://localhost:3000`.
 `curl -s localhost:8080/api/health` returns `200`.
 
@@ -23,7 +23,7 @@ listens on `8080`, `web` serves `http://localhost:3000`.
 
 ```sh
 # backend (from backend/), with the compose db running
-TEST_DATABASE_URL=postgres://postgres:postgres@localhost:55432/asset_registry_test?sslmode=disable make check
+TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/asset_registry_test?sslmode=disable make check
 make lint
 
 # frontend (from frontend/)

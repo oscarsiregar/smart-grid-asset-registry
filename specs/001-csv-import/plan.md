@@ -85,7 +85,7 @@ specs/001-csv-import/
 
 ```text
 .gitattributes                                   # LF everywhere, binaries marked
-docker-compose.yml                               # db (55432), api (8080), web (3000); profile "test"
+docker-compose.yml                               # db (5432), api (8080), web (3000); profile "test"
 docker/postgres/init/01-create-test-db.sql       # creates asset_registry_test
 docs/ARCHITECTURE.md                             # layers, import flow, transaction, trade-offs
 docs/KNOWN_LIMITATIONS.md
