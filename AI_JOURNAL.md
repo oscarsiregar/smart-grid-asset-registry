@@ -21,6 +21,10 @@ After that I built one feature at a time, each with its own spec and task list i
 2. **002 Asset explorer**: the tree, asset details and a stable URL per asset.
 3. **003 Asset search**: search by ID or name, with an optional type filter.
 4. **004 UI design**: restyling to a design reference, with no change in behaviour.
+5. **005 UI polish**: a closer match to the reference screenshots, and loading placeholders so the page no
+   longer jumps while data arrives.
+
+After the first review I also handled the reviewers' comments on a separate branch (see "After the review").
 
 Each feature ended with checkpoints that I ran myself in the browser and against the API before moving on.
 
@@ -53,10 +57,24 @@ each spec. The ones that shaped the app most:
 - **Show all children at once, with no paging.** I checked that the API stays fast at 50 000 assets, and
   wrote down the browser-side limit in `KNOWN_LIMITATIONS.md`.
 - **Sort IDs naturally**, so `SS-2` comes before `SS-10`.
-- **Only show a status in the tree when it is not "in service"**, to keep the tree quiet.
+- **Only show a status in the tree when it is not "in service"**, to keep the tree quiet. I changed this in
+  005: every node now shows a small status shape and its name, as in the reference. The asset ID, type and
+  status in words stay available to screen readers and on hover.
 - **Search runs on Enter or on the button**, not while typing. It shows the first 50 matches with the total
   count, and the results replace the tree. Selecting a result goes to the asset's own URL, and Back returns
   to the results.
+
+**UI polish (005)**
+
+- **Appearance only.** No new endpoint and no import history, even though the reference shows "recent
+  imports". The register card counts substations from data the page already loads.
+- **Placeholders, not spinners.** Each area that waits for data shows grey shapes the size of its content. They
+  appear only on a first load and only after 200 ms, so a fast response never flashes. With reduced motion
+  turned on they don't pulse.
+- **Keep our own texts.** I kept "Not recorded" for blank values and `2010-03-12` dates instead of the
+  reference's "—" and "Mar 12, 2010".
+- **The path shows names**, with the asset ID for screen readers and on hover.
+- **The tab icon matches the app**: the amber bolt on a dark tile, replacing the template's icon.
 
 **Assumptions about the brief**
 
@@ -64,6 +82,19 @@ each spec. The ones that shaped the app most:
   file has 222 rows, including some that are clearly meant to be invalid. My rules give 205 accepted and 17
   rejected, and the 13 substations match. I kept the result that follows from the rules, pinned it in a
   golden test, and documented the difference instead of bending the rules to hit 220.
+
+## After the review
+
+The reviewers left three comments, which I handled on a separate branch:
+
+- **A unit test report at the root.** `UNIT_TEST_REPORT.md` is generated from real test runs: the counts and
+  the coverage per package, the integration tests and the frontend tests, plus the commands to reproduce it.
+- **Remove an unneeded file.** `backend/domain/service/doc.go` was an empty package left from the template.
+- **The backend rule files.** `backend/docs/rules/` came from my own company template, which is written in
+  Indonesian. At first I wanted to keep them as they were, because the template is a separate project. Our
+  Technical Manager asked for English so the client can review them, so I had the agent translate every rule
+  file and remove the remaining Indonesian examples. Wherever this project deliberately differs from the
+  template, the translation adds a short "This project:" note pointing to the exception in the constitution.
 
 ## Three representative prompts
 
@@ -89,6 +120,8 @@ These are translated from Indonesian and slightly shortened.
   This journal is where the AI involvement is described.
 - **A misleading code comment.** A comment in the golden test said the expected values were "derived by
   hand". I had it reworded to say what is actually true: the values follow the spec's rules for each row.
+- **Placeholders that stayed after an error.** A test written first showed that the register card kept its
+  placeholder when loading failed. The card now hides on an error.
 - **Too much at once.** An earlier attempt had very long specs and a lot of generated test code. I threw it
   away and restarted with smaller specs, and tests only for the core import and hierarchy behaviour.
 
@@ -114,7 +147,10 @@ These are translated from Indonesian and slightly shortened.
   one component per file, design tokens). I had to point it at the template and the rules before it followed
   them consistently.
 - **It missed visual bugs in the code.** Two layout bugs only became visible in screenshots: the import drawer
-  was clipped by the scrollbar gutter, and status badges were squeezing the asset names in the tree.
+  was clipped by the scrollbar gutter, and status badges were squeezing the asset names in the tree. The
+  browser tab also still showed the template's icon until I noticed it myself.
+- **It lost track of earlier work.** At the start of 005 it said nothing from the reference existed yet, while
+  much of it had already been built in 004. It corrected itself after reading the code.
 
 ## Time
 
