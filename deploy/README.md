@@ -88,10 +88,15 @@ The deploy job may only run commands on this one VM.
 APP_ID=$(az ad app create --display-name gh-smart-grid-deploy --query appId --output tsv)
 az ad sp create --id "$APP_ID"
 
+# Newer repositories send a subject with immutable IDs; copy it from the
+# "subject claim" line of a failed azure/login step. The older form is
+# repo:<owner>/<repository>:environment:production.
+SUBJECT='repo:<owner>@<owner-id>/<repository>@<repository-id>:environment:production'
+
 az ad app federated-credential create --id "$APP_ID" --parameters "{
-  \"name\": \"github-production\",
+  \"name\": \"github-smart-grid-production-ids\",
   \"issuer\": \"https://token.actions.githubusercontent.com\",
-  \"subject\": \"repo:$GITHUB_REPO:environment:production\",
+  \"subject\": \"$SUBJECT\",
   \"audiences\": [\"api://AzureADTokenExchange\"]
 }"
 
@@ -99,6 +104,12 @@ az role assignment create --assignee "$APP_ID" \
   --role "Virtual Machine Contributor" \
   --scope "$(az vm show --resource-group "$RG" --name "$VM" --query id --output tsv)"
 ```
+
+The subject must match what GitHub sends exactly. This repository's token carries the owner and repository
+IDs (`repo:oscarsiregar@116549248/smart-grid-asset-registry@1464917673:environment:production`), so a rename
+does not break the login, but a deleted and recreated repository gets a new ID and needs a new credential.
+To change a subject, create a new credential and delete the old one (`az ad app federated-credential
+delete`); `federated-credential update` did not change it.
 
 ### 3. GitHub
 
