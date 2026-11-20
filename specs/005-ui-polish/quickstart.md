@@ -22,7 +22,7 @@ cd backend && make check && make lint                   # unchanged backend, sti
 
 ## 2. Side by side with the reference (SC-001), 1920 × 940
 
-1. `/assets/SS-001`: brand with the bolt tile; outlined Import CSV; compact search without visible labels;
+1. `/assets/SS-001`: brand with the bolt tile and the same bolt on a dark tile as the tab icon; outlined Import CSV; compact search without visible labels;
    tree rows with a status shape and the name only; "Register — 13 substations" at the bottom of the
    sidebar; header "Asset explorer" / "Aurora Substation (North)"; details card without ID/type/name/status;
    counts after it; "Immediate children (5)" with column headings.

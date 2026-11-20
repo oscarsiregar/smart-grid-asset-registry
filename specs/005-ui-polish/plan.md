@@ -74,6 +74,8 @@ specs/005-ui-polish/
 ### Source Code (repository root)
 
 ```text
+frontend/index.html                        # favicon links + theme-color (R10a)
+frontend/public/favicon.svg, favicon.ico   # dark tile with the amber bolt (R10a)
 frontend/src/
 ├── assets/
 │   ├── css/app-tokens.css                 # + skeleton, register and drawer tokens
