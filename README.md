@@ -84,6 +84,7 @@ End-to-end API and UI scenarios: [specs/001-csv-import/quickstart.md](specs/001-
 | [backend/docs/api/asset-import.md](backend/docs/api/asset-import.md) | API reference for the two import endpoints |
 | [backend/docs/api/asset.md](backend/docs/api/asset.md) | API reference for the two explorer endpoints and the search |
 | [AGENTS.md](AGENTS.md) | Rules for anyone (human or AI) changing the code, and where the detailed rules live |
+| [AI_JOURNAL.md](AI_JOURNAL.md) | How the AI agent was used: tools, workflow, prompts, corrections, review, time |
 | [.specify/memory/constitution.md](.specify/memory/constitution.md) | Project principles, template exceptions, Definition of Done |
 | [backend/README.md](backend/README.md), [frontend/README.md](frontend/README.md) | Working on each part on its own |
 
