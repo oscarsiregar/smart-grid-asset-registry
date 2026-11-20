@@ -1,0 +1,11 @@
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-12);
+	align-items: center;
+}
+
+.status {
+	font-size: var(--font-size-body-sm);
+	color: var(--text-muted);
+}

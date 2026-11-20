@@ -1,6 +1,6 @@
 # Unit test report
 
-Smart Grid Asset Registry — generated 2026-11-20 13:00 SE Asia Standard Time on branch `chore/review-comments` at commit `89fd02d`.
+Smart Grid Asset Registry — generated 2026-11-20 14:26 SE Asia Standard Time on branch `005-ui-polish`, on top of commit `742fa8e` with the branch's uncommitted changes.
 
 ## Summary
 
@@ -8,7 +8,7 @@ Smart Grid Asset Registry — generated 2026-11-20 13:00 SE Asia Standard Time o
 |---|---|---|---|---|---|
 | Backend unit tests | `go test ./...` (in `backend/`) | 545 | 0 | 25 | 0 |
 | Backend integration tests (PostgreSQL 16) | `TEST_DATABASE_URL=… go test ./internal/integrationtest/... ./internal/testsupport/...` | 66 | 0 | 1 | 0 |
-| Frontend unit and component tests | `pnpm test` (Vitest, in `frontend/`) | 224 | 0 | 0 | 0 |
+| Frontend unit and component tests | `pnpm test` (Vitest, in `frontend/`) | 259 | 0 | 0 | 0 |
 
 Counts include sub-tests (`t.Run`) for Go and every `it` for Vitest. In the unit run the integration tests skip themselves without `TEST_DATABASE_URL` (Template Exception 11); they run in the second row.
 
@@ -68,7 +68,10 @@ The one skipped test is `TestOpen_SkipsWithoutDatabaseURL`: it clears `TEST_DATA
 
 | Test file | Passed | Failed | Skipped |
 |---|---|---|---|
-| `src/libs/components/panel/panel.test.tsx` | 5 | 0 | 0 |
+| `src/libs/components/button/button.test.tsx` | 2 | 0 | 0 |
+| `src/libs/components/logo/logo.test.tsx` | 2 | 0 | 0 |
+| `src/libs/components/panel/panel.test.tsx` | 7 | 0 | 0 |
+| `src/libs/components/skeleton/skeleton.test.tsx` | 4 | 0 | 0 |
 | `src/libs/hooks/use-panel/use-panel.hook.test.tsx` | 6 | 0 | 0 |
 | `src/libs/modules/api/libs/helpers/to-server-error.helper.test.ts` | 8 | 0 | 0 |
 | `src/libs/modules/api/libs/helpers/unwrap-envelope.helper.test.ts` | 6 | 0 | 0 |
@@ -78,23 +81,30 @@ The one skipped test is `TestOpen_SkipsWithoutDatabaseURL`: it clears `TEST_DATA
 | `src/modules/imports/imports-api.test.tsx` | 10 | 0 | 0 |
 | `src/modules/imports/imports.test.ts` | 5 | 0 | 0 |
 | `src/modules/imports/libs/helpers/create-import-form-data.helper.test.ts` | 1 | 0 | 0 |
-| `src/pages/assets/assets.test.tsx` | 27 | 0 | 0 |
+| `src/pages/assets/assets.test.tsx` | 29 | 0 | 0 |
 | `src/pages/assets/components/asset-details/asset-details.test.tsx` | 10 | 0 | 0 |
 | `src/pages/assets/components/asset-details/components/child-groups/child-groups.test.tsx` | 4 | 0 | 0 |
-| `src/pages/assets/components/asset-details/components/child-list/child-list.test.tsx` | 1 | 0 | 0 |
+| `src/pages/assets/components/asset-details/components/child-list/child-list.test.tsx` | 2 | 0 | 0 |
 | `src/pages/assets/components/asset-details/components/descendant-counts/descendant-counts.test.tsx` | 2 | 0 | 0 |
+| `src/pages/assets/components/asset-details/components/details-skeleton/details-skeleton.test.tsx` | 1 | 0 | 0 |
+| `src/pages/assets/components/asset-header/asset-header.test.tsx` | 3 | 0 | 0 |
 | `src/pages/assets/components/asset-search/components/search-form/components/asset-type-field/asset-type-field.test.tsx` | 3 | 0 | 0 |
-| `src/pages/assets/components/asset-search/components/search-form/search-form.test.tsx` | 9 | 0 | 0 |
+| `src/pages/assets/components/asset-search/components/search-form/search-form.test.tsx` | 10 | 0 | 0 |
 | `src/pages/assets/components/asset-search/components/search-results/search-results.test.tsx` | 12 | 0 | 0 |
-| `src/pages/assets/components/asset-tree/asset-tree.test.tsx` | 7 | 0 | 0 |
+| `src/pages/assets/components/asset-tree/asset-tree.test.tsx` | 8 | 0 | 0 |
+| `src/pages/assets/components/asset-tree/components/tree-skeleton/tree-skeleton.test.tsx` | 1 | 0 | 0 |
 | `src/pages/assets/components/import-panel/components/import-form/import-form.test.tsx` | 5 | 0 | 0 |
-| `src/pages/assets/components/import-panel/components/import-result/import-result.test.tsx` | 9 | 0 | 0 |
+| `src/pages/assets/components/import-panel/components/import-result-actions/import-result-actions.test.tsx` | 4 | 0 | 0 |
+| `src/pages/assets/components/import-panel/components/import-result/import-result.test.tsx` | 5 | 0 | 0 |
+| `src/pages/assets/components/import-panel/components/import-steps/import-steps.test.tsx` | 3 | 0 | 0 |
 | `src/pages/assets/components/import-panel/components/outcome-banner/outcome-banner.test.tsx` | 4 | 0 | 0 |
 | `src/pages/assets/components/import-panel/components/rejected-rows-table/rejected-rows-table.test.tsx` | 5 | 0 | 0 |
 | `src/pages/assets/components/import-panel/components/warnings-table/warnings-table.test.tsx` | 2 | 0 | 0 |
-| `src/pages/assets/components/import-panel/import-panel.test.tsx` | 10 | 0 | 0 |
+| `src/pages/assets/components/import-panel/import-panel.test.tsx` | 13 | 0 | 0 |
 | `src/pages/assets/components/import-panel/libs/helpers/check-is-failure.helper.test.ts` | 4 | 0 | 0 |
+| `src/pages/assets/components/import-panel/libs/helpers/get-import-step.helper.test.ts` | 5 | 0 | 0 |
 | `src/pages/assets/components/import-panel/libs/helpers/get-outcome-summary.helper.test.ts` | 4 | 0 | 0 |
+| `src/pages/assets/components/register-summary/register-summary.test.tsx` | 4 | 0 | 0 |
 | `src/pages/assets/libs/helpers/check-is-addressable-asset-id.helper.test.ts` | 5 | 0 | 0 |
 | `src/pages/assets/libs/helpers/check-is-asset-not-found.helper.test.ts` | 5 | 0 | 0 |
 | `src/pages/assets/libs/helpers/get-asset-location-text.helper.test.ts` | 2 | 0 | 0 |

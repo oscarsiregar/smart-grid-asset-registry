@@ -10,24 +10,47 @@ type Properties = {
 	path: AssetNodeDto[];
 };
 
-/** The chain from the substation down to the asset; every ancestor is a link (spec FR-011). */
+/**
+ * The chain from the substation down to the asset, by name; every ancestor is
+ * a link (spec FR-011). Each step's asset ID is hidden text and its hover
+ * title (spec 005 FR-011).
+ */
 const AssetPath: React.FC<Properties> = ({
 	currentAssetId,
 	path,
 }: Properties) => (
 	<nav aria-label={AssetsPageMessage.PATH_LABEL}>
 		<ol className={styles["path"]}>
-			{path.map((step) => (
-				<li className={styles["step"]} key={step.assetId}>
-					{step.assetId === currentAssetId ? (
-						<span aria-current="page" className={styles["current"]}>
-							{step.assetId}
-						</span>
-					) : (
-						<Link to={getAssetPath(step.assetId)}>{step.assetId}</Link>
-					)}
-				</li>
-			))}
+			{path.map((step) => {
+				const content = (
+					<>
+						{step.assetName}{" "}
+						<span className="visually-hidden">{step.assetId}</span>
+					</>
+				);
+
+				return (
+					<li className={styles["step"]} key={step.assetId}>
+						{step.assetId === currentAssetId ? (
+							<span
+								aria-current="page"
+								className={styles["current"]}
+								title={step.assetId}
+							>
+								{content}
+							</span>
+						) : (
+							<Link
+								className={styles["link"]}
+								title={step.assetId}
+								to={getAssetPath(step.assetId)}
+							>
+								{content}
+							</Link>
+						)}
+					</li>
+				);
+			})}
 		</ol>
 	</nav>
 );

@@ -2,7 +2,7 @@ import { useCallback } from "react";
 
 import { Button } from "~/libs/components/button/button.js";
 import { Input } from "~/libs/components/input/input.js";
-import { ButtonVariant, IconName } from "~/libs/enums/enums.js";
+import { ButtonVariant, ControlSize, IconName } from "~/libs/enums/enums.js";
 import { useAppForm } from "~/libs/hooks/use-app-form/use-app-form.hook.js";
 import {
 	type AssetSearchRequestDto,
@@ -64,6 +64,7 @@ const SearchForm: React.FC<Properties> = ({
 				<Input
 					control={control}
 					iconName={IconName.SEARCH}
+					isLabelHidden
 					label={AssetsPageMessage.SEARCH_FIELD_LABEL}
 					name="q"
 					placeholder={AssetsPageMessage.SEARCH_FIELD_PLACEHOLDER}
@@ -71,11 +72,17 @@ const SearchForm: React.FC<Properties> = ({
 			</div>
 			<AssetTypeField control={control} name="assetType" />
 			<div className={styles["actions"]}>
-				<Button label={AssetsPageMessage.SEARCH_BUTTON_LABEL} type="submit" />
+				<Button
+					label={AssetsPageMessage.SEARCH_BUTTON_LABEL}
+					size={ControlSize.SM}
+					type="submit"
+					variant={ButtonVariant.SECONDARY}
+				/>
 				{activeSearch && (
 					<Button
 						label={AssetsPageMessage.CLEAR_SEARCH_BUTTON_LABEL}
 						onClick={onClear}
+						size={ControlSize.SM}
 						type="button"
 						variant={ButtonVariant.SECONDARY}
 					/>

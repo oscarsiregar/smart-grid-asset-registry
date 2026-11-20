@@ -172,6 +172,8 @@ describe("Assets page: states", () => {
 		expect(
 			screen.getByRole("button", { name: "Try again" }),
 		).toBeInTheDocument();
+		// No placeholder stays after a failure (spec 005 SC-004).
+		expect(document.querySelector("[data-shape]")).toBeNull();
 
 		fireEvent.click(screen.getByRole("button", { name: "Import CSV" }));
 
@@ -191,6 +193,32 @@ describe("Assets page: states", () => {
 		fireEvent.click(screen.getByRole("link", { name: /SS-001/ }));
 
 		expect(screen.getByTestId("pathname")).toHaveTextContent("/assets/SS-001");
+	});
+
+	it("has the Asset explorer header and the register card in the sidebar", async () => {
+		stubTopLevel(HTTPCode.OK, TOP_LEVEL);
+
+		renderAssets(AppRoute.ASSETS);
+
+		expect(
+			screen.getByRole("heading", { level: 1, name: "Asset explorer" }),
+		).toBeInTheDocument();
+		const sidebar = screen.getByRole("complementary", {
+			name: "Asset navigation",
+		});
+		expect(await within(sidebar).findByText("substation")).toHaveTextContent(
+			"1 substation",
+		);
+		expect(within(sidebar).getByText("Register")).toBeInTheDocument();
+	});
+
+	it("shows no register card for an empty registry", async () => {
+		renderAssets(AppRoute.ASSETS);
+
+		expect(
+			await screen.findByText("No assets have been imported yet."),
+		).toBeInTheDocument();
+		expect(screen.queryByText("Register")).not.toBeInTheDocument();
 	});
 });
 
@@ -698,6 +726,8 @@ describe("Assets page: search states", () => {
 		expect(
 			await screen.findByRole("heading", { name: SUBSTATION.assetName }),
 		).toBeInTheDocument();
+		// No placeholder stays after a failure (spec 005 SC-004).
+		expect(document.querySelector("[data-skeleton-row]")).toBeNull();
 
 		fireEvent.click(screen.getByRole("button", { name: "Clear" }));
 

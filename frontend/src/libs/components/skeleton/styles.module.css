@@ -1,0 +1,89 @@
+/*
+ * A loading placeholder (spec 005 FR-019 – FR-023, research R1, R2). It is
+ * transparent for --motion-delay-skeleton, then fades in and pulses.
+ */
+.skeleton {
+	display: block;
+	flex-shrink: 0;
+	height: var(--size-skeleton-text);
+	background-color: var(--surface-skeleton);
+	border-radius: var(--radius-sm);
+	opacity: 0;
+	animation:
+		skeleton-appear var(--motion-duration-med) var(--motion-ease-out)
+			var(--motion-delay-skeleton) forwards,
+		skeleton-pulse var(--motion-duration-skeleton-pulse) ease-in-out
+			calc(var(--motion-delay-skeleton) + var(--motion-duration-med)) infinite;
+}
+
+.text {
+	height: var(--size-skeleton-text);
+}
+
+.title {
+	height: var(--size-skeleton-title);
+}
+
+.block {
+	height: var(--size-skeleton-block);
+	border-radius: var(--radius-lg);
+}
+
+.dot {
+	width: var(--size-skeleton-dot);
+	height: var(--size-skeleton-dot);
+	border-radius: var(--radius-pill);
+}
+
+.full {
+	width: 100%;
+}
+
+.three-quarters {
+	width: 75%;
+}
+
+.half {
+	width: 50%;
+}
+
+.quarter {
+	width: 25%;
+}
+
+.dot.full,
+.dot.three-quarters,
+.dot.half,
+.dot.quarter {
+	width: var(--size-skeleton-dot);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.skeleton {
+		animation: skeleton-show 0s steps(1, end) var(--motion-delay-skeleton)
+			forwards;
+	}
+}
+
+@keyframes skeleton-appear {
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes skeleton-pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0.5;
+	}
+}
+
+@keyframes skeleton-show {
+	to {
+		opacity: 1;
+	}
+}

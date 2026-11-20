@@ -12,6 +12,7 @@ import {
 import { AssetsPageMessage } from "../../../../libs/enums/enums.js";
 import { checkIsSearchRefused } from "../../../../libs/helpers/helpers.js";
 import { SearchResult } from "./components/search-result/search-result.js";
+import { SearchResultsSkeleton } from "./components/search-results-skeleton/search-results-skeleton.js";
 import { SearchSummary } from "./components/search-summary/search-summary.js";
 import styles from "./styles.module.css";
 
@@ -57,11 +58,7 @@ const SearchResults: React.FC<Properties> = ({ search }: Properties) => {
 		}
 
 		if (!currentData) {
-			return (
-				<p className={styles["message"]} role="status">
-					{AssetsPageMessage.SEARCHING}
-				</p>
-			);
+			return <SearchResultsSkeleton />;
 		}
 
 		return (

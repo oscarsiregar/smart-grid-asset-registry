@@ -1,0 +1,13 @@
+.skeleton {
+	display: flex;
+	flex-direction: column;
+}
+
+/* A tree row: the toggle's room, then the status shape and the name. */
+.row {
+	display: flex;
+	gap: var(--space-10);
+	align-items: center;
+	min-height: var(--size-control-h-md);
+	padding: var(--space-6) var(--space-8) var(--space-6) var(--space-28);
+}

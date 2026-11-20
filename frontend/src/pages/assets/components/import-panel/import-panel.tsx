@@ -8,7 +8,10 @@ import {
 import { type ImportRequestDto } from "~/modules/imports/imports.js";
 
 import { ImportForm } from "./components/import-form/import-form.js";
+import { ImportResultActions } from "./components/import-result-actions/import-result-actions.js";
+import { ImportResultSkeleton } from "./components/import-result-skeleton/import-result-skeleton.js";
 import { ImportResult } from "./components/import-result/import-result.js";
+import { ImportSteps } from "./components/import-steps/import-steps.js";
 import { OutcomeBanner } from "./components/outcome-banner/outcome-banner.js";
 import { FORM_KEY_STEP, INITIAL_FORM_KEY } from "./libs/constants/constants.js";
 import {
@@ -16,14 +19,16 @@ import {
 	ImportPanelMessage,
 	OutcomeTone,
 } from "./libs/enums/enums.js";
-import { checkIsFailure } from "./libs/helpers/helpers.js";
+import { checkIsFailure, getImportStep } from "./libs/helpers/helpers.js";
 import styles from "./styles.module.css";
 
 /**
  * Check a CSV file (user story 1), then save it (user story 2). Results come
  * from the mutation states, never a copy; only the file and mode that were
  * checked are kept, so Save sends exactly that file again and the server
- * re-validates it (spec FR-022).
+ * re-validates it (spec FR-022). The steps sit at the top; the content
+ * scrolls, and the actions stay in a footer below it (spec 005 FR-017,
+ * FR-018).
  */
 const ImportPanel: React.FC = () => {
 	const [
@@ -74,55 +79,87 @@ const ImportPanel: React.FC = () => {
 		setFormKey((key) => key + FORM_KEY_STEP);
 	}, [resetCreate, resetValidate]);
 
-	if (confirmed) {
-		return (
-			<ImportResult
-				onReset={handleReset}
-				resetLabel={ImportPanelMessage.IMPORT_ANOTHER_FILE_LABEL}
-				result={confirmed}
-			/>
-		);
-	}
+	const hasCheckFailed = checkIsFailure(checkError);
+	const hasSaveFailed = checkIsFailure(saveError);
 
-	if (validated) {
-		const hasSaveFailed = checkIsFailure(saveError);
+	const renderContent = (): React.ReactNode => {
+		if (confirmed) {
+			return <ImportResult result={confirmed} />;
+		}
+
+		if (validated) {
+			return (
+				<>
+					{hasSaveFailed && (
+						<OutcomeBanner
+							message={ImportOutcomeMessage.COMMIT_FAILED}
+							tone={OutcomeTone.DANGER}
+						/>
+					)}
+					<FormAlert error={hasSaveFailed ? undefined : saveError} />
+					<ImportResult result={validated} />
+				</>
+			);
+		}
 
 		return (
-			<div className={styles["panel"]}>
-				{hasSaveFailed && (
+			<>
+				<ImportForm
+					isLoading={isChecking}
+					key={formKey}
+					onChange={handleChange}
+					onSubmit={handleSubmit}
+				/>
+				<FormAlert error={hasCheckFailed ? undefined : checkError} />
+				{hasCheckFailed && (
 					<OutcomeBanner
-						message={ImportOutcomeMessage.COMMIT_FAILED}
+						message={ImportOutcomeMessage.CHECK_FAILED}
 						tone={OutcomeTone.DANGER}
 					/>
 				)}
-				<FormAlert error={hasSaveFailed ? undefined : saveError} />
-				<ImportResult
+				{isChecking && <ImportResultSkeleton />}
+			</>
+		);
+	};
+
+	const renderActions = (): React.ReactNode => {
+		if (confirmed) {
+			return (
+				<ImportResultActions
+					confirmCount={confirmed.counts.imported}
+					onReset={handleReset}
+					resetLabel={ImportPanelMessage.IMPORT_ANOTHER_FILE_LABEL}
+				/>
+			);
+		}
+
+		if (validated) {
+			return (
+				<ImportResultActions
+					confirmCount={validated.counts.imported}
 					isSaving={isSaving}
 					onConfirm={handleConfirm}
 					onReset={handleReset}
 					resetLabel={ImportPanelMessage.CHOOSE_ANOTHER_FILE_LABEL}
-					result={validated}
 				/>
-			</div>
-		);
-	}
+			);
+		}
 
-	const hasCheckFailed = checkIsFailure(checkError);
+		return null;
+	};
+
+	const actions = renderActions();
 
 	return (
 		<div className={styles["panel"]}>
-			<ImportForm
-				isLoading={isChecking}
-				key={formKey}
-				onChange={handleChange}
-				onSubmit={handleSubmit}
-			/>
-			<FormAlert error={hasCheckFailed ? undefined : checkError} />
-			{hasCheckFailed && (
-				<OutcomeBanner
-					message={ImportOutcomeMessage.CHECK_FAILED}
-					tone={OutcomeTone.DANGER}
-				/>
+			<div className={styles["content"]} data-import-content>
+				<ImportSteps currentStep={getImportStep({ confirmed, validated })} />
+				{renderContent()}
+			</div>
+			{actions && (
+				<footer className={styles["footer"]} data-import-footer>
+					{actions}
+				</footer>
 			)}
 		</div>
 	);

@@ -49,4 +49,25 @@ describe("ChildList", () => {
 		expect(screen.getByText("Maintenance")).toBeInTheDocument();
 		expect(screen.getByText("In service")).toBeInTheDocument();
 	});
+
+	it("shows a child whose ID is .. as plain text, not a link", () => {
+		const [panel] = PANELS;
+
+		if (!panel) {
+			throw new Error("The fixture has no panel");
+		}
+
+		render(
+			<MemoryRouter>
+				<ChildList
+					childAssets={[{ ...panel, assetId: "..", assetName: "Dots Panel" }]}
+					label="Switchboard panels"
+				/>
+			</MemoryRouter>,
+		);
+
+		expect(screen.queryByRole("link")).not.toBeInTheDocument();
+		expect(screen.getByText("Dots Panel")).toBeInTheDocument();
+		expect(screen.getByText("..")).toBeInTheDocument();
+	});
 });

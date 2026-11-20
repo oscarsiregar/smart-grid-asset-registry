@@ -30,6 +30,7 @@ import Trash2Icon from "~/assets/img/trash-2.svg?react";
 import UserCogIcon from "~/assets/img/user-cog.svg?react";
 import UserIcon from "~/assets/img/user.svg?react";
 import UsersIcon from "~/assets/img/users.svg?react";
+import ZapIcon from "~/assets/img/zap.svg?react";
 import { IconName } from "~/libs/enums/enums.js";
 import { type ValueOf } from "~/libs/types/types.js";
 
@@ -64,6 +65,7 @@ const iconNameToIcon = {
 	[IconName.USER]: UserIcon,
 	[IconName.USER_COG]: UserCogIcon,
 	[IconName.USERS]: UsersIcon,
+	[IconName.ZAP]: ZapIcon,
 } satisfies Record<
 	ValueOf<typeof IconName>,
 	FunctionComponent<SVGProps<SVGSVGElement>>

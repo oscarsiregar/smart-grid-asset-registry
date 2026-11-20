@@ -58,6 +58,12 @@
 	letter-spacing: 1px;
 }
 
+.empty {
+	margin: 0;
+	font-size: var(--font-size-body-sm);
+	color: var(--text-muted);
+}
+
 @media (width < 600px) {
 	.title {
 		font-size: var(--font-size-title-2);

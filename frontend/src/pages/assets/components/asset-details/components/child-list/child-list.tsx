@@ -6,7 +6,10 @@ import { configureString } from "~/libs/helpers/helpers.js";
 import { type AssetNodeDto } from "~/modules/assets/assets.js";
 
 import { AssetsPageMessage } from "../../../../libs/enums/enums.js";
-import { getAssetPath } from "../../../../libs/helpers/helpers.js";
+import {
+	checkIsAddressableAssetId,
+	getAssetPath,
+} from "../../../../libs/helpers/helpers.js";
 import { IdTag } from "../../../id-tag/id-tag.js";
 import { StatusBadge } from "../../../status-badge/status-badge.js";
 import styles from "./styles.module.css";
@@ -37,20 +40,32 @@ const ChildList: React.FC<Properties> = ({
 			<p className={styles["empty"]}>{AssetsPageMessage.GROUP_EMPTY}</p>
 		) : (
 			<ul className={styles["list"]}>
-				{childAssets.map((child) => (
-					<li className={styles["item"]} key={child.assetId}>
-						<Link
-							className={styles["link"]}
-							hasDefaultStyles={false}
-							to={getAssetPath(child.assetId)}
-						>
+				{childAssets.map((child) => {
+					const content = (
+						<>
 							<span className={styles["name"]}>{child.assetName}</span>
 							<IdTag assetId={child.assetId} />
-						</Link>
-						<StatusBadge status={child.operationalStatus} />
-						<Icon className={styles["chevron"]} iconName={IconName.CHEVRON} />
-					</li>
-				))}
+						</>
+					);
+
+					return (
+						<li className={styles["item"]} key={child.assetId}>
+							{checkIsAddressableAssetId(child.assetId) ? (
+								<Link
+									className={styles["link"]}
+									hasDefaultStyles={false}
+									to={getAssetPath(child.assetId)}
+								>
+									{content}
+								</Link>
+							) : (
+								<span className={styles["link"]}>{content}</span>
+							)}
+							<StatusBadge status={child.operationalStatus} />
+							<Icon className={styles["chevron"]} iconName={IconName.CHEVRON} />
+						</li>
+					);
+				})}
 			</ul>
 		)}
 	</section>

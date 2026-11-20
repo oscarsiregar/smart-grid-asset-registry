@@ -6,12 +6,19 @@
 
 .mark {
 	display: inline-flex;
+	flex-shrink: 0;
 	align-items: center;
 	justify-content: center;
 	width: var(--logo-mark-size);
 	height: var(--logo-mark-size);
-	border-radius: 25%;
-	box-shadow: inset 0 0 0 1px rgb(255 255 255 / 18%);
+	color: var(--text-on-accent);
+	background-color: var(--surface-accent);
+	border-radius: var(--radius-md);
+}
+
+.mark-icon {
+	width: var(--size-icon-md);
+	height: var(--size-icon-md);
 }
 
 .wordmark {
@@ -23,7 +30,7 @@
 }
 
 .sm {
-	--logo-mark-size: 28px;
+	--logo-mark-size: var(--size-brand-tile);
 	--logo-wordmark-size: var(--font-size-title-3);
 }
 

@@ -17,4 +17,22 @@
 	--z-index-header: 2;
 	--z-index-sidebar: 20;
 	--z-index-scrim: 19;
+
+	/* Brand mark (spec 005 FR-004). */
+	--size-brand-tile: 32px;
+
+	/* Details grid: up to five columns at the content width (spec 005 FR-012). */
+	--layout-attribute-min-width: 160px;
+
+	/* Children table: name, asset ID, status, chevron (spec 005 FR-014). */
+	--layout-child-columns: minmax(0, 1fr) 180px 160px var(--size-icon-sm);
+
+	/* Loading placeholders (spec 005 FR-019 – FR-023, research R1, R2). */
+	--surface-skeleton: rgb(255 255 255 / 7%);
+	--size-skeleton-text: 14px;
+	--size-skeleton-title: 28px;
+	--size-skeleton-block: 64px;
+	--size-skeleton-dot: 10px;
+	--motion-delay-skeleton: 200ms;
+	--motion-duration-skeleton-pulse: 1200ms;
 }

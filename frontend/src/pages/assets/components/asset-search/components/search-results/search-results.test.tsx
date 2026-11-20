@@ -22,6 +22,9 @@ import {
 
 import { SearchResults } from "./search-results.js";
 
+// Placeholder result rows while a search runs (spec 005).
+const SEARCH_SKELETON_ROWS = 4;
+
 // Position of the last element for Array.prototype.at.
 const LAST_POSITION = -1;
 
@@ -187,6 +190,9 @@ describe("SearchResults", () => {
 		renderResults();
 
 		expect(await screen.findByRole("status")).toHaveTextContent("Searching…");
+		expect(document.querySelectorAll("[data-skeleton-row]")).toHaveLength(
+			SEARCH_SKELETON_ROWS,
+		);
 	});
 });
 

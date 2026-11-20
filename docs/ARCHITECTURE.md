@@ -4,10 +4,11 @@ How the Smart Grid Asset Registry is put together, and why. It covers three feat
 [specs/001-csv-import](../specs/001-csv-import/spec.md) — import a grid-asset CSV, validate it on the server,
 store the accepted rows —, [specs/002-asset-explorer](../specs/002-asset-explorer/spec.md) — browse the
 stored hierarchy — and [specs/003-asset-search](../specs/003-asset-search/spec.md) — find an asset by ID or name.
+Features 004 and [005](../specs/005-ui-polish/spec.md) give the page its reference design and loading placeholders.
 The decisions behind each part are recorded in each feature's research
 ([001](../specs/001-csv-import/research.md) R0–R14, [002](../specs/002-asset-explorer/research.md) R0–R11,
-[003](../specs/003-asset-search/research.md) R0–R8; cited below as R*n*, 002-R*n* and 003-R*n*); the project rules
-are in the [constitution](../.specify/memory/constitution.md).
+[003](../specs/003-asset-search/research.md) R0–R8, [005](../specs/005-ui-polish/research.md) R0–R12; cited below
+as R*n*, 002-R*n*, 003-R*n* and 005-R*n*); the project rules are in the [constitution](../.specify/memory/constitution.md).
 
 ## 1. System overview
 
@@ -235,11 +236,14 @@ The asset explorer (feature 002) lives in the same page:
   own query, mounted only while the node is expanded, so children load on first expansion and come from the
   cache afterwards. `useTreeKeyboard` gives a roving tab stop and the arrow, Home, End and Enter keys.
   `useExpandedNodes` keeps the expanded set and, when the selected asset's path arrives, expands its ancestors
-  once per selection, adjusting state during render rather than copying query data in an effect. The selected
-  node is marked in words ("Selected") and bold, not by colour alone, and scrolled into view.
-- **Details**: the path (ancestors are links), every attribute (blanks say "Not recorded"), for a substation its
-  children in three groups and the four counts, for a switchboard its panels. `ASSET_NOT_FOUND` is a
-  "not found" state with a way back, not an error and not a toast.
+  once per selection, adjusting state during render rather than copying query data in an effect. A node shows
+  a status shape and the name; its ID, type and status in words are hidden text and its hover title (005-R5).
+  The selected node is marked by an accent bar and bold text, "Selected" for screen readers — not by colour
+  alone — and scrolled into view.
+- **Details**: the path by name (ancestors are links, IDs as hidden text), the type, name, ID tag and status
+  badge, then a details card (parent first; blanks say "Not recorded"), a substation's four counts, and the
+  children under column headings — a substation's three groups, a switchboard's panels, or "Nothing is connected
+  below this asset." `ASSET_NOT_FOUND` is a "not found" state with a way back, not an error and not a toast.
 
 The asset search (feature 003) sits above the tree on the same page:
 
@@ -258,6 +262,23 @@ The asset search (feature 003) sits above the tree on the same page:
 - **Opening a result** (003-R5): the link goes to `getAssetPath(id)` without the search, so it is exactly 002's deep
   link — the tree comes back, the ancestors expand and the asset is highlighted — and Back returns to the search.
   IDs `.` and `..` are plain text, as in the tree.
+
+The page's presentation (features 004 and 005):
+
+- **Layout**: a fixed sidebar — brand, **Import CSV**, the search, the tree or the results as its only scrolling
+  region, and a register card with the number of substations (005-R4, read from the cached top-level list, so no
+  extra request) — beside a header ("Asset explorer" and the selected asset's path names) and the details. Below
+  960 px the sidebar is an off-canvas drawer.
+- **Loading placeholders** (005-R1–R3): one shared `libs/components/skeleton` block (shapes and widths from enums,
+  sizes from tokens) composed per area — tree rows, a node's children, the details, the search results, the
+  register number and the import check. Each area keeps its loading text as a status for screen readers. A CSS
+  animation keeps a placeholder transparent for 200 ms, so a fast response never flashes it, then fades it in and
+  pulses it; with reduced motion it appears static. Placeholders only replace first loads: cached data shows at
+  once and a refetch after an import keeps the rows on screen.
+- **Import drawer** (005-R11): the template `Panel` has a subtitle and an icon-only Close button (`Button`
+  `isLabelHidden`). The import panel shows the steps Choose file → Review → Done, derived from its mutation
+  results, above a scrolling content area; the actions sit in a footer outside that area, so they never cover a
+  row.
 
 ## 4. Key trade-offs
 
@@ -282,5 +303,8 @@ The asset search (feature 003) sits above the tree on the same page:
 | Result order (003-R3) | exact matches first, then the tree's order | relevance by match position or length | A full ID is always first; no relevance model to explain |
 | Ancestors (003-R4) | one recursive CTE for the page | `FindPath` per result, a stored path column | One round trip; no schema change |
 | Opening a result (003-R5) | a link to 002's deep link | selecting in place, a second reveal path | One reveal implementation; Back returns to the search |
+| Loading placeholders (005-R1, R2) | one shared skeleton block, a 200 ms CSS delay | a skeleton library, a timer hook, a spinner | No dependency and no timers; a spinner still lets the layout jump |
+| Shortened tree and path (005-R5, R6) | shape + name shown; ID, type, status as hidden text and hover title | `aria-label` on the link, a tooltip component | Same accessible content as before; nothing that can drift from the visible name |
+| Drawer footer (005-R11) | a footer outside the scrolling content | a sticky bar inside the scroll area | A sticky bar covers rows while scrolling; a separate footer never does |
 
 Known limits and simplifications are listed in [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).

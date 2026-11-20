@@ -48,6 +48,12 @@ itself is described in [ARCHITECTURE.md](ARCHITECTURE.md).
   plain text rather than a link.
 - **Numbers are shown by value** (FR-010). `NUMERIC` values reach the browser as JSON numbers, so trailing zeros
   typed in the CSV are not kept: `22.50` shows as `22.5 kV`.
+- **The register card counts substations only** (feature 005). It shows the number of top-level assets; there is
+  no "last import" line and no import history, which would need a new endpoint.
+- **Placeholders appear after 200 ms** (005-R2). A response that takes a little longer shows a short moment of
+  empty space before its placeholders fade in; the space is already reserved, so nothing jumps.
+- **The tree shows names only** (feature 005). Two assets with the same name look alike in the tree and the path;
+  their IDs are in the hover text and read by screen readers, and their position tells them apart.
 
 ## Asset search
 

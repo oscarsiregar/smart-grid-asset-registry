@@ -3,7 +3,9 @@
 React + TypeScript single-page app for importing grid-asset CSV files (choose a file and a mode, see the server's
 validation result, then save it), exploring the stored asset hierarchy (an expandable tree beside the selected
 asset's details, every asset at its own address `/assets/<asset_id>`) and searching it by asset ID or name
-(`/assets?q=<text>&type=<TYPE>`). Built on the company frontend template (store,
+(`/assets?q=<text>&type=<TYPE>`). The page follows the reference design (features 004 and 005): a sidebar with the
+search, the tree and a register card, an "Asset explorer" header with the selected asset's path, and loading
+placeholders shaped like the content (`src/libs/components/skeleton`). Built on the company frontend template (store,
 API layer, error handling, notifications, forms, routing) with strict conventions.
 
 - Rules: [docs/code-conventions.md](docs/code-conventions.md)

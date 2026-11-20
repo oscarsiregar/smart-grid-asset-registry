@@ -5,16 +5,21 @@ import { configureString } from "~/libs/helpers/helpers.js";
 import { AssetType, useGetAssetDetailQuery } from "~/modules/assets/assets.js";
 
 import { AssetsPageMessage } from "../../libs/enums/enums.js";
-import { checkIsAssetNotFound } from "../../libs/helpers/helpers.js";
+import {
+	checkHasChildList,
+	checkIsAssetNotFound,
+} from "../../libs/helpers/helpers.js";
 import { assetTypeToLabel } from "../../libs/maps.js";
 import { IdTag } from "../id-tag/id-tag.js";
 import { StatusBadge } from "../status-badge/status-badge.js";
 import { AssetAttributes } from "./components/asset-attributes/asset-attributes.js";
 import { AssetPath } from "./components/asset-path/asset-path.js";
+import { ChildColumns } from "./components/child-columns/child-columns.js";
 import { ChildGroups } from "./components/child-groups/child-groups.js";
 import { ChildList } from "./components/child-list/child-list.js";
 import { DescendantCounts } from "./components/descendant-counts/descendant-counts.js";
 import { DetailsMessage } from "./components/details-message/details-message.js";
+import { DetailsSkeleton } from "./components/details-skeleton/details-skeleton.js";
 import styles from "./styles.module.css";
 
 type Properties = {
@@ -64,9 +69,7 @@ const AssetDetails: React.FC<Properties> = ({
 	}
 
 	if (!currentData) {
-		return (
-			<DetailsMessage isLoading message={AssetsPageMessage.DETAILS_LOADING} />
-		);
+		return <DetailsSkeleton />;
 	}
 
 	const { asset, children, descendantCounts, path } = currentData;
@@ -84,29 +87,40 @@ const AssetDetails: React.FC<Properties> = ({
 					<StatusBadge status={asset.operationalStatus} />
 				</div>
 			</header>
-			{descendantCounts && <DescendantCounts counts={descendantCounts} />}
 			<section className={styles["card"]}>
 				<h3 className={styles["card-title"]}>
 					{AssetsPageMessage.DETAILS_LABEL}
 				</h3>
 				<AssetAttributes asset={asset} parent={parent} />
 			</section>
-			{asset.assetType === AssetType.SUBSTATION && (
-				<section className={styles["card"]}>
-					<h3 className={styles["card-title"]}>
-						{AssetsPageMessage.CHILDREN_LABEL}
-					</h3>
-					<ChildGroups childAssets={children} />
-				</section>
-			)}
-			{asset.assetType === AssetType.SWITCHBOARD && (
-				<section className={styles["card"]}>
-					<ChildList
-						childAssets={children}
-						label={AssetsPageMessage.COUNT_SWITCHBOARD_PANELS}
-					/>
-				</section>
-			)}
+			{descendantCounts && <DescendantCounts counts={descendantCounts} />}
+			<section className={styles["card"]}>
+				<h3 className={styles["card-title"]}>
+					{checkHasChildList(asset.assetType)
+						? configureString(AssetsPageMessage.CHILDREN_HEADING, {
+								count: String(children.length),
+							})
+						: AssetsPageMessage.CHILDREN_LABEL}
+				</h3>
+				{asset.assetType === AssetType.SUBSTATION && (
+					<>
+						<ChildColumns />
+						<ChildGroups childAssets={children} />
+					</>
+				)}
+				{asset.assetType === AssetType.SWITCHBOARD && (
+					<>
+						<ChildColumns />
+						<ChildList
+							childAssets={children}
+							label={AssetsPageMessage.COUNT_SWITCHBOARD_PANELS}
+						/>
+					</>
+				)}
+				{!checkHasChildList(asset.assetType) && (
+					<p className={styles["empty"]}>{AssetsPageMessage.CHILDREN_NONE}</p>
+				)}
+			</section>
 		</article>
 	);
 };

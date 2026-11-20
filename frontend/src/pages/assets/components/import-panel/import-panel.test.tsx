@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
@@ -124,6 +130,8 @@ const submitFile = (): void => {
 	});
 	fireEvent.click(screen.getByRole("button", { name: "Check file" }));
 };
+
+const NO_PLACEHOLDERS = 0;
 
 const NOT_CHECKED_MESSAGE =
 	"Not checked — the file could not be checked. Nothing was saved.";
@@ -313,5 +321,98 @@ describe("ImportPanel — saving a file (US2)", () => {
 		expect(
 			screen.queryByText("Committed — 205 assets saved"),
 		).not.toBeInTheDocument();
+	});
+});
+
+// ---- Steps, footer and the check placeholders (spec 005 US3) --------------
+
+const getCurrentStep = (): string | undefined =>
+	within(screen.getByRole("list", { name: "Import steps" }))
+		.getAllByRole("listitem")
+		.find((item) => item.getAttribute("aria-current") === "step")
+		?.textContent.replace(/\(done\)/, "");
+
+const getFooter = (): HTMLElement => {
+	const footer = document.querySelector<HTMLElement>("[data-import-footer]");
+
+	if (!footer) {
+		throw new Error("No import footer");
+	}
+
+	return footer;
+};
+
+describe("ImportPanel — steps and footer (spec 005 US3)", () => {
+	it("follows the flow: Choose file, Review after a check, Done after a save", async () => {
+		serve({
+			create: createSuccess(HTTPCode.CREATED, COMMITTED),
+			validate: createSuccess(HTTPCode.OK, VALIDATED),
+		});
+		renderPanel();
+
+		expect(getCurrentStep()).toBe("1Choose file");
+		expect(document.querySelector("[data-import-footer]")).toBeNull();
+
+		submitFile();
+		await screen.findByText("Validated only — nothing saved");
+		expect(getCurrentStep()).toBe("2Review");
+
+		fireEvent.click(screen.getByRole("button", { name: "Save 205 assets" }));
+		await screen.findByText("Committed — 205 assets saved");
+		expect(getCurrentStep()).toBe("3Done");
+
+		fireEvent.click(
+			screen.getByRole("button", { name: "Import another file" }),
+		);
+		await waitFor(() => {
+			expect(getCurrentStep()).toBe("1Choose file");
+		});
+	});
+
+	it("puts the actions in a footer outside the scrolling content, once each", async () => {
+		serve({ validate: createSuccess(HTTPCode.OK, VALIDATED) });
+		renderPanel();
+		submitFile();
+		await screen.findByText("Validated only — nothing saved");
+
+		const footer = getFooter();
+		const content = document.querySelector("[data-import-content]");
+		expect(content).not.toBeNull();
+		expect(content?.contains(footer)).toBe(false);
+		expect(
+			within(footer).getByRole("button", { name: "Save 205 assets" }),
+		).toBeInTheDocument();
+		expect(
+			within(footer).getByRole("button", { name: "Choose another file" }),
+		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /Save/ })).toBeInTheDocument();
+		expect(
+			within(footer).queryByText("Validated only — nothing saved"),
+		).not.toBeInTheDocument();
+	});
+
+	it("shows placeholders for the result while a check runs", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(
+				() =>
+					new Promise<Response>(() => {
+						// Never settles.
+					}),
+			),
+		);
+		renderPanel();
+
+		submitFile();
+
+		expect(await screen.findByText("Checking file…")).toHaveAttribute(
+			"role",
+			"status",
+		);
+		const placeholder = document.querySelector("[data-import-skeleton]");
+		expect(placeholder).toHaveAttribute("aria-hidden", "true");
+		expect(
+			placeholder?.querySelectorAll("[data-shape]").length,
+		).toBeGreaterThan(NO_PLACEHOLDERS);
 	});
 });

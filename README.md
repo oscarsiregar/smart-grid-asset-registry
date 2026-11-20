@@ -14,7 +14,8 @@ stored hierarchy.
   different values are rejected, so importing the same file twice adds nothing.
 - **Browse the hierarchy**: an expandable tree (substations at the top, children loaded when a node is opened)
   beside a details area with every attribute and the path from the substation. A substation shows its children
-  grouped by type and the counts of each type beneath it; a switchboard lists its panels.
+  grouped by type and the counts of each type beneath it; a switchboard lists its panels. The sidebar shows how
+  many substations are stored, and every area shows placeholders shaped like its content while it loads.
 - **Link to any asset**: every asset has its own address, `/assets/<asset_id>` (the ID percent-encoded), which
   reopens with its ancestors expanded and the asset highlighted; an unknown ID shows "not found". The tree
   refreshes after an import that saved data.

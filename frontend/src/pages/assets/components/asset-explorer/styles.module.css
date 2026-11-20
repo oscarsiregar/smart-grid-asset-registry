@@ -6,11 +6,21 @@
 	min-height: 0;
 }
 
+/* The tree is the only scrolling part of the sidebar (spec 005 FR-009). */
 .tree {
 	display: flex;
+	flex: 1;
 	flex-direction: column;
 	gap: var(--space-8);
 	min-width: 0;
+	min-height: 0;
+}
+
+.tree-scroll {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
 }
 
 .label {

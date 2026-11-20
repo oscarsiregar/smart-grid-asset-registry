@@ -207,7 +207,8 @@ unchanged.
   substation.
 - **FR-002**: Each tree node MUST show the asset's ID, name and type in words. A node whose asset is not in
   service MUST also show its status in words — "Maintenance", "Out of service" or "No status recorded"; an
-  in-service node shows no status label.
+  in-service node shows no status label. *Amended by feature 005 (FR-007): a node shows a status shape and
+  the name; the ID, type and status words are in its accessible name and hover text.*
 - **FR-003**: A node MUST be expandable if and only if the asset has at least one stored child; expanding it
   MUST show all of its immediate children at once, without paging.
 - **FR-004**: The order of nodes MUST be stable: top-level substations by asset ID; children grouped by type in
@@ -234,7 +235,8 @@ unchanged.
 - **FR-011**: The details MUST show the selected asset's path from its substation down to the asset itself (for
   example `SS-001 › SWB-001-1 › PNL-001-1-3`), each step with its asset ID. Every ancestor in the path, like
   the parent in FR-008, MUST be selectable, making it the selected asset. For a substation the path is the
-  substation alone.
+  substation alone. *Amended by feature 005 (FR-011): each step shows the asset name; its ID is in the
+  step's accessible name and hover text.*
 - **FR-012**: When a substation is selected, the details MUST also list its immediate children in three
   groups — transformers, LV boards, switchboards — each child with asset ID, name and operational status,
   each group with its number of children, and an empty group stated as having none.

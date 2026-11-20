@@ -11,6 +11,8 @@ const ImportPanelMessage = {
 	COUNT_UNCHANGED: "Unchanged",
 	COUNT_WARNING_ROWS: "Rows with warnings",
 	COUNTS_LABEL: "Summary",
+	DESCRIPTION:
+		"Validate a file, review what would be rejected, then save the valid rows.",
 	EMPTY_CELL: "—",
 	FILE_DESCRIPTION:
 		"A UTF-8 CSV file of at most 5 MB with the eleven asset columns.",
@@ -25,6 +27,11 @@ const ImportPanelMessage = {
 	NO_WARNINGS: "No rows have warnings.",
 	REJECTED_CAPTION: "Rejected rows (:count)",
 	SAVING_STATUS: "Saving…",
+	STEP_CHOOSE_FILE: "Choose file",
+	STEP_DONE: "Done",
+	STEP_DONE_MARKER: "(done)",
+	STEP_REVIEW: "Review",
+	STEPS_LABEL: "Import steps",
 	TABLE_ASSET_ID: "Asset ID",
 	TABLE_CODE: "Code",
 	TABLE_MESSAGE: "Message",

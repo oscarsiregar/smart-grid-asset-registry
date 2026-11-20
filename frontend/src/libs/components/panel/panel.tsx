@@ -8,6 +8,8 @@ import styles from "./styles.module.css";
 
 type Properties = {
 	children: React.ReactNode;
+	/** A one-line subtitle under the title, also the dialog's description. */
+	description?: string | undefined;
 	isOpen: boolean;
 	onClose: () => void;
 	title: string;
@@ -24,6 +26,7 @@ type Properties = {
  */
 const Panel: React.FC<Properties> = ({
 	children,
+	description,
 	isOpen,
 	onClose,
 	title,
@@ -31,6 +34,7 @@ const Panel: React.FC<Properties> = ({
 	const dialogReference = useRef<HTMLDialogElement>(null);
 	const openerReference = useRef<Element | null>(null);
 	const titleId = useId();
+	const descriptionId = useId();
 
 	useEffect(() => {
 		const dialog = dialogReference.current;
@@ -67,17 +71,26 @@ const Panel: React.FC<Properties> = ({
 
 	return (
 		<dialog
+			aria-describedby={description === undefined ? undefined : descriptionId}
 			aria-labelledby={titleId}
 			className={styles["panel"]}
 			onCancel={handleCancel}
 			ref={dialogReference}
 		>
 			<header className={styles["header"]}>
-				<h2 className={styles["title"]} id={titleId}>
-					{title}
-				</h2>
+				<div className={styles["heading"]}>
+					<h2 className={styles["title"]} id={titleId}>
+						{title}
+					</h2>
+					{description !== undefined && (
+						<p className={styles["description"]} id={descriptionId}>
+							{description}
+						</p>
+					)}
+				</div>
 				<Button
 					iconName={IconName.CLOSE}
+					isLabelHidden
 					label={PanelLabel.CLOSE}
 					onClick={onClose}
 					size={ControlSize.SM}

@@ -29,6 +29,7 @@ const IconName = {
 	USER: "user",
 	USER_COG: "user-cog",
 	USERS: "users",
+	ZAP: "zap",
 } as const;
 
 export { IconName };

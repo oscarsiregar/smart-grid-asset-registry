@@ -8,11 +8,15 @@ import {
 	useGetAssetNodesQuery,
 } from "~/modules/assets/assets.js";
 
-import { TREE_ROOT_LEVEL } from "../../libs/constants/constants.js";
+import {
+	TREE_ROOT_LEVEL,
+	TREE_SKELETON_ROWS,
+} from "../../libs/constants/constants.js";
 import { AssetsPageMessage } from "../../libs/enums/enums.js";
 import { useExpandedNodes } from "../../libs/hooks/use-expanded-nodes/use-expanded-nodes.hook.js";
 import { useTreeKeyboard } from "../../libs/hooks/use-tree-keyboard/use-tree-keyboard.hook.js";
 import { TreeNode } from "./components/tree-node/tree-node.js";
+import { TreeSkeleton } from "./components/tree-skeleton/tree-skeleton.js";
 import styles from "./styles.module.css";
 
 type Properties = {
@@ -54,9 +58,10 @@ const AssetTree: React.FC<Properties> = ({ selectedAssetId }: Properties) => {
 
 	if (isLoading) {
 		return (
-			<p className={styles["message"]} role="status">
-				{AssetsPageMessage.TREE_LOADING}
-			</p>
+			<TreeSkeleton
+				label={AssetsPageMessage.TREE_LOADING}
+				rows={TREE_SKELETON_ROWS}
+			/>
 		);
 	}
 
