@@ -28,6 +28,11 @@ browser ──► web (nginx, :3000) ──/api──► api (Go/Fiber, :8080) �
 The `test` profile adds `backend-test` (`go test ./...`) and `frontend-test` (`pnpm test`), so the tests run
 without local toolchains.
 
+In the cloud (Template Exception 15) the same images run on one Azure VM from
+`deploy/docker-compose.prod.yml`, with Caddy in front as the only public entry (HTTPS) and no host ports on
+`db`, `api` or `web`. GitHub Actions checks every change, builds the images into GitHub Container Registry and
+updates the VM through Azure Run Command; see [deploy/README.md](../deploy/README.md).
+
 There is no authentication (Template Exception 1): every route is public under `/api`.
 
 ## 2. Backend

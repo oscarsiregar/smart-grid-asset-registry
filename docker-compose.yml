@@ -32,6 +32,8 @@ services:
       APP_ENV: dev
       APP_HOST: 0.0.0.0
       APP_PORT: "8080"
+      # nginx in "web" forwards the browser's address in X-Forwarded-For.
+      TRUSTED_PROXIES: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
       DB_HOST: db
       DB_PORT: "5432"
       DB_USER: postgres

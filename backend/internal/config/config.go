@@ -14,6 +14,11 @@ type Config struct {
 	AppPort      int
 	FiberPrefork bool
 
+	// TrustedProxies lists the reverse proxies (CIDR ranges or addresses)
+	// whose X-Forwarded-For header gives the client address; empty when the
+	// API is reached directly.
+	TrustedProxies []string
+
 	DBHost            string
 	DBUser            string
 	DBPassword        string
@@ -51,6 +56,9 @@ func Load() (*Config, error) {
 		AppPort:      viper.GetInt("APP_PORT"),
 		FiberPrefork: viper.GetBool("FIBER_PREFORK"),
 
+		// Comma-separated, e.g. "10.0.0.0/8,172.16.0.0/12".
+		TrustedProxies: splitList(viper.GetString("TRUSTED_PROXIES")),
+
 		DBHost:            viper.GetString("DB_HOST"),
 		DBUser:            viper.GetString("DB_USER"),
 		DBPassword:        viper.GetString("DB_PASSWORD"),
@@ -66,6 +74,18 @@ func Load() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// splitList reads a comma-separated variable, ignoring spaces and empty items.
+func splitList(value string) []string {
+	var items []string
+	for _, item := range strings.Split(value, ",") {
+		if item = strings.TrimSpace(item); item != "" {
+			items = append(items, item)
+		}
+	}
+
+	return items
 }
 
 // Validate fails fast at startup listing EVERY missing variable at once.

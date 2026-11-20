@@ -85,7 +85,17 @@ itself is described in [ARCHITECTURE.md](ARCHITECTURE.md).
 - **Rate limiter during error testing.** The template's limiter counts only non-2xx responses: 20 in 15 minutes
   per client, then `429`. Repeating the error scenarios (empty file, missing columns, too large…) can trigger
   it. Wait, or restart the `api` container.
-- **`backend/values.yml` (Helm) is not maintained.** It is left from the template; the supported way to run the
-  app is `docker compose`.
+- **`backend/values.yml` (Helm) and `backend/.gitlab-ci.yml` are not maintained.** They are left from the
+  template; the app runs with `docker compose` locally and is deployed by GitHub Actions to an Azure VM
+  (Template Exception 15, [deploy/README.md](../deploy/README.md)).
+
+## Deployment
+
+- **Public without sign-in.** The deployed link is open to anyone (Template Exceptions 1 and 15): anyone who has
+  it can browse, search and import into the shared database.
+- **One VM, no high availability.** One `Standard_B2ats_v2` (1 GB memory) runs every container. A deploy restarts
+  the changed containers, so the app is briefly unavailable, and a VM failure stops it until the VM is back.
+- **No automatic backups.** The database lives in a Docker volume on the VM disk; backups are taken by hand
+  (`pg_dump`, see deploy/README.md).
 - **Development logs show SQL values.** In `APP_ENV=dev` the GORM logger prints statements with their values.
   `APP_ENV=prod` uses the quiet logger. Row contents are never written by the application's own logs.
