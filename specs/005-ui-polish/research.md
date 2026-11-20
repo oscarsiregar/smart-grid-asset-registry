@@ -152,6 +152,20 @@ class (accent border and text, transparent background) rather than a new button 
 **Rationale**: FR-004/FR-005 with the smallest change; one page uses the outlined look, so a page class is
 enough (conventions: no new pattern for a single use).
 
+## R10a. Browser tab icon
+
+**Decision**: `public/favicon.svg` (a 32 × 32 rounded tile in the canvas colour `#0a0d12` with the `zap.svg`
+bolt in the accent colour `#e1ad66`) for current browsers, and `public/favicon.ico` (the same picture at 16,
+32 and 48 px) for the rest; `index.html` links both and sets `theme-color` to the canvas colour. The
+template's icon is replaced.
+
+**Rationale**: FR-004; the tab shows the same mark as the sidebar. A favicon cannot read CSS custom
+properties, so the two token values are written as literals; they must change with `--surface-canvas` and
+`--surface-accent`.
+
+**Alternatives**: an accent tile with a dark bolt like the sidebar mark (a light square in a dark tab bar);
+SVG only (older browsers fall back to no icon).
+
 ## R11. Import drawer: description, icon close, steps, footer
 
 **Decision**:

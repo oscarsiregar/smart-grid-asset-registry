@@ -164,7 +164,8 @@ pass.
 **Sidebar**
 
 - **FR-004**: The brand MUST use a bolt mark in an accent tile with the application name "Smart Grid Asset
-  Registry".
+  Registry". The browser tab icon MUST show the same bolt in the accent colour on a full dark tile (the
+  canvas colour), replacing the template's icon.
 - **FR-005**: **Import CSV** MUST be an outlined button in the accent colour, full width.
 - **FR-006**: The search form MUST show one text field with a search icon and the placeholder "Search by ID
   or name", and the type select below it; their labels ("Search assets", "Asset type") stay for assistive

@@ -25,6 +25,7 @@ feature 004. Addresses, requests, keyboard behaviour and every text not listed h
 └───────────────────────────────┴────────────────────────────────────────────────────────┘
 ```
 
+- The browser tab icon is the bolt in the accent colour on a dark tile (FR-004).
 - The sidebar is a column: brand, Import CSV, search form, then the tree or the search results as the only
   scrolling region, then the register card fixed at the bottom. Below 960 px it stays the off-canvas drawer
   of feature 004.
