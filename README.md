@@ -74,6 +74,12 @@ End-to-end API and UI scenarios: [specs/001-csv-import/quickstart.md](specs/001-
 [specs/002-asset-explorer/quickstart.md](specs/002-asset-explorer/quickstart.md) (explorer) and
 [specs/003-asset-search/quickstart.md](specs/003-asset-search/quickstart.md) (search).
 
+## Deploy
+
+Every push to `main` is checked, built and deployed to an Azure VM by GitHub Actions
+([.github/workflows/](.github/workflows/)); pull requests run the same checks. Setup, operations and backups:
+[deploy/README.md](deploy/README.md).
+
 ## Documentation
 
 | Document | Contents |
@@ -83,6 +89,7 @@ End-to-end API and UI scenarios: [specs/001-csv-import/quickstart.md](specs/001-
 | [specs/001-csv-import/](specs/001-csv-import/), [specs/002-asset-explorer/](specs/002-asset-explorer/), [specs/003-asset-search/](specs/003-asset-search/) | Per feature: spec, plan, research decisions, data model, API and UI contracts, tasks |
 | [backend/docs/api/asset-import.md](backend/docs/api/asset-import.md) | API reference for the two import endpoints |
 | [backend/docs/api/asset.md](backend/docs/api/asset.md) | API reference for the two explorer endpoints and the search |
+| [deploy/README.md](deploy/README.md) | Azure deployment and the GitHub Actions pipeline: one-time setup, operations, backups |
 | [AGENTS.md](AGENTS.md) | Rules for anyone (human or AI) changing the code, and where the detailed rules live |
 | [AI_JOURNAL.md](AI_JOURNAL.md) | How the AI agent was used: tools, workflow, prompts, corrections, review, time |
 | [.specify/memory/constitution.md](.specify/memory/constitution.md) | Project principles, template exceptions, Definition of Done |
