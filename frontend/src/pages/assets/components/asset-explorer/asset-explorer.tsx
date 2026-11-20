@@ -30,7 +30,9 @@ const AssetExplorer: React.FC<Properties> = ({
 					<p className={styles["label"]}>
 						{AssetsPageMessage.SUBSTATIONS_LABEL}
 					</p>
-					<AssetTree selectedAssetId={selectedAssetId} />
+					<div className={styles["tree-scroll"]}>
+						<AssetTree selectedAssetId={selectedAssetId} />
+					</div>
 				</div>
 			)}
 		</div>

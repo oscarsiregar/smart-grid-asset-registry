@@ -55,6 +55,9 @@ const CHILDREN: AssetListDto = {
 };
 
 const NO_REQUESTS = 0;
+// Placeholder rows while the top level and a node's children load (spec 005).
+const TOP_LEVEL_SKELETON_ROWS = 8;
+const CHILDREN_SKELETON_ROWS = 3;
 const ONE_REQUEST = 1;
 const REQUESTS_WITH_RETRY = 2;
 
@@ -105,11 +108,11 @@ const countChildRequests = (fetchMock: ReturnType<typeof stubFetch>): number =>
 	fetchMock.mock.calls.filter(([request]) => request.url === CHILDREN_URL)
 		.length;
 
-const renderTree = (): void => {
+const renderTree = (selectedAssetId: null | string = null): void => {
 	render(
 		<Provider store={createStore(config)}>
 			<MemoryRouter>
-				<AssetTree selectedAssetId={null} />
+				<AssetTree selectedAssetId={selectedAssetId} />
 			</MemoryRouter>
 		</Provider>,
 	);
@@ -127,6 +130,22 @@ const getNode = (assetId: string): HTMLElement => {
 
 	return node;
 };
+
+// The node's own label link (the first link inside it; children follow).
+const getNodeLink = (assetId: string): HTMLElement => {
+	const [link] = within(getNode(assetId)).getAllByRole("link");
+
+	if (!link) {
+		throw new Error(`No link for tree node ${assetId}`);
+	}
+
+	return link;
+};
+
+const getHiddenTexts = (element: HTMLElement): string[] =>
+	[...element.querySelectorAll(".visually-hidden")].map(
+		(hidden) => hidden.textContent,
+	);
 
 afterEach(() => {
 	vi.unstubAllGlobals();
@@ -157,7 +176,11 @@ describe("AssetTree", () => {
 		);
 		renderTree();
 
-		expect(screen.getByText("Loading assets…")).toBeInTheDocument();
+		expect(screen.getByRole("status")).toHaveTextContent("Loading assets…");
+		expect(document.querySelectorAll("[data-skeleton-row]")).toHaveLength(
+			TOP_LEVEL_SKELETON_ROWS,
+		);
+		expect(screen.queryByRole("tree")).not.toBeInTheDocument();
 	});
 
 	it("makes only nodes with children expandable", async () => {
@@ -192,44 +215,86 @@ describe("AssetTree", () => {
 		expect(countChildRequests(fetchMock)).toBe(ONE_REQUEST);
 	});
 
-	it("shows ID, name, type and a status label only when not in service", async () => {
+	it("shows a status shape and the name; ID, type and status are hidden text and the hover title", async () => {
 		stubFetch();
 		renderTree();
 		await screen.findByText("SS-001");
 		fireEvent.click(screen.getByRole("button", { name: "Expand SS-001" }));
 		await screen.findByText("TX-001-1");
 
-		const inService = getNode("SS-001");
-		expect(
-			within(inService).getByText("Aurora Substation"),
-		).toBeInTheDocument();
-		expect(within(inService).getByText("Substation")).toBeInTheDocument();
-		expect(within(inService).queryByText("In service")).not.toBeInTheDocument();
+		const cases = [
+			["SS-001", "Aurora Substation", "Substation", "In service"],
+			["SS-002", "Beacon Substation", "Substation", "No status recorded"],
+			["TX-001-1", "Aurora Transformer T1", "Transformer", "Maintenance"],
+			["SWB-001-1", "Aurora Switchboard A", "Switchboard", "Out of service"],
+		] as const;
 
-		expect(
-			within(getNode("SS-002")).getByText("No status recorded"),
-		).toBeInTheDocument();
-		expect(
-			within(getNode("TX-001-1")).getByText("Maintenance"),
-		).toBeInTheDocument();
-		expect(
-			within(getNode("TX-001-1")).getByText("Transformer"),
-		).toBeInTheDocument();
-		expect(
-			within(getNode("SWB-001-1")).getByText("Out of service"),
-		).toBeInTheDocument();
+		for (const [assetId, name, type, status] of cases) {
+			const link = getNodeLink(assetId);
+			expect(link).toHaveAttribute(
+				"title",
+				`${name} · ${assetId} · ${type} · ${status}`,
+			);
+			expect(getHiddenTexts(link)).toEqual([assetId, type, status]);
+			expect(link.querySelector("svg[aria-hidden='true']")).toBeInTheDocument();
+		}
 	});
 
-	it("shows a loading row while a node's children load", async () => {
+	it("marks the selected node in words for assistive technology only", async () => {
+		const [, beacon] = TOP_LEVEL.items;
+
+		if (!beacon) {
+			throw new Error("The fixture has no SS-002");
+		}
+
+		vi.stubGlobal(
+			"fetch",
+			vi.fn((request: Request) =>
+				respond(
+					HTTPCode.OK,
+					request.url.endsWith("/api/assets/SS-002")
+						? {
+								asset: {
+									...beacon,
+									commissionedDate: null,
+									manufacturer: null,
+									model: null,
+									parentAssetId: null,
+									ratingKva: null,
+									serialNumber: null,
+									voltageKv: null,
+								},
+								children: [],
+								descendantCounts: null,
+								path: [beacon],
+							}
+						: TOP_LEVEL,
+				),
+			),
+		);
+		renderTree("SS-002");
+		await screen.findByText("SS-002");
+
+		const selected = getNode("SS-002");
+		expect(selected).toHaveAttribute("aria-selected", "true");
+		expect(getHiddenTexts(getNodeLink("SS-002"))).toContain("Selected");
+		expect(getHiddenTexts(getNodeLink("SS-001"))).not.toContain("Selected");
+	});
+
+	it("shows placeholder rows while a node's children load", async () => {
 		stubFetch(["pending"]);
 		renderTree();
 		await screen.findByText("SS-001");
 
 		fireEvent.click(screen.getByRole("button", { name: "Expand SS-001" }));
 
-		expect(
-			await within(getNode("SS-001")).findByText("Loading…"),
-		).toBeInTheDocument();
+		const node = getNode("SS-001");
+		expect(await within(node).findByRole("status")).toHaveTextContent(
+			"Loading…",
+		);
+		expect(node.querySelectorAll("[data-skeleton-row]")).toHaveLength(
+			CHILDREN_SKELETON_ROWS,
+		);
 	});
 
 	it("shows a failed child load with a retry that refetches", async () => {
@@ -241,6 +306,9 @@ describe("AssetTree", () => {
 		expect(
 			await screen.findByText("Could not load children"),
 		).toBeInTheDocument();
+
+		// No placeholder stays after a failure (spec 005 SC-004).
+		expect(document.querySelector("[data-skeleton-row]")).toBeNull();
 
 		fireEvent.click(screen.getByRole("button", { name: "Try again" }));
 

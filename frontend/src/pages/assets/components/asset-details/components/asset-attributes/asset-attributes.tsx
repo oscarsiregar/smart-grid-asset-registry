@@ -3,11 +3,7 @@ import { configureString } from "~/libs/helpers/helpers.js";
 import { type AssetDto, type AssetNodeDto } from "~/modules/assets/assets.js";
 
 import { AssetsPageMessage } from "../../../../libs/enums/enums.js";
-import {
-	getAssetPath,
-	getStatusText,
-} from "../../../../libs/helpers/helpers.js";
-import { assetTypeToLabel } from "../../../../libs/maps.js";
+import { getAssetPath } from "../../../../libs/helpers/helpers.js";
 import styles from "./styles.module.css";
 
 type Properties = {
@@ -25,22 +21,16 @@ const getMeasurement = (value: null | number, template: string): string =>
 		? AssetsPageMessage.NOT_RECORDED
 		: configureString(template, { value: String(value) });
 
-/** Every stored attribute; a blank one says "Not recorded" (spec FR-008, FR-009). */
+/**
+ * The attributes the intro does not show — parent first, then the measured
+ * and recorded values; a blank one says "Not recorded" (spec FR-008, FR-009,
+ * spec 005 FR-012). Asset ID, type, name and status are in the intro.
+ */
 const AssetAttributes: React.FC<Properties> = ({
 	asset,
 	parent,
 }: Properties) => {
 	const attributes = [
-		{ label: AssetsPageMessage.ATTRIBUTE_ASSET_ID, value: asset.assetId },
-		{
-			label: AssetsPageMessage.ATTRIBUTE_TYPE,
-			value: assetTypeToLabel[asset.assetType],
-		},
-		{ label: AssetsPageMessage.ATTRIBUTE_NAME, value: asset.assetName },
-		{
-			label: AssetsPageMessage.ATTRIBUTE_OPERATIONAL_STATUS,
-			value: getStatusText(asset.operationalStatus),
-		},
 		{
 			label: AssetsPageMessage.ATTRIBUTE_VOLTAGE,
 			value: getMeasurement(asset.voltageKv, AssetsPageMessage.UNIT_KV),
@@ -48,6 +38,10 @@ const AssetAttributes: React.FC<Properties> = ({
 		{
 			label: AssetsPageMessage.ATTRIBUTE_RATING,
 			value: getMeasurement(asset.ratingKva, AssetsPageMessage.UNIT_KVA),
+		},
+		{
+			label: AssetsPageMessage.ATTRIBUTE_COMMISSIONED_DATE,
+			value: getText(asset.commissionedDate),
 		},
 		{
 			label: AssetsPageMessage.ATTRIBUTE_MANUFACTURER,
@@ -58,20 +52,10 @@ const AssetAttributes: React.FC<Properties> = ({
 			label: AssetsPageMessage.ATTRIBUTE_SERIAL_NUMBER,
 			value: getText(asset.serialNumber),
 		},
-		{
-			label: AssetsPageMessage.ATTRIBUTE_COMMISSIONED_DATE,
-			value: getText(asset.commissionedDate),
-		},
 	];
 
 	return (
 		<dl className={styles["attributes"]}>
-			{attributes.map(({ label, value }) => (
-				<div className={styles["attribute"]} key={label}>
-					<dt className={styles["term"]}>{label}</dt>
-					<dd className={styles["value"]}>{value}</dd>
-				</div>
-			))}
 			{asset.parentAssetId !== null && (
 				<div className={styles["attribute"]}>
 					<dt className={styles["term"]}>
@@ -88,6 +72,12 @@ const AssetAttributes: React.FC<Properties> = ({
 					</dd>
 				</div>
 			)}
+			{attributes.map(({ label, value }) => (
+				<div className={styles["attribute"]} key={label}>
+					<dt className={styles["term"]}>{label}</dt>
+					<dd className={styles["value"]}>{value}</dd>
+				</div>
+			))}
 		</dl>
 	);
 };

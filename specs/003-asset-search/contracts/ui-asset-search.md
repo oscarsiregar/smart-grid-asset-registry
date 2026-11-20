@@ -37,9 +37,10 @@ Shown only when at least one asset is stored (the empty registry state of 002 ha
 
 ## Search form
 
-- `role="search"` landmark; the text field is the restored template `Input` with a visible label "Search assets"
-  (hint: "Asset ID or name, or part of it") and a leading search icon; the type field is a labelled `<select>`
-  ("Asset type": "All types", "Substation", "Transformer", "LV board", "Switchboard", "Switchboard panel").
+- `role="search"` landmark; the text field is the restored template `Input` labelled "Search assets" (the label
+  is visually hidden since feature 005) with the placeholder "Search by ID or name" and a leading search icon; the
+  type field is a `<select>` labelled "Asset type" (visually hidden) — "All types", "Substation", "Transformer",
+  "LV board", "Switchboard", "Switchboard panel". **Search** and **Clear** are small buttons on one row.
 - **Search** submits (Enter in the field too); a blank text shows "Enter an asset ID or name to search." under the
   field and does not change the address. **Clear** (shown while a search is in the address) empties the form and
   removes the search.
@@ -49,7 +50,7 @@ Shown only when at least one asset is stored (the empty registry state of 002 ha
 
 | State | Shows |
 |---|---|
-| Running | "Searching…" (`role="status"`) |
+| Running | placeholder result rows, announced as "Searching…" (`role="status"`, feature 005) |
 | All matches received | "N assets match “<text>”" ("1 asset matches …" for one) (and " of type <Type>" when chosen), then the list |
 | More matches than received | "Showing <items received> of N assets that match “<text>”. Add more of the ID or name, or choose a type, to narrow the search." then the received items (the backend's first 50) |
 | No match | "No asset matches “<text>”" (+ " of type <Type>"). "Check the spelling, or search all types." |

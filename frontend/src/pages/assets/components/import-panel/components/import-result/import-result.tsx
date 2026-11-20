@@ -1,6 +1,3 @@
-import { Button } from "~/libs/components/button/button.js";
-import { ButtonVariant } from "~/libs/enums/enums.js";
-import { configureString } from "~/libs/helpers/helpers.js";
 import { type ImportResultDto } from "~/modules/imports/imports.js";
 
 import { ImportPanelMessage } from "../../libs/enums/enums.js";
@@ -11,25 +8,15 @@ import { WarningsTable } from "../warnings-table/warnings-table.js";
 import styles from "./styles.module.css";
 
 type Properties = {
-	isSaving?: boolean;
-	onConfirm?: (() => void) | undefined;
-	onReset: () => void;
-	resetLabel: string;
 	result: ImportResultDto;
 };
 
 /**
  * One import result: the outcome in words, the counts, the rejected rows and
- * the warnings. A validated result offers Save (onConfirm); a confirmed one
- * only offers to start again.
+ * the warnings. Its actions are in the drawer's footer (ImportResultActions,
+ * spec 005 FR-018).
  */
-const ImportResult: React.FC<Properties> = ({
-	isSaving = false,
-	onConfirm,
-	onReset,
-	resetLabel,
-	result,
-}: Properties) => {
+const ImportResult: React.FC<Properties> = ({ result }: Properties) => {
 	const { counts, isCommitted, rejectedRows, warnings } = result;
 	const importedLabel = isCommitted
 		? ImportPanelMessage.COUNT_IMPORTED
@@ -73,31 +60,6 @@ const ImportResult: React.FC<Properties> = ({
 			</dl>
 			<RejectedRowsTable rows={rejectedRows} />
 			<WarningsTable warnings={warnings} />
-			<div className={styles["actions"]}>
-				{onConfirm && (
-					<Button
-						isDisabled={isSaving}
-						isLoading={isSaving}
-						label={configureString(ImportPanelMessage.CONFIRM_BUTTON_LABEL, {
-							count: String(counts.imported),
-						})}
-						onClick={onConfirm}
-						type="button"
-					/>
-				)}
-				<Button
-					isDisabled={isSaving}
-					label={resetLabel}
-					onClick={onReset}
-					type="button"
-					variant={ButtonVariant.SECONDARY}
-				/>
-				{isSaving && (
-					<span className={styles["status"]} role="status">
-						{ImportPanelMessage.SAVING_STATUS}
-					</span>
-				)}
-			</div>
 		</div>
 	);
 };

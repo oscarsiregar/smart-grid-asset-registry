@@ -18,6 +18,8 @@ type Properties = {
 	shouldOpenInNewTab?: boolean;
 	/** For composite widgets (a tree) that manage focus themselves. */
 	tabIndex?: number | undefined;
+	/** Hover text, for example the details of a shortened label. */
+	title?: string | undefined;
 	/** A fixed route, or an address with parameters from `generateRoutePath`. */
 	to: GeneratedRoutePath | NavigableRoute;
 };
@@ -29,6 +31,7 @@ const Link: React.FC<Properties> = ({
 	hasDefaultStyles = true,
 	shouldOpenInNewTab = false,
 	tabIndex,
+	title,
 	to,
 }: Properties) => {
 	const getLinkClassName = useCallback(
@@ -49,6 +52,7 @@ const Link: React.FC<Properties> = ({
 			{...newTabAttributes}
 			className={getLinkClassName}
 			tabIndex={tabIndex}
+			title={title}
 			to={to}
 		>
 			{children}

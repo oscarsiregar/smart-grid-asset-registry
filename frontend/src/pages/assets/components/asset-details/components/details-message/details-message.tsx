@@ -8,29 +8,21 @@ import styles from "./styles.module.css";
 type Properties = {
 	/** Offer the way back to the overview (the not-found state, spec FR-020). */
 	hasBackLink?: boolean;
-	isLoading?: boolean;
 	message: string;
 	onRetry?: (() => void) | undefined;
 };
 
 /**
- * A details-area state in words: the prompt, loading, not found with a way
- * back, or a failure with a retry.
+ * A details-area state in words: the prompt, not found with a way back, or a
+ * failure with a retry. Loading shows placeholders instead (spec 005).
  */
 const DetailsMessage: React.FC<Properties> = ({
 	hasBackLink = false,
-	isLoading = false,
 	message,
 	onRetry,
 }: Properties) => (
 	<div className={styles["message"]}>
-		{isLoading ? (
-			<p className={styles["text"]} role="status">
-				{message}
-			</p>
-		) : (
-			<p className={styles["text"]}>{message}</p>
-		)}
+		<p className={styles["text"]}>{message}</p>
 		{hasBackLink && (
 			<Link to={AppRoute.ASSETS}>{AssetsPageMessage.BACK_TO_ALL_ASSETS}</Link>
 		)}

@@ -1,5 +1,8 @@
+/* The form stays; the results below it scroll (spec 005 FR-009). */
 .search {
 	display: flex;
+	flex: 0 1 auto;
 	flex-direction: column;
 	gap: var(--space-16);
+	min-height: 0;
 }

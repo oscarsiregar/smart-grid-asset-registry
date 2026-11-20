@@ -40,7 +40,7 @@ const AssetTypeField = <T extends FieldValues>({
 
 	return (
 		<div className={styles["field"]}>
-			<label className={styles["label"]} htmlFor={selectId}>
+			<label className="visually-hidden" htmlFor={selectId}>
 				{AssetsPageMessage.ASSET_TYPE_FIELD_LABEL}
 			</label>
 			<select

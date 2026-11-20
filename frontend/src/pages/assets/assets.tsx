@@ -19,8 +19,11 @@ import { useGetAssetNodesQuery } from "~/modules/assets/assets.js";
 
 import { AssetDetails } from "./components/asset-details/asset-details.js";
 import { AssetExplorer } from "./components/asset-explorer/asset-explorer.js";
+import { AssetHeader } from "./components/asset-header/asset-header.js";
 import { EmptyRegistry } from "./components/empty-registry/empty-registry.js";
 import { ImportPanel } from "./components/import-panel/import-panel.js";
+import { ImportPanelMessage } from "./components/import-panel/libs/enums/enums.js";
+import { RegisterSummary } from "./components/register-summary/register-summary.js";
 import { AssetsPageMessage, TabIndex } from "./libs/enums/enums.js";
 import styles from "./styles.module.css";
 
@@ -106,6 +109,7 @@ const Assets: React.FC = () => {
 				{!isRegistryEmpty && (
 					<AssetExplorer selectedAssetId={selectedAssetId} />
 				)}
+				<RegisterSummary />
 			</aside>
 			<div className={styles["body"]}>
 				<header className={styles["header"]}>
@@ -119,12 +123,7 @@ const Assets: React.FC = () => {
 					>
 						<Icon className={styles["menu-icon"]} iconName={IconName.MENU} />
 					</button>
-					<div className={styles["header-copy"]}>
-						<h1 className={styles["title"]}>{AssetsPageMessage.TITLE}</h1>
-						<p className={styles["subtitle"]}>
-							{AssetsPageMessage.DESCRIPTION}
-						</p>
-					</div>
+					<AssetHeader selectedAssetId={selectedAssetId} />
 				</header>
 				<div className={styles["content"]}>
 					{isRegistryEmpty ? (
@@ -135,6 +134,7 @@ const Assets: React.FC = () => {
 				</div>
 			</div>
 			<Panel
+				description={ImportPanelMessage.DESCRIPTION}
 				isOpen={isOpen}
 				onClose={closePanel}
 				title={AssetsPageMessage.IMPORT_PANEL_TITLE}

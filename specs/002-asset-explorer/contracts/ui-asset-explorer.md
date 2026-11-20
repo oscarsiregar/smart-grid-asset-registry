@@ -33,12 +33,13 @@ Narrow screens stack the tree above the details.
 
 ## Tree
 
-- Top level: every substation, ordered by the API. Each node: expand toggle (only if `childCount > 0`), asset ID,
-  name, type in words, and a status label only when not in service ("Maintenance", "Out of service", "No status
-  recorded").
-- Expanding a node loads its children the first time (loading row "Loading…"; failure row "Could not load
-  children" + **Try again**); later expansions use the cache.
-- Selected node: `aria-selected="true"`, a visible marker and bold text, scrolled into view.
+- Top level: every substation, ordered by the API. Each node: expand toggle (only if `childCount > 0`), a status
+  shape and the name; the asset ID, the type and the status in words are hidden text and the hover title
+  (*amended by feature 005, FR-007*; previously ID, name, type and a status label when not in service).
+- Expanding a node loads its children the first time (placeholder rows announced as "Loading…", feature 005;
+  failure row "Could not load children" + **Try again**); later expansions use the cache.
+- Selected node: `aria-selected="true"`, a raised row with an accent bar and bold text, "Selected" for screen
+  readers (feature 005 FR-008), scrolled into view.
 - A node whose asset ID is `.` or `..` has a plain-text label, not a link: it can be expanded but not selected
   (browsers rewrite those path segments; spec edge case).
 - Keyboard: Tab enters the tree on the selected (or first) node; ↑/↓ move; → expands or moves to the first
@@ -49,8 +50,8 @@ Narrow screens stack the tree above the details.
 | State | Shows |
 |---|---|
 | No selection | "Select an asset in the tree to see its details." |
-| Loading | "Loading asset…" (`role="status"`) |
-| Loaded | path (links), name and type heading, attribute list; blanks "Not recorded" / "No status recorded"; numbers with kV / kVA; date `YYYY-MM-DD`; parent link (non-substations) |
+| Loading | placeholders shaped like the details, announced as "Loading asset…" (`role="status"`, feature 005) |
+| Loaded | path (links; each step by name, its ID hidden text and hover title — feature 005 FR-011), type, name, ID tag and status badge, then a details card: parent link (non-substations), voltage, rating, commissioned date, manufacturer, model, serial number; blanks "Not recorded"; numbers with kV / kVA; date `YYYY-MM-DD`; transformer, LV board and panel: "Immediate children — Nothing is connected below this asset." (feature 005) |
 | Loaded, substation | plus three groups — Transformers (n), LV boards (n), Switchboards (n) — each child a link with ID, name, status; empty group "None"; plus counts beneath: transformers, LV boards, switchboards, switchboard panels |
 | Loaded, switchboard | plus "Switchboard panels (n)" list of links |
 | Not found (`ASSET_NOT_FOUND`) | "No asset with ID <id> exists." and a link "Back to all assets" (`/assets`); no error styling or toast |
@@ -60,7 +61,7 @@ Narrow screens stack the tree above the details.
 
 | State | Shows |
 |---|---|
-| Top level loading | "Loading assets…" in the tree area |
+| Top level loading | placeholder tree rows announced as "Loading assets…" in the tree area (feature 005) |
 | Empty registry (`totalItems = 0`) | "No assets have been imported yet." + **Import CSV** (opens the panel); no tree, no details area |
 | Top level failed | "The assets could not be loaded." + **Try again**; the Import CSV button still works |
 
@@ -70,3 +71,9 @@ Every state is readable from its text alone; status and selection never rely on 
 
 A committed import (`isCommitted: true`) refetches every visible asset list and the details; a result that saved
 nothing changes nothing (FR-026). The selection and the expanded nodes stay.
+
+## Since feature 005 (ui-polish)
+
+The page's presentation follows [../../005-ui-polish/contracts/ui-asset-page.md](../../005-ui-polish/contracts/ui-asset-page.md):
+header "Asset explorer" with the path names, the register card in the sidebar, the details order (details card,
+counts, children under column headings) and loading placeholders. Addresses and behaviour above are unchanged.

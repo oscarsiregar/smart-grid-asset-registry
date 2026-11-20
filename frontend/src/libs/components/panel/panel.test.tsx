@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 import { Panel } from "./panel.js";
 
 const PANEL_TITLE = "Import assets from CSV";
+const PANEL_DESCRIPTION =
+	"Validate a file, review what would be rejected, then save the valid rows.";
 
 type HarnessProperties = {
 	isOpen: boolean;
@@ -48,6 +50,30 @@ describe("Panel", () => {
 		render(<Harness isOpen onClose={vi.fn()} />);
 
 		expect(getDialog()).toHaveAccessibleName(PANEL_TITLE);
+	});
+
+	it("is described by its subtitle when it has one", () => {
+		render(
+			<Panel
+				description={PANEL_DESCRIPTION}
+				isOpen
+				onClose={vi.fn()}
+				title={PANEL_TITLE}
+			>
+				<p>Panel body</p>
+			</Panel>,
+		);
+
+		expect(screen.getByText(PANEL_DESCRIPTION)).toBeInTheDocument();
+		expect(getDialog()).toHaveAccessibleDescription(PANEL_DESCRIPTION);
+	});
+
+	it("shows only an icon on the Close button, still named Close", () => {
+		render(<Harness isOpen onClose={vi.fn()} />);
+
+		const close = screen.getByRole("button", { name: "Close" });
+		expect(close.querySelector(".visually-hidden")).toHaveTextContent("Close");
+		expect(close.querySelector("svg")).toBeInTheDocument();
 	});
 
 	it("calls onClose on Escape (cancel) and keeps itself open until told otherwise", () => {

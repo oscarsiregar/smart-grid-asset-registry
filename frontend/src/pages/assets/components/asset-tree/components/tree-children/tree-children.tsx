@@ -4,8 +4,10 @@ import { Button } from "~/libs/components/button/button.js";
 import { ButtonVariant, ControlSize } from "~/libs/enums/enums.js";
 import { useGetAssetNodesQuery } from "~/modules/assets/assets.js";
 
+import { CHILDREN_SKELETON_ROWS } from "../../../../libs/constants/constants.js";
 import { AssetsPageMessage } from "../../../../libs/enums/enums.js";
 import { TreeNode } from "../tree-node/tree-node.js";
+import { TreeSkeleton } from "../tree-skeleton/tree-skeleton.js";
 import styles from "./styles.module.css";
 
 type Properties = {
@@ -40,8 +42,11 @@ const TreeChildren: React.FC<Properties> = ({
 	return (
 		<ul className={styles["group"]} role="group">
 			{isLoading && (
-				<li className={styles["message"]} role="none">
-					<span role="status">{AssetsPageMessage.CHILDREN_LOADING}</span>
+				<li role="none">
+					<TreeSkeleton
+						label={AssetsPageMessage.CHILDREN_LOADING}
+						rows={CHILDREN_SKELETON_ROWS}
+					/>
 				</li>
 			)}
 			{isError && (

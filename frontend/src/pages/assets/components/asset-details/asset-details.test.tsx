@@ -58,6 +58,8 @@ const PANEL: AssetDetailDto = {
 
 // The failed request plus the retry.
 const REQUESTS_WITH_RETRY = 2;
+// The ancestors of the panel; the panel itself is not a link.
+const PATH_LINKS = 2;
 
 const respondWith = (status: number, data: unknown): Promise<Response> =>
 	Promise.resolve(
@@ -126,6 +128,9 @@ describe("AssetDetails", () => {
 		renderDetails("PNL-001-1-01");
 
 		expect(screen.getByRole("status")).toHaveTextContent("Loading asset…");
+		expect(
+			document.querySelector("[data-skeleton-part='intro']"),
+		).toBeInTheDocument();
 	});
 
 	it("shows the path, the heading and every attribute of a panel", async () => {
@@ -141,26 +146,34 @@ describe("AssetDetails", () => {
 		).toBeInTheDocument();
 
 		const path = screen.getByRole("navigation", { name: "Path" });
-		expect(within(path).getByRole("link", { name: "SS-001" })).toHaveAttribute(
-			"href",
-			"/assets/SS-001",
-		);
+		const substationStep = within(path).getByRole("link", {
+			name: "Aurora Substation SS-001",
+		});
+		expect(substationStep).toHaveAttribute("href", "/assets/SS-001");
+		expect(substationStep).toHaveAttribute("title", "SS-001");
 		expect(
-			within(path).getByRole("link", { name: "SWB-001-1" }),
+			within(path).getByRole("link", {
+				name: "Aurora Switchboard A SWB-001-1",
+			}),
 		).toHaveAttribute("href", "/assets/SWB-001-1");
-		expect(
-			within(path).queryByRole("link", { name: "PNL-001-1-01" }),
-		).not.toBeInTheDocument();
-		expect(within(path).getByText("PNL-001-1-01")).toHaveAttribute(
-			"aria-current",
-			"page",
-		);
+		const [currentStep] = path.querySelectorAll("[aria-current='page']");
+		expect(currentStep).toHaveTextContent("Aurora Panel A1");
+		expect(currentStep).toHaveAttribute("title", "PNL-001-1-01");
+		expect(within(path).getAllByRole("link")).toHaveLength(PATH_LINKS);
 
-		expect(getValue("Asset ID")).toHaveTextContent("PNL-001-1-01");
-		expect(getValue("Type")).toHaveTextContent("Switchboard panel");
-		expect(getValue("Name")).toHaveTextContent("Aurora Panel A1");
-		expect(getValue("Operational status")).toHaveTextContent(
-			"No status recorded",
+		// The intro states the ID, type and status once.
+		expect(screen.getByText("Switchboard panel")).toBeInTheDocument();
+		expect(screen.getByText("No status recorded")).toBeInTheDocument();
+		expect(screen.getAllByRole("term").map((term) => term.textContent)).toEqual(
+			[
+				"Parent asset",
+				"Voltage",
+				"Rating",
+				"Commissioned date",
+				"Manufacturer",
+				"Model",
+				"Serial number",
+			],
 		);
 		expect(getValue("Voltage")).toHaveTextContent("22 kV");
 		expect(getValue("Rating")).toHaveTextContent("1000 kVA");
@@ -211,7 +224,7 @@ describe("AssetDetails", () => {
 		renderDetails("SS-001");
 
 		await screen.findByRole("heading", { name: "Aurora Substation" });
-		expect(getValue("Operational status")).toHaveTextContent("In service");
+		expect(screen.getByText("In service")).toBeInTheDocument();
 		expect(getValue("Voltage")).toHaveTextContent("Not recorded");
 		expect(getValue("Rating")).toHaveTextContent("Not recorded");
 		expect(getValue("Commissioned date")).toHaveTextContent("Not recorded");
@@ -232,6 +245,8 @@ describe("AssetDetails", () => {
 		expect(
 			await screen.findByText("The asset could not be loaded."),
 		).toBeInTheDocument();
+		// No placeholder stays after a failure (spec 005 SC-004).
+		expect(document.querySelector("[data-skeleton-part]")).toBeNull();
 
 		fireEvent.click(screen.getByRole("button", { name: "Try again" }));
 
@@ -274,9 +289,23 @@ describe("AssetDetails", () => {
 		expect(
 			await screen.findByRole("heading", { name: "Switchboards (1)" }),
 		).toBeInTheDocument();
-		expect(
-			screen.getByRole("heading", { name: "Beneath this substation" }),
-		).toBeInTheDocument();
+		const details = screen.getByRole("heading", { name: "Details" });
+		const counts = screen.getByRole("heading", {
+			name: "Beneath this substation",
+		});
+		const children = screen.getByRole("heading", {
+			name: "Immediate children (1)",
+		});
+		// Details card, then the counts, then the children (spec 005 FR-013).
+		expect(details.compareDocumentPosition(counts)).toBe(
+			Node.DOCUMENT_POSITION_FOLLOWING,
+		);
+		expect(counts.compareDocumentPosition(children)).toBe(
+			Node.DOCUMENT_POSITION_FOLLOWING,
+		);
+		const columns = screen.getByTestId("child-columns");
+		expect(columns).toHaveAttribute("aria-hidden", "true");
+		expect(columns).toHaveTextContent("NameAsset IDStatus");
 		expect(
 			screen.queryByRole("heading", { name: /^Switchboard panels/ }),
 		).not.toBeInTheDocument();
@@ -316,7 +345,7 @@ describe("AssetDetails", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("shows neither groups nor a child list for a panel", async () => {
+	it("says nothing is connected below a panel, without groups or a child list", async () => {
 		vi.stubGlobal(
 			"fetch",
 			vi.fn(() => respondWith(HTTPCode.OK, PANEL)),
@@ -325,6 +354,13 @@ describe("AssetDetails", () => {
 		renderDetails("PNL-001-1-01");
 
 		await screen.findByRole("heading", { name: "Aurora Panel A1" });
+		expect(
+			screen.getByRole("heading", { name: "Immediate children" }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText("Nothing is connected below this asset."),
+		).toBeInTheDocument();
+		expect(screen.queryByTestId("child-columns")).not.toBeInTheDocument();
 		expect(
 			screen.queryByRole("heading", {
 				name: /^(Transformers|Switchboard panels)/,

@@ -39,6 +39,17 @@ describe("SearchForm", () => {
 		expect(getField()).toHaveValue("");
 	});
 
+	it("keeps the labels for assistive technology only and shows the placeholder", () => {
+		renderForm();
+
+		expect(getField()).toHaveAttribute("placeholder", "Search by ID or name");
+		expect(screen.getByText("Search assets")).toHaveClass("visually-hidden");
+		expect(screen.getByText("Asset type")).toHaveClass("visually-hidden");
+		expect(
+			screen.getByRole("combobox", { name: "Asset type" }),
+		).toBeInTheDocument();
+	});
+
 	it("submits the trimmed text with the Search button", async () => {
 		const { onSubmit } = renderForm();
 

@@ -18,6 +18,8 @@ type Properties = {
 	className?: string | undefined;
 	iconName?: ValueOf<typeof IconName>;
 	isDisabled?: boolean;
+	/** Show only the icon; the label stays as the accessible name. */
+	isLabelHidden?: boolean;
 	isLoading?: boolean;
 	label: string;
 	onBlur?: () => void;
@@ -34,6 +36,7 @@ const Button: React.FC<Properties> = ({
 	className,
 	iconName,
 	isDisabled = false,
+	isLabelHidden = false,
 	isLoading = false,
 	label,
 	onBlur,
@@ -61,7 +64,7 @@ const Button: React.FC<Properties> = ({
 		type={type}
 	>
 		{iconName && <Icon iconName={iconName} />}
-		{label}
+		{isLabelHidden ? <span className="visually-hidden">{label}</span> : label}
 		{isLoading && (
 			<Loader
 				label="Loading"

@@ -1,0 +1,55 @@
+/* Pills that wrap on narrow screens (spec 005 FR-017, edge case). */
+.steps {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-8);
+	padding: 0;
+	margin: 0;
+	list-style: none;
+}
+
+.step {
+	display: inline-flex;
+	gap: var(--space-8);
+	align-items: center;
+	height: var(--size-control-h-lg);
+	padding: 0 var(--space-14) 0 var(--space-6);
+	font-size: var(--font-size-body-sm);
+	font-weight: 500;
+	color: var(--text-muted);
+	background-color: var(--surface-card);
+	border: var(--border-width-hairline) solid var(--border-subtle);
+	border-radius: var(--radius-pill);
+}
+
+.number {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--size-control-h-sm);
+	height: var(--size-control-h-sm);
+	font-size: var(--font-size-label-sm);
+	font-weight: 600;
+	border-radius: var(--radius-pill);
+}
+
+/* The current step: accent outline and filled number, bold word. */
+.current {
+	font-weight: 600;
+	color: var(--text-strong);
+	border: var(--border-width-emphasis) solid var(--border-accent);
+}
+
+.current .number {
+	color: var(--text-on-accent);
+	background-color: var(--surface-accent);
+}
+
+.done {
+	color: var(--fg-success);
+}
+
+.check {
+	width: var(--size-icon-sm);
+	height: var(--size-icon-sm);
+}

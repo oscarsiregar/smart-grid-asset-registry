@@ -7,14 +7,18 @@ import { IconName } from "~/libs/enums/enums.js";
 import { configureString, getValidClasses } from "~/libs/helpers/helpers.js";
 import { type AssetNodeDto } from "~/modules/assets/assets.js";
 
-import { TREE_STEP } from "../../../../libs/constants/constants.js";
+import {
+	NODE_DETAIL_SEPARATOR,
+	TREE_STEP,
+} from "../../../../libs/constants/constants.js";
 import { AssetsPageMessage, TabIndex } from "../../../../libs/enums/enums.js";
 import {
 	checkIsAddressableAssetId,
 	getAssetPath,
+	getStatusText,
 } from "../../../../libs/helpers/helpers.js";
 import { assetTypeToLabel } from "../../../../libs/maps.js";
-import { StatusLabel } from "../status-label/status-label.js";
+import { StatusBadge } from "../../../status-badge/status-badge.js";
 import { TreeChildren } from "../tree-children/tree-children.js";
 import styles from "./styles.module.css";
 
@@ -30,8 +34,11 @@ type Properties = {
 /**
  * One node of the navigation tree (research R8): the label is a link, so
  * selecting is navigating; a separate toggle expands it. Only nodes with
- * children are expandable (spec FR-003). The selected node is marked in words
- * and bold, not by colour alone, and scrolled into view (spec FR-006).
+ * children are expandable (spec FR-003). The label shows the status shape and
+ * the name; the ID, type and status in words are hidden text and the hover
+ * title (spec 005 FR-007). The selected node is marked by an accent bar and
+ * bold text, "Selected" for screen readers, and scrolled into view (spec
+ * FR-006, spec 005 FR-008).
  */
 const TreeNode: React.FC<Properties> = ({
 	expandedAssetIds,
@@ -65,11 +72,24 @@ const TreeNode: React.FC<Properties> = ({
 		{ assetId: node.assetId },
 	);
 
+	const typeText = assetTypeToLabel[node.assetType];
+	const statusText = getStatusText(node.operationalStatus);
+	const hoverText = [node.assetName, node.assetId, typeText, statusText].join(
+		NODE_DETAIL_SEPARATOR,
+	);
+
 	const labelContent = (
 		<>
-			<span className={styles["id"]}>{node.assetId}</span>
+			<StatusBadge isShapeOnly status={node.operationalStatus} />
 			<span className={styles["name"]}>{node.assetName}</span>
-			<span className={styles["type"]}>{assetTypeToLabel[node.assetType]}</span>
+			<span className="visually-hidden">{node.assetId}</span>
+			<span className="visually-hidden">{typeText}</span>
+			<span className="visually-hidden">{statusText}</span>
+			{isSelected && (
+				<span className="visually-hidden">
+					{AssetsPageMessage.SELECTED_MARKER}
+				</span>
+			)}
 		</>
 	);
 
@@ -116,25 +136,16 @@ const TreeNode: React.FC<Properties> = ({
 						className={styles["label"]}
 						hasDefaultStyles={false}
 						tabIndex={TabIndex.SKIPPED}
+						title={hoverText}
 						to={getAssetPath(node.assetId)}
 					>
 						{labelContent}
 					</Link>
 				) : (
-					<span className={styles["label"]}>{labelContent}</span>
+					<span className={styles["label"]} title={hoverText}>
+						{labelContent}
+					</span>
 				)}
-				<span className={styles["meta"]}>
-					<StatusLabel status={node.operationalStatus} />
-					{isSelected && (
-						<span className={styles["marker"]}>
-							<Icon
-								className={styles["marker-icon"]}
-								iconName={IconName.CHECK}
-							/>
-							{AssetsPageMessage.SELECTED_MARKER}
-						</span>
-					)}
-				</span>
 			</div>
 			{isExpanded && (
 				<TreeChildren
