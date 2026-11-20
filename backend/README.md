@@ -5,8 +5,8 @@ hierarchy and the asset search to the explorer.
 **Go 1.26 · Fiber v2 · GORM / PostgreSQL · local go-common**, layered handler → usecase → repository with the
 contracts in `domain/`.
 
-> **Rules: [AGENTS.md](AGENTS.md)** (short, binding) · details in **[docs/rules/](docs/rules/)** (Indonesian,
-> kept from the template) · adding a feature: **[docs/menambah-fitur.md](docs/menambah-fitur.md)** · API:
+> **Rules: [AGENTS.md](AGENTS.md)** (short, binding) · details in **[docs/rules/](docs/rules/)** (from the
+> template) · adding a feature: **[docs/adding-a-feature.md](docs/adding-a-feature.md)** · API:
 > **[docs/api/asset-import.md](docs/api/asset-import.md)**, **[docs/api/asset.md](docs/api/asset.md)** · architecture: [../docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
 
 ## Prerequisites
@@ -107,16 +107,18 @@ client ─► [Recover → CommonMiddleware → Limiter → Compress]
 
 | # | Topic |
 |---|---|
-| [01](docs/rules/01-arsitektur.md) | Architecture and dependency direction |
-| [02](docs/rules/02-penamaan.md) | Naming and file layout |
+| [01](docs/rules/01-architecture.md) | Architecture and dependency direction |
+| [02](docs/rules/02-naming.md) | Naming and file layout |
 | [03](docs/rules/03-handler.md) | HTTP handlers |
 | [04](docs/rules/04-usecase.md) | Usecases, validation, transactions |
 | [05](docs/rules/05-repository-database.md) | Repositories, GORM, migrations |
 | [06](docs/rules/06-error-handling.md) | Error handling |
-| [07](docs/rules/07-keamanan.md) | Security |
+| [07](docs/rules/07-security.md) | Security |
 | [08](docs/rules/08-testing.md) | Testing |
 | [09](docs/rules/09-logging-observability.md) | Logging, health check, shutdown |
 | [10](docs/rules/10-git-ci-deploy.md) | Git, CI, deploy |
 
-The rule documents are in Indonesian and describe the company template, including authentication; where this
-project differs, the constitution's Template Exceptions apply (`../.specify/memory/constitution.md`).
+The rule documents come from the backend template (a separate project, translated from its original
+Indonesian) and describe it, including authentication; where this project differs, the constitution's
+Template Exceptions apply (`../.specify/memory/constitution.md`), and the rules point them out as
+"This project" notes.

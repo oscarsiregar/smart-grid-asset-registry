@@ -1,41 +1,45 @@
 # 08 — Testing
 
-## Target
+## Targets
 
-| Lapis | Alat | Yang wajib dites | Coverage |
+| Layer | Tool | What must be tested | Coverage |
 |---|---|---|---|
-| `domain/valueobject` | testify | Parse (valid/invalid), Scan (string, []byte, tipe salah, nilai salah), Value, String, IsValid | 100% |
-| `domain/usecase` (Validate/SetDefault) | testify, table-driven | setiap aturan validasi & default | 100% |
-| `internal/usecase` | mockery mocks + `StubWithinTx` | **setiap cabang**: sukses, permission denied, validasi, not found, conflict, setiap error repo, rollback | **≥ 80% (gate CI)**, target 100% |
-| `internal/repository/psql` | sqlmock (regexp) | SQL yang dihasilkan, sukses, error DB, trx diberikan, Tx tipe salah, not found → nil,nil | tinggi |
-| `internal/handler` | `fiber.App.Test` + mock usecase | parse error → 400, input diteruskan benar, mapping response, status sukses, AppError → status, error biasa → 500 | tinggi |
-| mapper / helpers / querysafety | testify | semua field, nil, slice kosong | 100% |
+| `domain/valueobject` | testify | Parse (valid/invalid), Scan (string, []byte, wrong type, wrong value), Value, String, IsValid | 100% |
+| `domain/usecase` (Validate/SetDefault) | testify, table-driven | every validation rule & default | 100% |
+| `internal/usecase` | mockery mocks + `StubWithinTx` | **every branch**: success, permission denied, validation, not found, conflict, every repo error, rollback | **≥ 80% (CI gate)**, target 100% |
+| `internal/repository/psql` | sqlmock (regexp) | the generated SQL, success, DB error, trx given, wrong Tx type, not found → nil,nil | high |
+| `internal/handler` | `fiber.App.Test` + usecase mock | parse error → 400, input passed on correctly, response mapping, success status, AppError → status, plain error → 500 | high |
+| mapper / helpers / querysafety | testify | every field, nil, empty slice | 100% |
 
-Tidak dites (dikecualikan di CI): `cmd/`, `internal/bootstrap`, `internal/routes`, `internal/mocks`, package yang hanya deklarasi (`domain/repository|service|dto|entity|errorcode`, `psql/model`).
+Not tested (excluded in CI): `cmd/`, `internal/bootstrap`, `internal/routes`, `internal/mocks`, declaration-only packages (`domain/repository|service|dto|entity|errorcode`, `psql/model`).
 
-## Pola test usecase (table-driven, mock per kasus)
+> **This project:** repositories and usecases are also tested against a real PostgreSQL in
+> `internal/integrationtest/` and `internal/testsupport/pgtest/`, skipped without `TEST_DATABASE_URL`
+> (constitution → *Template Exceptions* no. 11).
+
+## Usecase test pattern (table-driven, mocks per case)
 
 ```go
 tests := []struct {
 	name    string
 	input   usecase.CreateProductInput
-	setup   func(d deps)          // pasang EXPECT() khusus kasus ini
+	setup   func(d deps)          // set the EXPECT() calls for this case
 	wantErr error
 }{
 	{
 		name:  "error code already exists rolls back",
 		input: validInput,
 		setup: func(d deps) {
-			d.withinTx()                                    // WithinTx menjalankan callback dgn d.trx
+			d.withinTx()                                    // WithinTx runs the callback with d.trx
 			d.repo.EXPECT().FindByCode(mock.Anything, d.trx, "P-001").Return(sampleProduct(), nil)
-			d.trx.EXPECT().Rollback().Return(nil)           // memastikan rollback terjadi
+			d.trx.EXPECT().Rollback().Return(nil)           // makes sure the rollback happens
 		},
 		wantErr: apperr.Conflict(errorcode.ProductCodeAlreadyExists, "P-001"),
 	},
 }
 for _, tt := range tests {
 	t.Run(tt.name, func(t *testing.T) {
-		d := newDeps(t)       // mock BARU tiap kasus
+		d := newDeps(t)       // NEW mocks for every case
 		tt.setup(d)
 		output, err := d.usecase().CreateProduct(ctx, tt.input)
 		assert.Equal(t, tt.wantErr, err)
@@ -43,28 +47,28 @@ for _, tt := range tests {
 }
 ```
 
-Aturan:
-1. **Mock dibuat per kasus** (`newDeps(t)`). Mockery mendaftarkan `AssertExpectations` lewat `t.Cleanup`, jadi panggilan yang diharapkan tapi tidak terjadi → gagal; panggilan tak terduga → panic/gagal. Ini yang membuktikan "repository tidak dipanggil saat permission ditolak".
-2. Gunakan `EXPECT()` (typed), bukan `On("Method")`.
-3. Pastikan transaksi benar: argumen `d.trx` (bukan `mock.Anything`) untuk repo yang harus berada di dalam transaksi, dan `Commit()` / `Rollback()` diharapkan secara eksplisit.
-4. Waktu dipaku: `now: func() time.Time { return fixedNow }`.
-5. Cocokkan entity yang dikirim ke repo dengan `mock.MatchedBy(func(p *entity.Product) bool {...})` untuk memverifikasi field yang dihitung usecase (trim, audit, timestamp).
-6. Bandingkan error dengan `assert.Equal(t, tt.wantErr, err)` — `apperr` menghasilkan nilai yang bisa dibandingkan, sehingga kode & pesan ikut terverifikasi.
+Rules:
+1. **Mocks are created per case** (`newDeps(t)`). Mockery registers `AssertExpectations` through `t.Cleanup`, so an expected call that does not happen → fails; an unexpected call → panics/fails. This is what proves "the repository is not called when permission is denied".
+2. Use `EXPECT()` (typed), not `On("Method")`.
+3. Check the transaction: the `d.trx` argument (not `mock.Anything`) for repos that must run inside the transaction, and `Commit()` / `Rollback()` expected explicitly.
+4. Pin the time: `now: func() time.Time { return fixedNow }`.
+5. Match the entity sent to the repo with `mock.MatchedBy(func(p *entity.Product) bool {...})` to verify the fields the usecase computes (trim, audit, timestamps).
+6. Compare errors with `assert.Equal(t, tt.wantErr, err)` — `apperr` produces comparable values, so the code & message are verified too.
 
-## Pola test repository (sqlmock)
+## Repository test pattern (sqlmock)
 
 ```go
-gdb, mock := newMockDB(t) // regexp matcher; ExpectationsWereMet dicek di Cleanup
+gdb, mock := newMockDB(t) // regexp matcher; ExpectationsWereMet is checked in Cleanup
 mock.ExpectQuery(`SELECT \* FROM "product" WHERE id = \$1 ORDER BY "product"\."id" LIMIT \$2`).
 	WithArgs(id, 1).
 	WillReturnRows(productRow(sqlmock.NewRows(productColumns), id, "P-001"))
 ```
 
-- Tulis SQL yang diharapkan **selengkap mungkin** (bukan hanya `SELECT`) — inilah yang menangkap regresi seperti `Save` → upsert atau zero value yang tidak ter-update.
-- Write dengan GORM default dibungkus transaksi: `ExpectBegin` → `ExpectExec` → `ExpectCommit` / `ExpectRollback`.
-- Kasus wajib per method: sukses, error DB, `wrapTx(gdb)`, `unsupportedTx{}`; plus `nil, nil` untuk not found.
+- Write the expected SQL **as completely as possible** (not just `SELECT`) — this is what catches regressions such as `Save` → upsert or zero values that are not updated.
+- GORM wraps writes in a transaction by default: `ExpectBegin` → `ExpectExec` → `ExpectCommit` / `ExpectRollback`.
+- Required cases per method: success, DB error, `wrapTx(gdb)`, `unsupportedTx{}`; plus `nil, nil` for not found.
 
-## Pola test handler
+## Handler test pattern
 
 ```go
 app := newTestApp(NewProductHandler(uc), identityWith(valueobject.PermissionCreateProduct))
@@ -72,27 +76,27 @@ resp := doRequest(t, app, "POST", "/products", body)
 require.Equal(t, fiber.StatusCreated, resp.StatusCode)
 ```
 
-- `newTestApp` memakai `utils.NewErrorHandler` yang sama dengan produksi, dan middleware yang menyuntikkan identitas seperti `Identity()`.
-- Untuk input invalid, buat mock usecase **tanpa** EXPECT — membuktikan usecase tidak dipanggil.
-- Verifikasi bentuk JSON (camelCase, `items` bukan `null`, format waktu RFC3339).
+- `newTestApp` uses the same `utils.NewErrorHandler` as production, and a middleware that injects the identity like `Identity()`.
+- For invalid input, create a usecase mock **without** EXPECT — this proves the usecase is not called.
+- Verify the JSON shape (camelCase, `items` not `null`, RFC3339 time format).
 
-## Mock
+## Mocks
 
-- Dihasilkan dari interface `domain/` oleh mockery (`.mockery.yaml`): `make mocks`.
-- **Jangan edit** file hasil generate. Helper manual (mis. `txhelpers.go`) diberi komentar "Hand-written" dan tidak ditimpa mockery.
-- Commit mock hasil generate bersama perubahan interface.
+- Generated from the `domain/` interfaces by mockery (`.mockery.yaml`): `make mocks`.
+- **Don't edit** generated files. Hand-written helpers (e.g. `txhelpers.go`) carry a "Hand-written" comment and are not overwritten by mockery.
+- Commit the generated mocks together with the interface change.
 
-## Perintah
+## Commands
 
 ```sh
-make test     # unit test (paket sama dengan CI)
-make cover    # coverage internal/usecase, gate 80%
-go test ./internal/usecase/product/ -run TestCreateProduct -v   # satu test
+make test     # unit tests (the same packages as CI)
+make cover    # internal/usecase coverage, 80% gate
+go test ./internal/usecase/product/ -run TestCreateProduct -v   # a single test
 ```
 
-## Smoke test end-to-end (sebelum rilis besar)
+## End-to-end smoke test (before a major release)
 
-1. Jalankan Postgres sementara, terapkan `migrations/*.up.sql`.
-2. `make run` dengan `.env` yang menunjuk DB tersebut.
-3. Panggil endpoint dengan header `X-Internal-Secret` dan `Authorization: Bearer <JWT HS256 berisi id, name, permissions>`.
-4. Verifikasi: 403 tanpa secret, 401 tanpa JWT, 403 tanpa permission, alur CRUD, 409 duplikat, 404 setelah delete.
+1. Start a temporary Postgres and apply `migrations/*.up.sql`.
+2. `make run` with a `.env` that points at that DB.
+3. Call the endpoints with the `X-Internal-Secret` header and `Authorization: Bearer <HS256 JWT with id, name, permissions>`.
+4. Verify: 403 without the secret, 401 without a JWT, 403 without the permission, the CRUD flow, 409 on a duplicate, 404 after a delete.

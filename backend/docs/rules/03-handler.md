@@ -1,73 +1,73 @@
 # 03 — Handler (HTTP)
 
-Handler adalah **adapter tipis** antara Fiber dan usecase. Jika handler Anda lebih
-dari ±50 baris atau memuat `if` yang bukan soal parsing, logika itu milik usecase.
+A handler is a **thin adapter** between Fiber and a usecase. If your handler is longer
+than about 50 lines or holds an `if` that is not about parsing, that logic belongs in the usecase.
 
-## Anatomi standar
+## Standard anatomy
 
 ```go
 // CreateProduct godoc
 // POST /v1/products
 func (h *productHandler) CreateProduct(ctx *fiber.Ctx) error {
-	// 1. parse ke DTO request
+	// 1. parse into the request DTO
 	var request dto.CreateProductRequest
 	if err := ctx.BodyParser(&request); err != nil {
 		return apperr.BadRequest(errorcode.InvalidRequest, err.Error())
 	}
 
-	// 2. konversi tipe (UUID, enum) — gagal = 400
+	// 2. convert types (UUID, enum) — a failure is a 400
 	status, err := valueobject.ParseProductStatus(request.Status)
 	if err != nil {
 		return apperr.BadRequest(errorcode.InvalidRequest, err.Error())
 	}
 
-	// 3. identitas caller
+	// 3. the caller's identity
 	actorName, permissions := caller(ctx)
 
-	// 4. panggil SATU usecase dengan ctx.UserContext()
+	// 4. call ONE usecase with ctx.UserContext()
 	output, err := h.productUsecase.CreateProduct(ctx.UserContext(), usecase.CreateProductInput{...})
 	if err != nil {
-		return err // ErrorHandler global yang memformat
+		return err // the global ErrorHandler formats it
 	}
 
-	// 5. map Output → DTO response
+	// 5. map Output → response DTO
 	return response.Success(ctx, fiber.StatusCreated, "Successfully create product", toProductResponse(output.Product))
 }
 ```
 
-## Aturan
+## Rules
 
 1. **Parsing**: `QueryParser` (GET list), `ParamsParser` (path `:id`), `BodyParser` (POST/PUT/PATCH).
-   Untuk PUT/PATCH yang punya path param + body, panggil `ParamsParser` lalu `BodyParser` pada struct yang sama.
-2. **Konversi**: UUID dengan `uuid.Parse`, enum dengan `valueobject.ParseXxx`. Pesan error parse UUID: `"id must be a valid UUID"` (jangan bocorkan detail parser).
-3. **Identitas**: hanya dari `pkg_middleware_fiber.GetUserIdentity(ctx)` (diisi middleware). Caller tanpa identitas → `Permissions: []string{}` sehingga usecase menolak.
-   Jangan pernah membaca header `X-User-*` sendiri.
-4. **Context**: selalu `ctx.UserContext()` — membawa trace id dan user id untuk audit plugin. Jangan meneruskan `*fiber.Ctx` ke usecase.
-5. **Status sukses**:
+   For a PUT/PATCH with a path param + a body, call `ParamsParser` and then `BodyParser` on the same struct.
+2. **Conversion**: UUIDs with `uuid.Parse`, enums with `valueobject.ParseXxx`. The UUID parse error message: `"id must be a valid UUID"` (don't leak parser details).
+3. **Identity**: only from `pkg_middleware_fiber.GetUserIdentity(ctx)` (filled in by middleware). A caller without an identity → `Permissions: []string{}`, so the usecase refuses.
+   Never read the `X-User-*` headers yourself.
+4. **Context**: always `ctx.UserContext()` — it carries the trace id and the user id for the audit plugin. Never pass `*fiber.Ctx` to a usecase.
+5. **Success status**:
 
-   | Operasi | Status | Body |
+   | Operation | Status | Body |
    |---|---|---|
    | GET list / detail | 200 | `response.Success` |
-   | POST create | 201 | entitas yang dibuat |
-   | PUT / PATCH | 200 | entitas setelah diubah |
-   | DELETE | 204 | kosong (`ctx.SendStatus`) |
-   | Aksi async | 202 | status job |
+   | POST create | 201 | the created entity |
+   | PUT / PATCH | 200 | the entity after the change |
+   | DELETE | 204 | empty (`ctx.SendStatus`) |
+   | Async action | 202 | the job status |
 
-6. **Error**: `return err`. Jangan `c.Status(...).JSON(...)` untuk error. `utils.NewErrorHandler` (di `bootstrap/fiber.go`) memetakan `apperror.AppError` ke status-nya dan menyembunyikan error lain sebagai 500.
-7. **Response list**: `{ "items": [...], "totalItems": N }`. `items` **tidak boleh `null`** — inisialisasi `make([]T, 0, n)`.
-8. **Mapping** entity → DTO di helper `toXxxResponse` (satu bentuk response per entitas untuk semua endpoint).
-9. Handler **tidak** memanggil repository, service, atau usecase lain, dan tidak memanggil lebih dari satu method usecase.
+6. **Errors**: `return err`. Don't use `c.Status(...).JSON(...)` for errors. `utils.NewErrorHandler` (in `bootstrap/fiber.go`) maps an `apperror.AppError` to its status and hides any other error as a 500.
+7. **List response**: `{ "items": [...], "totalItems": N }`. `items` **must not be `null`** — initialise with `make([]T, 0, n)`.
+8. **Mapping** entity → DTO in a `toXxxResponse` helper (one response shape per entity for every endpoint).
+9. A handler does **not** call repositories, services or other usecases, and does not call more than one usecase method.
 
-## Envelope response (dari go-common)
+## Response envelope (from go-common)
 
 ```json
 { "code": 200, "status": "success", "message": "Successfully get list product", "data": { ... } }
-{ "code": 404, "status": "error",   "message": "Produk tidak ditemukan",        "data": null }
+{ "code": 404, "status": "error",   "message": "Product not found",             "data": null }
 ```
 
-## Registrasi route
+## Route registration
 
-Hanya di `internal/routes/router.go`, di bawah grup `authenticated`:
+Only in `internal/routes/router.go`, under the `authenticated` group:
 
 ```go
 productGroup := authenticated.Group("/products")
@@ -78,16 +78,16 @@ productGroup.Put("/:id", deps.ProductHandler.UpdateProduct)
 productGroup.Delete("/:id", deps.ProductHandler.DeleteProduct)
 ```
 
-Route statis (`/months`, `/bulk-generate`) didaftarkan **sebelum** route ber-parameter (`/:id`) agar tidak tertangkap sebagai id.
+Static routes (`/months`, `/bulk-generate`) are registered **before** parameterised routes (`/:id`) so they are not caught as an id.
 
-## Konvensi REST
+## REST conventions
 
-| Kebutuhan | Method & path |
+| Need | Method & path |
 |---|---|
-| list | `GET /v1/<modul-plural>` |
-| detail | `GET /v1/<modul-plural>/:id` |
-| buat | `POST /v1/<modul-plural>` |
-| ganti penuh | `PUT /v1/<modul-plural>/:id` |
-| ubah sebagian / aksi | `PATCH /v1/<modul-plural>/:id[/<aksi>]` (mis. `/submit`, `/approve`) |
-| hapus | `DELETE /v1/<modul-plural>/:id` |
+| list | `GET /v1/<module-plural>` |
+| detail | `GET /v1/<module-plural>/:id` |
+| create | `POST /v1/<module-plural>` |
+| full replace | `PUT /v1/<module-plural>/:id` |
+| partial change / action | `PATCH /v1/<module-plural>/:id[/<action>]` (e.g. `/submit`, `/approve`) |
+| delete | `DELETE /v1/<module-plural>/:id` |
 | sub-resource | `/v1/periods/:id/report-compliance/:catalogId` |
