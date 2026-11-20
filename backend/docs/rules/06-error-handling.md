@@ -35,18 +35,18 @@ client, and business errors always have the right status & message.
 2. `internal/apperr/apperr.go` — add a catalog entry:
 
    ```go
-   errorcode.ProductCodeAlreadyExists: {
-       ID: "Kode produk %s sudah digunakan",
-       EN: "Product code %s is already in use",
-   },
+   errorcode.ProductCodeAlreadyExists: "Product code %s is already in use",
    ```
+
+   (In the template each entry holds an Indonesian (`ID`) and an English (`EN`) message.)
 3. `TestCatalog_EveryErrorCodeHasAMessage` makes sure step 2 is not missed.
 
-> **This project:** the catalog holds English messages only (constitution → *Template Exceptions* no. 6).
+> **This project:** the catalog holds English messages only (constitution → *Template Exceptions* no. 6), as in
+> the example above.
 
 ## Message rules
 
-- Messages to the client are in **Indonesian**, polite, and something the user can act on ("Kode produk P-001 sudah digunakan" — "Product code P-001 is already in use"), not technical jargon.
+- Messages to the client are polite and something the user can act on ("Product code P-001 is already in use"), not technical jargon. The template writes them in Indonesian; this project in English.
 - `%s` arguments only for values that are safe to show (codes, ids the user sent). Never insert DB error text, queries, stack traces or another user's data.
 - One code = one meaning. A specific code (`PERIOD_NOT_EDITABLE`) is better than a generic code with varying messages.
 - Usecases & handlers **must not** call go-common's `apperror.*` directly — always go through `apperr`, so messages stay in one place.
