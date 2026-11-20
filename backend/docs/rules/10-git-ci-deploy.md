@@ -1,81 +1,84 @@
 # 10 — Git, CI & Deploy
 
-## Branch
+## Branches
 
-| Prefix | Untuk |
+| Prefix | For |
 |---|---|
-| `feat/<deskripsi>` | fitur baru |
-| `fix/<deskripsi>` | perbaikan bug |
-| `refactor/<deskripsi>` | perubahan struktur tanpa ubah perilaku |
-| `chore/<deskripsi>` | dependensi, tooling, CI |
-| `docs/<deskripsi>` | dokumentasi |
+| `feat/<description>` | new features |
+| `fix/<description>` | bug fixes |
+| `refactor/<description>` | structural changes without behaviour changes |
+| `chore/<description>` | dependencies, tooling, CI |
+| `docs/<description>` | documentation |
 
-- Dibuat dari `main`, masuk lewat Merge Request. Tidak ada push langsung ke `main` / `staging`.
-- Alur environment: feature branch → `staging` (uji) → `main` (produksi).
+- Created from `main`, merged through a Merge Request. No direct pushes to `main` / `staging`.
+- Environment flow: feature branch → `staging` (testing) → `main` (production).
 
-## Commit — Conventional Commits
+## Commits — Conventional Commits
 
 ```
-<type>(<scope>): <ringkasan imperatif, huruf kecil, tanpa titik>
+<type>(<scope>): <imperative summary, lower case, no full stop>
 
-<badan opsional: KENAPA perubahan ini, bukan apa>
+<optional body: WHY this change, not what>
 ```
 
-Contoh:
+Examples:
 ```
 feat(product): add bulk status update endpoint
 fix(period): reject approve when reviewer is not assigned
 docs: document maker-checker-approval status flow
 ```
 
-- Satu commit = satu perubahan logis yang lolos test.
-- Jangan commit: `.env`, binary (`*.exe`, `bin/`), `coverage.out`, file IDE.
+- One commit = one logical change that passes the tests.
+- Don't commit: `.env`, binaries (`*.exe`, `bin/`), `coverage.out`, IDE files.
 
-## Merge Request
+## Merge Requests
 
-Checklist sebelum minta review:
-- [ ] `make check` lulus (gofmt, vet, test)
-- [ ] `make lint` bersih
-- [ ] Test baru untuk setiap cabang logika baru; coverage usecase tidak turun
-- [ ] Mock di-regenerate bila interface `domain/` berubah
-- [ ] Migrasi baru (bila ada) + `.down.sql`
-- [ ] `docs/api/<modul>.md` diperbarui bila kontrak API berubah
-- [ ] `.env.example` + `config.Validate()` diperbarui bila ada env baru
-- [ ] Checklist keamanan di [07-keamanan](07-keamanan.md)
+Checklist before asking for a review:
+- [ ] `make check` passes (gofmt, vet, test)
+- [ ] `make lint` is clean
+- [ ] New tests for every new logic branch; usecase coverage does not drop
+- [ ] Mocks regenerated when a `domain/` interface changes
+- [ ] New migrations (if any) + `.down.sql`
+- [ ] `docs/api/<module>.md` updated when the API contract changes
+- [ ] `.env.example` + `config.Validate()` updated for new env variables
+- [ ] The security checklist in [07-security](07-security.md)
 
-Reviewer memeriksa juga: arah dependensi antar lapis, penamaan sesuai [02-penamaan](02-penamaan.md), tidak ada logika bisnis di handler/repository.
+Reviewers also check: the dependency direction between layers, naming as in [02-naming](02-naming.md), no business logic in handlers/repositories.
 
 ## CI (`.gitlab-ci.yml`)
 
-| Job | Isi | Memblokir? |
+| Job | Contents | Blocking? |
 |---|---|---|
-| `lint` | `golangci-lint run` (konfigurasi `.golangci.yml`) | ya |
-| `go_test` | gofmt check, `go vet`, unit test (tanpa paket wiring/mock/deklarasi) | ya |
-| `coverage_check` | coverage `internal/usecase` ≥ 80% | hanya di `main`/`staging` |
-| include `Infra/supply-chain` | build image, push ke Harbor, deploy | sesuai template Infra |
+| `lint` | `golangci-lint run` (configured in `.golangci.yml`) | yes |
+| `go_test` | gofmt check, `go vet`, unit tests (without the wiring/mock/declaration packages) | yes |
+| `coverage_check` | `internal/usecase` coverage ≥ 80% | only on `main`/`staging` |
+| include `Infra/supply-chain` | build the image, push to Harbor, deploy | as in the Infra template |
 
-Modul privat go-common diambil dengan `CI_JOB_TOKEN` (`git config url.insteadOf`) dan `GOPRIVATE`.
+The private go-common module is fetched with `CI_JOB_TOKEN` (`git config url.insteadOf`) and `GOPRIVATE`.
+
+> **This project:** CI and deployment run on GitHub Actions to one Azure VM (constitution → *Template
+> Exceptions* no. 15, see `deploy/README.md`); go-common is re-implemented locally (no. 4).
 
 ## Build & image
 
-- `Dockerfile` multi-stage: build `golang:1.26.x-alpine` (`CGO_ENABLED=0`, `-trimpath -ldflags="-s -w"`) → runtime `alpine` minimal, user non-root, `tzdata`.
-- Konfigurasi dari env var (viper `AutomaticEnv`), **tidak ada** `.env` di image.
+- A multi-stage `Dockerfile`: build on `golang:1.26.x-alpine` (`CGO_ENABLED=0`, `-trimpath -ldflags="-s -w"`) → a minimal `alpine` runtime, a non-root user, `tzdata`.
+- Configuration from env variables (viper `AutomaticEnv`); **no** `.env` in the image.
 
 ## Deploy (Kubernetes / Helm `values.yml`)
 
-- Secret (`DB_PASSWORD`, `JWT_SECRET`, `INTERNAL_SERVICE_SECRET`) dari Kubernetes Secret; `values.yml` hanya env non-rahasia.
-- `FIBER_PREFORK=false` dan `GOMAXPROCS` disesuaikan limit CPU.
-- Probe `httpGet /v1/health` dengan `tcpSocket: null` (chart bersama default ke tcpSocket dan Helm menggabungkan map → Deployment ditolak bila keduanya ada).
-- Sebelum deploy ke suatu environment: rebuild dari source terbaru dan pastikan env var menunjuk ke environment itu (bukan `localhost` dari `.env` lokal).
-- Migrasi DB dijalankan **sebelum** versi kode yang membutuhkannya (job migrasi / pipeline), dan harus kompatibel mundur dengan versi kode yang sedang berjalan.
+- Secrets (`DB_PASSWORD`, `JWT_SECRET`, `INTERNAL_SERVICE_SECRET`) from a Kubernetes Secret; `values.yml` holds only non-secret env.
+- `FIBER_PREFORK=false` and `GOMAXPROCS` set to the CPU limit.
+- Probes `httpGet /v1/health` with `tcpSocket: null` (the shared chart defaults to tcpSocket and Helm merges maps → the Deployment is rejected when both are present).
+- Before deploying to an environment: rebuild from the latest source and make sure the env variables point at that environment (not the `localhost` of a local `.env`).
+- DB migrations run **before** the code version that needs them (a migration job / pipeline), and must stay backwards compatible with the code version that is running.
 
-## Versi Go & tooling
+## Go & tooling versions
 
-| Tool | Versi |
+| Tool | Version |
 |---|---|
-| Go | 1.26.x (lihat `go.mod`) |
+| Go | 1.26.x (see `go.mod`) |
 | golangci-lint | v2.13.x |
 | mockery | v2.53.x |
-| go-common | dipin di `go.mod` (`v1.0.0`) |
+| go-common | pinned in `go.mod` (`v1.0.0`) |
 
-Naik versi Go/tool lewat MR `chore/` tersendiri dan perbarui tabel ini.
+Upgrade Go/tools in a separate `chore/` MR and update this table.

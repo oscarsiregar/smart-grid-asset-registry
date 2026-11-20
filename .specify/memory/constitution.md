@@ -55,9 +55,10 @@ be conveyed by colour alone; panels MUST trap focus and close on Escape.
 7. **Template example modules** are removed before delivery.
 8. **No CHECK constraints**: enum and range columns are plain columns validated by the
    backend, overriding the template's CHECK pattern (follows from Principle II).
-9. **English documentation**: project documentation (root `docs/`, `backend/docs/api/*`,
-   READMEs) is written in English; the template's existing Indonesian rule files stay as
-   they are.
+9. **English documentation**: all documentation is written in English, including the
+   template's rule files (`backend/AGENTS.md`, `backend/docs/rules/*`,
+   `backend/docs/adding-a-feature.md`), which are translated from the template's original
+   Indonesian.
 10. **Pure import rules package**: the import rules live in their own package
     `backend/domain/assetimport/`, importing only the standard library and other `domain`
     packages.
@@ -93,4 +94,4 @@ file with a semantic version bump (MAJOR: principle removed or redefined; MINOR:
 or section added or materially expanded; PATCH: wording clarifications). Plans and reviews
 MUST check compliance with these principles and the Definition of Done.
 
-**Version**: 1.4.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-20
+**Version**: 1.4.1 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-20

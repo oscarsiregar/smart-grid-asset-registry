@@ -1,38 +1,38 @@
 # 06 — Error Handling
 
-## Alur
+## Flow
 
 ```
 usecase: return apperr.NotFound(errorcode.ProductNotFound)
-   │  (apperror.AppError{Code:404, Message:"Produk tidak ditemukan"})
+   │  (apperror.AppError{Code:404, Message:"Product not found"})
 handler: return err
    │
 bootstrap/fiber.go → ErrorHandler = utils.NewErrorHandler(log)   (go-common)
-   ├─ *apperror.AppError → status = Code, message = Message   (log bila ≥ 500)
+   ├─ *apperror.AppError → status = Code, message = Message   (logged when ≥ 500)
    ├─ *fiber.Error       → status = Code
-   └─ error lain         → 500 "Internal Server Error" (detail TIDAK dikirim, tapi di-log)
+   └─ any other error    → 500 "Internal Server Error" (details are NOT sent, but they are logged)
 ```
 
-Akibatnya: error teknis (koneksi DB putus, query salah) **tidak pernah bocor** ke
-client, dan error bisnis selalu punya status & pesan yang benar.
+As a result: technical errors (a dropped DB connection, a wrong query) **never leak** to the
+client, and business errors always have the right status & message.
 
-## Kapan memakai apa
+## When to use what
 
-| Situasi | Fungsi | HTTP |
+| Situation | Function | HTTP |
 |---|---|---|
-| Body/query/path tidak bisa diparse, UUID/enum salah, `Validate()` gagal | `apperr.BadRequest(errorcode.InvalidRequest, detail)` | 400 |
-| Tidak punya permission / bukan pemilik data | `apperr.Forbidden(errorcode.PermissionDenied)` atau kode spesifik | 403 |
-| Data yang dirujuk tidak ada | `apperr.NotFound(errorcode.XxxNotFound)` | 404 |
-| Bentrok state: duplikat, versi berubah | `apperr.Conflict(errorcode.XxxAlreadyExists, arg)` | 409 |
-| Input valid tapi melanggar aturan bisnis (status salah, tidak berlaku) | `apperr.UnprocessableEntity(errorcode.Xxx, arg)` | 422 |
-| Kegagalan teknis | `return err` apa adanya | 500 |
+| Body/query/path cannot be parsed, wrong UUID/enum, `Validate()` fails | `apperr.BadRequest(errorcode.InvalidRequest, detail)` | 400 |
+| No permission / not the owner of the data | `apperr.Forbidden(errorcode.PermissionDenied)` or a specific code | 403 |
+| The referenced data does not exist | `apperr.NotFound(errorcode.XxxNotFound)` | 404 |
+| State conflict: a duplicate, a changed version | `apperr.Conflict(errorcode.XxxAlreadyExists, arg)` | 409 |
+| Valid input that breaks a business rule (wrong status, no longer applicable) | `apperr.UnprocessableEntity(errorcode.Xxx, arg)` | 422 |
+| A technical failure | `return err` as it is | 500 |
 
-401 (token) dan 403 BFF (secret) dihasilkan middleware go-common — usecase tidak perlu menanganinya.
+401 (token) and the BFF 403 (secret) are produced by the go-common middleware — usecases do not need to handle them.
 
-## Menambah kode error baru
+## Adding a new error code
 
-1. `domain/errorcode/errorcode.go` — tambah konstanta **dan** masukkan ke slice `All`.
-2. `internal/apperr/apperr.go` — tambah entri katalog:
+1. `domain/errorcode/errorcode.go` — add the constant **and** put it in the `All` slice.
+2. `internal/apperr/apperr.go` — add a catalog entry:
 
    ```go
    errorcode.ProductCodeAlreadyExists: {
@@ -40,19 +40,21 @@ client, dan error bisnis selalu punya status & pesan yang benar.
        EN: "Product code %s is already in use",
    },
    ```
-3. `TestCatalog_EveryErrorCodeHasAMessage` memastikan langkah 2 tidak terlewat.
+3. `TestCatalog_EveryErrorCodeHasAMessage` makes sure step 2 is not missed.
 
-## Aturan pesan
+> **This project:** the catalog holds English messages only (constitution → *Template Exceptions* no. 6).
 
-- Pesan ke client **Bahasa Indonesia**, sopan, bisa ditindaklanjuti user ("Kode produk P-001 sudah digunakan"), bukan jargon teknis.
-- Argumen `%s` hanya untuk nilai yang aman ditampilkan (kode, id yang dikirim user). Jangan menyisipkan isi error DB, query, stack trace, atau data milik user lain.
-- Satu kode = satu makna. Lebih baik kode spesifik (`PERIOD_NOT_EDITABLE`) daripada kode generik dengan pesan berbeda-beda.
-- Usecase & handler **tidak boleh** memanggil `apperror.*` go-common langsung — selalu lewat `apperr` agar pesan terpusat.
+## Message rules
 
-## Error dari domain
+- Messages to the client are in **Indonesian**, polite, and something the user can act on ("Kode produk P-001 sudah digunakan" — "Product code P-001 is already in use"), not technical jargon.
+- `%s` arguments only for values that are safe to show (codes, ids the user sent). Never insert DB error text, queries, stack traces or another user's data.
+- One code = one meaning. A specific code (`PERIOD_NOT_EDITABLE`) is better than a generic code with varying messages.
+- Usecases & handlers **must not** call go-common's `apperror.*` directly — always go through `apperr`, so messages stay in one place.
 
-`Input.Validate()` dan `valueobject.ParseXxx` mengembalikan `error` biasa (domain tidak
-mengenal `apperr`). Lapis pemanggil yang membungkus:
+## Errors from the domain
+
+`Input.Validate()` and `valueobject.ParseXxx` return a plain `error` (the domain does not
+know `apperr`). The calling layer wraps it:
 
 ```go
 if err := input.Validate(); err != nil {
@@ -60,21 +62,21 @@ if err := input.Validate(); err != nil {
 }
 ```
 
-Karena pesan dari `Validate()` dikirim ke client, tulis pesannya singkat dan aman
+Because the message from `Validate()` is sent to the client, keep it short and safe
 (`"code is required"`, `"price must not be negative"`).
 
-## Panic
+## Panics
 
-- `middleware.RecoverConfig()` (dipasang pertama di `main.go`) mengubah panic menjadi 500 untuk request itu saja — service tetap hidup.
-- Panic **bukan** mekanisme kontrol alur. Jangan `panic` untuk error yang bisa dikembalikan.
-- `log.Fatal` hanya boleh di `main.go` / bootstrap saat startup.
+- `middleware.RecoverConfig()` (installed first in `main.go`) turns a panic into a 500 for that request only — the service stays up.
+- A panic is **not** a control-flow mechanism. Don't `panic` for an error that can be returned.
+- `log.Fatal` is only allowed in `main.go` / bootstrap during startup.
 
 ## Wrapping
 
-Saat menambah konteks pada error teknis gunakan `%w` agar `errors.Is/As` tetap bekerja:
+When adding context to a technical error use `%w`, so `errors.Is/As` keep working:
 
 ```go
 return nil, fmt.Errorf("user-management: get user %s: %w", id, err)
 ```
 
-Jangan bandingkan error dengan `==`; gunakan `errors.Is` (linter `errorlint` aktif).
+Don't compare errors with `==`; use `errors.Is` (the `errorlint` linter is on).

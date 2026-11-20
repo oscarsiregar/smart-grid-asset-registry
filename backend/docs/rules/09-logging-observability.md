@@ -2,48 +2,51 @@
 
 ## Logger
 
-- Dibuat sekali di `main.go`: `log := logger.New(cfg.IsProd)` (go-common; JSON di prod, teks di dev).
-- Diinjeksi ke setiap usecase (`log *logrus.Logger`). Tidak ada logger global.
-- `commonMiddleware.InstallCommonMiddleware` memasang request id / trace id, access log, header keamanan, dan telemetry. Trace id mengalir lewat `ctx.UserContext()`.
+- Created once in `main.go`: `log := logger.New(cfg.IsProd)` (go-common; JSON in prod, text in dev).
+- Injected into every usecase (`log *logrus.Logger`). There is no global logger.
+- `commonMiddleware.InstallCommonMiddleware` installs the request id / trace id, the access log, the security headers and telemetry. The trace id flows through `ctx.UserContext()`.
 
-## Pola di usecase
+## Pattern in a usecase
 
 ```go
-log := logger.WithCtx(ctx, pu.log).WithField("usecase", "CreateProduct") // trace id otomatis
+log := logger.WithCtx(ctx, pu.log).WithField("usecase", "CreateProduct") // trace id included automatically
 
-log.Warn("permission denied")                                   // akses ditolak
-log.WithError(err).Error("failed to find product by code")      // kegagalan teknis
-log.WithField("productID", product.ID).Info("success")          // akhir sukses
+log.Warn("permission denied")                                   // access refused
+log.WithError(err).Error("failed to find product by code")      // technical failure
+log.WithField("productID", product.ID).Info("success")          // successful end
 ```
 
-| Level | Kapan | Contoh |
+| Level | When | Example |
 |---|---|---|
-| `Error` | kegagalan teknis yang dikembalikan sebagai 500 (DB, API eksternal) — **di titik kejadian**, sekali | `failed to update product` |
-| `Warn` | penolakan akses, kondisi aneh tapi tertangani | `permission denied` |
-| `Info` | satu baris sukses per usecase, dengan id relevan & jumlah (`count`) | `success` |
-| `Debug` | detail tambahan saat investigasi (mati di prod) | — |
+| `Error` | a technical failure returned as a 500 (DB, external API) — **where it happens**, once | `failed to update product` |
+| `Warn` | access refused, an odd but handled condition | `permission denied` |
+| `Info` | one success line per usecase, with the relevant ids & counts (`count`) | `success` |
+| `Debug` | extra detail while investigating (off in prod) | — |
 
-Aturan:
-1. Pesan log: huruf kecil, Bahasa Inggris, format `failed to <aksi> <objek>`.
-2. Data kontekstual lewat `WithField` / `WithFields`, bukan disisipkan di string pesan.
-3. Error bisnis 4xx (`NotFound`, `Conflict`, validasi) **tidak** di-log sebagai `Error` — itu perilaku normal.
-4. Jangan log di repository dan handler (usecase yang log; `ErrorHandler` me-log 5xx yang lolos).
-5. Jangan log data sensitif (lihat [07-keamanan](07-keamanan.md)).
-6. Jangan log ganda: bila error sudah di-log saat terjadi, lapis atas cukup mengembalikannya.
+Rules:
+1. Log messages: lower case, English, in the form `failed to <action> <object>`.
+2. Contextual data goes through `WithField` / `WithFields`, not into the message string.
+3. 4xx business errors (`NotFound`, `Conflict`, validation) are **not** logged as `Error` — they are normal behaviour.
+4. Don't log in repositories and handlers (the usecase logs; the `ErrorHandler` logs 5xx errors that get through).
+5. Don't log sensitive data (see [07-security](07-security.md)).
+6. Don't log twice: when an error was logged where it happened, the upper layer just returns it.
 
 ## Health check
 
-- `GET /v1/health` (go-common `RegisterHealthCheck`) benar-benar mem-ping DB (dan Redis bila diberikan).
-- Dipakai liveness & readiness probe di `values.yml` (httpGet, bukan tcpSocket).
-- Menambah dependensi kritis baru (Redis, broker) → teruskan ke `RegisterHealthCheck` agar probe mencerminkan kesehatan nyata.
+- `GET /v1/health` (go-common `RegisterHealthCheck`) really pings the DB (and Redis when given).
+- Used by the liveness & readiness probes in `values.yml` (httpGet, not tcpSocket).
+- A new critical dependency (Redis, a broker) → pass it to `RegisterHealthCheck` so the probe reflects real health.
+
+> **This project:** the health check is `GET /api/health` (no version prefix, constitution →
+> *Template Exceptions* no. 5).
 
 ## GORM log
 
-- Non-prod: `gormlogger.Info` (semua query tampil) — berguna saat development.
-- Prod: logger go-common (query lambat & error saja). Jangan aktifkan Info di prod (bocor data & volume).
+- Non-prod: `gormlogger.Info` (every query shown) — useful during development.
+- Prod: the go-common logger (slow queries & errors only). Don't enable Info in prod (data leaks & volume).
 
 ## Graceful shutdown
 
-`main.go` menunggu SIGINT/SIGTERM (`utils.NewShutdownHelper`), menghentikan Fiber dengan
-timeout 10 detik (request berjalan diselesaikan), lalu menutup koneksi DB. Resource baru
-(Redis, broker, worker) **wajib** didaftarkan di `sh.Graceful(map[...])`.
+`main.go` waits for SIGINT/SIGTERM (`utils.NewShutdownHelper`), stops Fiber with a
+10-second timeout (running requests are finished), then closes the DB connection. New resources
+(Redis, brokers, workers) **must** be registered in `sh.Graceful(map[...])`.

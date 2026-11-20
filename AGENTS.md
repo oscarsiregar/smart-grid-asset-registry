@@ -40,8 +40,8 @@ specs/      one folder per feature: spec.md, plan.md, tasks.md
 6. The error message catalog holds English text only.
 7. Template example modules are removed before delivery.
 8. No CHECK constraints: enum and range columns are plain columns validated by the backend.
-9. Project documentation (root `docs/`, `backend/docs/api/*`, READMEs) is in English; the
-   template's Indonesian rule files stay as they are.
+9. All documentation is in English, including the template's backend rule files (translated
+   from the template's original Indonesian).
 10. Pure import rules live in `backend/domain/assetimport/` (standard library and `domain/*` only).
 11. Real-PostgreSQL integration tests live in `backend/internal/integrationtest/` and
     `backend/internal/testsupport/pgtest/`, skipped without `TEST_DATABASE_URL`.

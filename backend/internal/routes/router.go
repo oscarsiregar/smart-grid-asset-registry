@@ -23,7 +23,7 @@ type RouteDependencies struct {
 // Every route is public and lives under /api (constitution, Template
 // Exceptions 1 and 5): the app has no users, so the template's
 // InternalSecret → Identity → JWTVerifyStrict chain does not apply. If users
-// are ever introduced, restore that chain (backend/docs/rules/07-keamanan.md).
+// are ever introduced, restore that chain (backend/docs/rules/07-security.md).
 func RegisterRoutes(deps *RouteDependencies) {
 	api := deps.App.Group("/api")
 

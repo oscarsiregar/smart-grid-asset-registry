@@ -1,6 +1,6 @@
 # 05 — Repository & Database
 
-## Interface (di `domain/repository/<modul>.go`)
+## Interface (in `domain/repository/<module>.go`)
 
 ```go
 type ProductRepository interface {
@@ -13,15 +13,15 @@ type ProductRepository interface {
 }
 ```
 
-- Parameter pertama selalu `ctx`, kedua selalu `trx Tx` (boleh `nil`).
-- Menerima & mengembalikan **entity**, tidak pernah model GORM.
-- Filter > 3 parameter → struct `FindXxxFilter` di package `repository`.
+- The first parameter is always `ctx`, the second always `trx Tx` (may be `nil`).
+- Takes & returns **entities**, never GORM models.
+- More than 3 filter parameters → a `FindXxxFilter` struct in the `repository` package.
 
-## Implementasi
+## Implementation
 
 ```go
 func (r productRepository) FindByID(ctx context.Context, trx repository.Tx, id uuid.UUID) (*entity.Product, error) {
-	db, err := gormtx.Conn(ctx, r.db, trx) // trx bila ada, kalau tidak r.db.WithContext(ctx)
+	db, err := gormtx.Conn(ctx, r.db, trx) // trx if given, otherwise r.db.WithContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func (r productRepository) FindByID(ctx context.Context, trx repository.Tx, id u
 	err = db.Where("id = ?", id).First(&product).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil // not found BUKAN error
+			return nil, nil // not found is NOT an error
 		}
 		return nil, err
 	}
@@ -40,30 +40,30 @@ func (r productRepository) FindByID(ctx context.Context, trx repository.Tx, id u
 
 ### MUST
 
-1. Koneksi selalu dari `gormtx.Conn(ctx, r.db, trx)` — menjamin `ctx` (timeout, trace, user id audit) ikut dan transaksi dipakai bila diberikan.
-2. **Not found = `nil, nil`** untuk `FindByXxx` tunggal; list kosong = slice kosong non-nil.
-3. Error DB dikembalikan apa adanya (jangan dibungkus `apperr`, jangan di-log — usecase yang log).
-4. Model GORM hanya di `psql/model`, konversi lewat `psql/mapper` (`ToModelXxx`, `ToEntityXxx`, `ToEntityXxxs` → slice non-nil).
-5. Repository tidak memanggil repository lain dan tidak membuka transaksi sendiri.
+1. The connection always comes from `gormtx.Conn(ctx, r.db, trx)` — this guarantees `ctx` (timeout, trace, audit user id) goes along and the transaction is used when given.
+2. **Not found = `nil, nil`** for a single `FindByXxx`; an empty list = an empty, non-nil slice.
+3. DB errors are returned as they are (not wrapped in `apperr`, not logged — the usecase logs).
+4. GORM models live only in `psql/model`, converted through `psql/mapper` (`ToModelXxx`, `ToEntityXxx`, `ToEntityXxxs` → non-nil slice).
+5. A repository does not call another repository and does not open its own transaction.
 
 ### MUST NOT
 
-| Jangan | Kenapa | Pakai |
+| Don't | Why | Use |
 |---|---|---|
-| `db.Save(m)` untuk update | Bila row tidak ada, GORM diam-diam melakukan INSERT (upsert) | `db.Model(m).Select("kolom", ...).Updates(m)` — eksplisit, zero value ikut tersimpan |
-| `db.Updates(struct)` tanpa `Select` | zero value (`0`, `""`, `false`, `nil`) **dilewati** | sertakan `Select(...)` |
-| `fmt.Sprintf` / konkatenasi nilai user ke SQL | SQL injection | placeholder `?` |
-| `Order(request.Sort)` mentah | ORDER BY tidak bisa diparameterisasi | `querysafety.SafeOrderClause(sort, order, default, defaultOrder, allowList...)` |
-| `"%"+q+"%"` untuk LIKE | `%`/`_` dari user jadi wildcard | `querysafety.ContainsPattern(q)` |
-| Field model bernama `CreatedBy`/`UpdatedBy` berisi nama | audit plugin go-common menimpa dengan UUID user JWT dan **membuang** nilai non-UUID | `CreatedByName`/`UpdatedByName` (atau `CreatedBy` bertipe UUID bila memang ingin audit otomatis) |
-| `db.Use(database.NewAuditPlugin())` | sudah didaftarkan `database.Connect` → `gorm.ErrRegistered` | tidak perlu apa-apa |
-| Reuse chain GORM untuk COUNT lalu SELECT | statement saling bocor | `query = query.Session(&gorm.Session{})` setelah WHERE dibangun |
+| `db.Save(m)` for an update | If the row does not exist, GORM silently INSERTs (upsert) | `db.Model(m).Select("column", ...).Updates(m)` — explicit, zero values are saved too |
+| `db.Updates(struct)` without `Select` | zero values (`0`, `""`, `false`, `nil`) are **skipped** | add `Select(...)` |
+| `fmt.Sprintf` / concatenating user values into SQL | SQL injection | `?` placeholders |
+| raw `Order(request.Sort)` | ORDER BY cannot be parameterised | `querysafety.SafeOrderClause(sort, order, default, defaultOrder, allowList...)` |
+| `"%"+q+"%"` for LIKE | a user's `%`/`_` becomes a wildcard | `querysafety.ContainsPattern(q)` |
+| A model field named `CreatedBy`/`UpdatedBy` holding a name | the go-common audit plugin overwrites it with the JWT user UUID and **drops** non-UUID values | `CreatedByName`/`UpdatedByName` (or a UUID-typed `CreatedBy` when automatic auditing is wanted) |
+| `db.Use(database.NewAuditPlugin())` | already registered by `database.Connect` → `gorm.ErrRegistered` | nothing needed |
+| Reusing a GORM chain for COUNT then SELECT | the statements leak into each other | `query = query.Session(&gorm.Session{})` after the WHERE is built |
 
-## Paging list
+## List paging
 
 ```go
 query := db.Model(&model.Product{})
-// ... WHERE dinamis
+// ... dynamic WHERE
 query = query.Session(&gorm.Session{})
 
 var total int64
@@ -74,29 +74,32 @@ query.Order(querysafety.SafeOrderClause(filter.Sort, filter.Order, "created_at",
 	Find(&rows)
 ```
 
-- `sortableColumns` = allow-list kolom yang boleh di-sort, didefinisikan di `init.go` repository.
-- `Limit <= 0` berarti tanpa batas (hanya untuk pemanggilan internal; usecase selalu mengisi default).
+- `sortableColumns` = the allow-list of sortable columns, defined in the repository's `init.go`.
+- `Limit <= 0` means no limit (internal calls only; usecases always set a default).
 
-## Skema & migrasi
+## Schema & migrations
 
-- Tabel **singular** snake_case; PK `id UUID`; kolom audit `created_at`, `created_by_name`, `updated_at`, `updated_by_name` (+ `deleted_at`, `deleted_by_name` bila soft delete).
-- Enum disimpan `VARCHAR` + `CHECK (status IN (...))`, dipetakan ke `valueobject` yang mengimplementasikan `sql.Scanner` & `driver.Valuer`.
-- Uang `NUMERIC(18,2)`, waktu `TIMESTAMPTZ`.
-- Setiap kolom yang dipakai filter/sort/unik → index (`ix_…`, `ux_…`).
-- Migrasi: `migrations/NNNNNN_deskripsi.up.sql` + `.down.sql`, nomor berurutan, **idempoten** (`IF NOT EXISTS`). Kompatibel dengan golang-migrate.
-- Migrasi yang sudah masuk `main` **tidak boleh diubah** — buat migrasi baru.
-- Perubahan yang merusak (rename/drop kolom) dilakukan bertahap: tambah kolom baru → deploy kode yang menulis keduanya → migrasi data → hapus kolom lama di rilis berikutnya.
+- **Singular** snake_case tables; PK `id UUID`; audit columns `created_at`, `created_by_name`, `updated_at`, `updated_by_name` (+ `deleted_at`, `deleted_by_name` for soft delete).
+- Enums are stored as `VARCHAR` + `CHECK (status IN (...))`, mapped to a `valueobject` that implements `sql.Scanner` & `driver.Valuer`.
+- Money `NUMERIC(18,2)`, time `TIMESTAMPTZ`.
+- Every column used for filtering/sorting/uniqueness → an index (`ix_…`, `ux_…`).
+- Migrations: `migrations/NNNNNN_description.up.sql` + `.down.sql`, numbered in order, **idempotent** (`IF NOT EXISTS`). Compatible with golang-migrate.
+- A migration that is already in `main` **must not be changed** — create a new migration.
+- Breaking changes (renaming/dropping a column) are done in steps: add the new column → deploy code that writes both → migrate the data → drop the old column in the next release.
+
+> **This project:** no CHECK constraints — enum and range columns are plain columns validated by the backend
+> (constitution → *Template Exceptions* no. 8).
 
 ## Soft delete vs hard delete
 
-- Default contoh `product`: **hard delete**.
-- Bila data punya nilai audit/legal (dokumen, approval): soft delete — kolom `status = DELETED` atau `deleted_at`, dan **setiap** query `Find*` wajib memfilter row terhapus. Dokumentasikan pilihannya di usecase.
+- The `product` example defaults to **hard delete**.
+- When data has audit/legal value (documents, approvals): soft delete — a `status = DELETED` or `deleted_at` column, and **every** `Find*` query must filter out deleted rows. Document the choice in the usecase.
 
-## Integrasi eksternal (`internal/service`)
+## External integrations (`internal/service`)
 
-- Interface di `domain/service`, implementasi `internal/service/<nama>/` (1 file = 1 call), constructor menerima base URL & secret dari config.
-- HTTP client dengan **timeout** eksplisit (go-common `utils.NewTracingClient(timeout)` meneruskan trace id).
-- Request selalu `http.NewRequestWithContext(ctx, ...)`; tutup `resp.Body`.
-- Non-2xx → error yang jelas (`fmt.Errorf("user-management: GET /users/%s: status %d", ...)`); 404 dari upstream yang bermakna "tidak ada" → `nil, nil`.
-- Jangan `InsecureSkipVerify: true` di production. Bila terpaksa untuk dev (sertifikat self-signed), jadikan konfigurasi env, default `false`.
-- Test dengan `httptest.NewServer`.
+- The interface in `domain/service`, the implementation in `internal/service/<name>/` (1 file = 1 call); the constructor takes the base URL & secret from config.
+- An HTTP client with an explicit **timeout** (go-common `utils.NewTracingClient(timeout)` forwards the trace id).
+- Requests always use `http.NewRequestWithContext(ctx, ...)`; close `resp.Body`.
+- Non-2xx → a clear error (`fmt.Errorf("user-management: GET /users/%s: status %d", ...)`); an upstream 404 that means "does not exist" → `nil, nil`.
+- No `InsecureSkipVerify: true` in production. If it is unavoidable in dev (self-signed certificates), make it an env setting, default `false`.
+- Test with `httptest.NewServer`.
