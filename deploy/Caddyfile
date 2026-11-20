@@ -1,0 +1,8 @@
+# The only public entry point. Caddy gets and renews a Let's Encrypt
+# certificate for SITE_ADDRESS (the VM's Azure DNS name) and redirects HTTP to
+# HTTPS. It replaces any X-Forwarded-For sent by the client with the client's
+# real address before passing the request to the web container.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	reverse_proxy web:80
+}

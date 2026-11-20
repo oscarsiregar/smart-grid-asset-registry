@@ -1,0 +1,81 @@
+# Production stack on the Azure VM (constitution, Template Exception 15).
+# Not run by hand: the deploy workflow copies this file to /opt/smart-grid on
+# the VM and runs it with /opt/smart-grid/.env (DB_PASSWORD, SITE_ADDRESS,
+# IMAGE_PREFIX, IMAGE_TAG), which remote-deploy.sh maintains.
+#
+# Only Caddy publishes ports. db, api and web are reachable inside this
+# network only; web's nginx still forwards /api to "api:8080".
+
+name: smart-grid-asset-registry
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD missing from .env}
+      POSTGRES_DB: asset_registry
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d asset_registry"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  api:
+    image: ${IMAGE_PREFIX:?}/smart-grid-asset-registry-api:${IMAGE_TAG:?}
+    restart: unless-stopped
+    environment:
+      APP_NAME: smart-grid-asset-registry
+      APP_ENV: prod
+      APP_HOST: 0.0.0.0
+      APP_PORT: "8080"
+      # Requests arrive through Caddy and nginx on this compose network; the
+      # limiter then counts each visitor (Caddy sets X-Forwarded-For).
+      TRUSTED_PROXIES: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:?}
+      DB_NAME: asset_registry
+      # A 1 GB VM: keep well below PostgreSQL's default max_connections.
+      DB_MAX_OPEN_CONNS: "20"
+      DB_MAX_IDLE_CONNS: "5"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/api/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  web:
+    image: ${IMAGE_PREFIX:?}/smart-grid-asset-registry-web:${IMAGE_TAG:?}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?SITE_ADDRESS missing from .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+
+volumes:
+  db-data:
+  caddy-data: # TLS certificates; keep it, or Let's Encrypt rate limits apply
+  caddy-config:
