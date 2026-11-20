@@ -73,6 +73,10 @@ be conveyed by colour alone; panels MUST trap focus and close on Escape.
     it with the domain's natural asset order (exact matches first) and takes the requested
     page in the usecase, because that order cannot be expressed in SQL. The API keeps the
     template's page/limit/totalItems contract. Other paged lists page in SQL.
+15. **Cloud deployment**: the app is deployed with GitHub Actions to one Azure VM that runs
+    `deploy/docker-compose.prod.yml` behind Caddy (HTTPS); images go to GitHub Container
+    Registry. The template's GitLab/Harbor pipeline is not used. Only ports 80 and 443 are
+    public, so with Exception 1 anyone with the link can use the app, including imports.
 
 ## Definition of Done
 
@@ -89,4 +93,4 @@ file with a semantic version bump (MAJOR: principle removed or redefined; MINOR:
 or section added or materially expanded; PATCH: wording clarifications). Plans and reviews
 MUST check compliance with these principles and the Definition of Done.
 
-**Version**: 1.3.1 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-20
+**Version**: 1.4.0 | **Ratified**: 2026-11-19 | **Last Amended**: 2026-11-20

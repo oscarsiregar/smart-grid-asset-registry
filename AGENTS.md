@@ -51,6 +51,8 @@ specs/      one folder per feature: spec.md, plan.md, tasks.md
 14. The asset search loads every match, orders it with the domain's natural asset order (exact
     matches first) and pages in the usecase; the API keeps `page`/`limit`/`totalItems`. Other paged
     lists page in SQL.
+15. Deployed by GitHub Actions to one Azure VM running `deploy/docker-compose.prod.yml` behind Caddy
+    (see `deploy/README.md`); only the app link is public.
 
 The constitution holds the full text and the reasons.
 
